@@ -1,7 +1,12 @@
 [package]
-name = "bunner-cors-rs"
+name = "bunner_cors_rs"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
 
 [dependencies]
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false
+features = ["user-hooks"]

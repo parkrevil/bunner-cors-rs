@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+set -eu
+
+make lint
+
+echo "pre-push: skipping tests (run locally with 'make test' when needed)."
