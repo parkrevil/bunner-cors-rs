@@ -28,14 +28,14 @@ fn vary_values(headers: &[Header]) -> BTreeSet<String> {
         .unwrap_or_default()
 }
 
-fn assert_simple<'a>(decision: CorsDecision) -> Vec<Header> {
+fn assert_simple(decision: CorsDecision) -> Vec<Header> {
     match decision {
         CorsDecision::Simple(result) => result.headers,
         other => panic!("expected simple decision, got {:?}", other),
     }
 }
 
-fn assert_preflight<'a>(decision: CorsDecision) -> (Vec<Header>, u16, bool) {
+fn assert_preflight(decision: CorsDecision) -> (Vec<Header>, u16, bool) {
     match decision {
         CorsDecision::Preflight(result) => (result.headers, result.status, result.halt_response),
         other => panic!("expected preflight decision, got {:?}", other),
@@ -71,8 +71,10 @@ fn default_simple_request_without_origin_still_allows_any() {
 
 #[test]
 fn exact_origin_is_reflected_with_vary() {
-    let mut options = CorsOptions::default();
-    options.origin = Origin::exact("https://allowed.dev");
+    let options = CorsOptions {
+        origin: Origin::exact("https://allowed.dev"),
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let request = RequestContext::new("POST").with_origin(Some("https://other.dev"));
@@ -90,11 +92,13 @@ fn exact_origin_is_reflected_with_vary() {
 
 #[test]
 fn origin_list_supports_exact_and_patterns() {
-    let mut options = CorsOptions::default();
-    options.origin = Origin::list([
-        OriginMatcher::exact("https://exact.example"),
-        OriginMatcher::pattern(Regex::new(r"^https://.*\.allowed\.org$").unwrap()),
-    ]);
+    let options = CorsOptions {
+        origin: Origin::list([
+            OriginMatcher::exact("https://exact.example"),
+            OriginMatcher::pattern(Regex::new(r"^https://.*\.allowed\.org$").unwrap()),
+        ]),
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let request = RequestContext::new("GET").with_origin(Some("https://service.allowed.org"));
@@ -121,8 +125,10 @@ fn origin_list_supports_exact_and_patterns() {
 
 #[test]
 fn predicate_origin_allows_custom_logic() {
-    let mut options = CorsOptions::default();
-    options.origin = Origin::predicate(|origin, _ctx| origin.ends_with(".trusted"));
+    let options = CorsOptions {
+        origin: Origin::predicate(|origin, _ctx| origin.ends_with(".trusted")),
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let allowed = RequestContext::new("GET").with_origin(Some("https://service.trusted"));
@@ -139,11 +145,13 @@ fn predicate_origin_allows_custom_logic() {
 
 #[test]
 fn custom_origin_can_skip_processing() {
-    let mut options = CorsOptions::default();
-    options.origin = Origin::custom(|origin, _ctx| match origin {
-        Some("https://allow.me") => OriginDecision::Mirror,
-        _ => OriginDecision::Skip,
-    });
+    let options = CorsOptions {
+        origin: Origin::custom(|origin, _ctx| match origin {
+            Some("https://allow.me") => OriginDecision::Mirror,
+            _ => OriginDecision::Skip,
+        }),
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let allowed_request = RequestContext::new("GET").with_origin(Some("https://allow.me"));
@@ -190,8 +198,10 @@ fn default_preflight_reflects_request_headers() {
 
 #[test]
 fn preflight_with_explicit_headers_does_not_reflect_request() {
-    let mut options = CorsOptions::default();
-    options.allowed_headers = AllowedHeaders::list(["Content-Type", "X-Custom"]);
+    let options = CorsOptions {
+        allowed_headers: AllowedHeaders::list(["Content-Type", "X-Custom"]),
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let request = RequestContext::new("OPTIONS")
@@ -212,9 +222,11 @@ fn preflight_with_explicit_headers_does_not_reflect_request() {
 
 #[test]
 fn credentials_and_exposed_headers_are_honored() {
-    let mut options = CorsOptions::default();
-    options.credentials = true;
-    options.exposed_headers = Some(vec!["X-Response-Time".into(), "X-Trace".into()]);
+    let options = CorsOptions {
+        credentials: true,
+        exposed_headers: Some(vec!["X-Response-Time".into(), "X-Trace".into()]),
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let request = RequestContext::new("GET").with_origin(Some("https://foo.bar"));
@@ -232,9 +244,11 @@ fn credentials_and_exposed_headers_are_honored() {
 
 #[test]
 fn max_age_and_preflight_continue_affect_preflight_response() {
-    let mut options = CorsOptions::default();
-    options.max_age = Some("600".into());
-    options.preflight_continue = true;
+    let options = CorsOptions {
+        max_age: Some("600".into()),
+        preflight_continue: true,
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let request = RequestContext::new("OPTIONS").with_origin(Some("https://foo.bar"));
@@ -253,9 +267,11 @@ fn max_age_and_preflight_continue_affect_preflight_response() {
 
 #[test]
 fn vary_headers_are_deduplicated_and_sorted() {
-    let mut options = CorsOptions::default();
-    options.origin = Origin::exact("https://allowed.dev");
-    options.allowed_headers = AllowedHeaders::MirrorRequest;
+    let options = CorsOptions {
+        origin: Origin::exact("https://allowed.dev"),
+        allowed_headers: AllowedHeaders::MirrorRequest,
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let request = RequestContext::new("OPTIONS")
@@ -276,8 +292,10 @@ fn vary_headers_are_deduplicated_and_sorted() {
 
 #[test]
 fn disallowed_origin_returns_headers_without_allow_origin() {
-    let mut options = CorsOptions::default();
-    options.origin = Origin::list([OriginMatcher::exact("https://allow.one")]);
+    let options = CorsOptions {
+        origin: Origin::list([OriginMatcher::exact("https://allow.one")]),
+        ..Default::default()
+    };
     let policy = CorsPolicy::new(options);
 
     let request = RequestContext::new("GET").with_origin(Some("https://deny.one"));
