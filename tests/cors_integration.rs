@@ -214,6 +214,16 @@ mod origin_configuration {
             BTreeSet::from([header::ORIGIN.to_string()])
         );
     }
+
+    #[test]
+    fn disabled_origin_short_circuits_cors_processing() {
+        let policy = policy().origin(Origin::disabled()).build();
+
+        assert!(matches!(
+            simple_request().origin("https://any.dev").evaluate(&policy),
+            CorsDecision::NotApplicable
+        ));
+    }
 }
 
 mod preflight_requests {
