@@ -171,7 +171,7 @@ impl From<&str> for OriginMatcher {
 }
 
 /// 허용되는 요청 헤더 설정.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub enum AllowedHeaders {
     #[default]
     MirrorRequest,
@@ -266,6 +266,8 @@ pub struct CorsOptions {
     pub origin: Origin,
     pub methods: Vec<String>,
     pub allowed_headers: AllowedHeaders,
+    /// Optional alias matching the legacy Node configuration field name `headers`.
+    pub headers: Option<AllowedHeaders>,
     pub exposed_headers: Option<Vec<String>>,
     pub credentials: bool,
     pub max_age: Option<String>,
@@ -286,6 +288,7 @@ impl Default for CorsOptions {
                 method::DELETE.into(),
             ],
             allowed_headers: AllowedHeaders::default(),
+            headers: None,
             exposed_headers: None,
             credentials: false,
             max_age: None,
@@ -358,7 +361,15 @@ pub struct CorsPolicy {
 }
 
 impl CorsPolicy {
-    pub fn new(options: CorsOptions) -> Self {
+    pub fn new(mut options: CorsOptions) -> Self {
+        if let Some(headers_alias) = options.headers.take() {
+            if matches!(options.allowed_headers, AllowedHeaders::MirrorRequest) {
+                options.allowed_headers = headers_alias;
+            } else {
+                options.headers = Some(headers_alias);
+            }
+        }
+
         Self { options }
     }
 
