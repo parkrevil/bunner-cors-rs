@@ -5,7 +5,7 @@ use crate::headers::Headers;
 pub struct PreflightResult {
     pub headers: Headers,
     pub status: u16,
-    pub halt_response: bool,
+    pub end_response: bool,
 }
 
 /// Result for a simple request evaluation.
