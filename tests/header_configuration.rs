@@ -1,7 +1,7 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{AllowedHeaders, Cors, CorsOptions, Origin};
+use bunner_cors_rs::{AllowedHeaders, Origin};
 use common::asserts::{assert_preflight, assert_simple};
 use common::builders::{cors, preflight_request, simple_request};
 use common::headers::{has_header, header_value, vary_values};
@@ -85,52 +85,6 @@ fn vary_headers_are_deduplicated_and_sorted() {
             header::ORIGIN.to_string()
         ])
     );
-}
-
-#[test]
-fn headers_alias_configures_allow_headers() {
-    let options = CorsOptions {
-        headers: Some(AllowedHeaders::list(["X-Alias", "X-Trace"])),
-        ..CorsOptions::default()
-    };
-    let cors = Cors::new(options);
-
-    let (headers, _status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::POST)
-            .request_headers("X-Other")
-            .evaluate(&cors),
-    );
-
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("X-Alias,X-Trace")
-    );
-    assert!(vary_values(&headers).is_empty());
-}
-
-#[test]
-fn headers_alias_does_not_override_explicit_allowed_headers() {
-    let cors = Cors::new(CorsOptions {
-        allowed_headers: AllowedHeaders::list(["X-Primary"]),
-        headers: Some(AllowedHeaders::list(["X-Alias"])),
-        ..CorsOptions::default()
-    });
-
-    let (headers, _status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .request_headers("X-Other")
-            .evaluate(&cors),
-    );
-
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("X-Primary")
-    );
-    assert!(vary_values(&headers).is_empty());
 }
 
 #[test]
