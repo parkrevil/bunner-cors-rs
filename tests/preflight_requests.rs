@@ -40,11 +40,8 @@ fn default_preflight_reflects_request_headers() {
 #[test]
 fn preflight_without_request_method_still_uses_defaults() {
     let cors = cors().build();
-    let (headers, status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .check(&cors),
-    );
+    let (headers, status, _halt) =
+        assert_preflight(preflight_request().origin("https://foo.bar").check(&cors));
 
     assert_eq!(status, 204);
     assert_eq!(
@@ -171,9 +168,7 @@ fn preflight_custom_origin_requires_request_method() {
         }))
         .build();
 
-    let missing_method = preflight_request()
-        .origin("https://ctx.dev")
-        .check(&cors);
+    let missing_method = preflight_request().origin("https://ctx.dev").check(&cors);
 
     assert!(matches!(missing_method, CorsDecision::NotApplicable));
 

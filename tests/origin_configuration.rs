@@ -98,11 +98,7 @@ fn origin_list_combines_bool_regex_and_exact_matchers() {
         Some("https://explicit.hybrid")
     );
 
-    let headers = assert_simple(
-        simple_request()
-            .origin("https://deny.hybrid")
-            .check(&cors),
-    );
+    let headers = assert_simple(simple_request().origin("https://deny.hybrid").check(&cors));
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
@@ -115,11 +111,7 @@ fn origin_list_combines_bool_regex_and_exact_matchers() {
 fn origin_list_supports_boolean_entries() {
     let cors = cors().origin(Origin::list([false, true])).build();
 
-    let headers = assert_simple(
-        simple_request()
-            .origin("https://boolean.dev")
-            .check(&cors),
-    );
+    let headers = assert_simple(simple_request().origin("https://boolean.dev").check(&cors));
 
     assert_eq!(
         header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
@@ -131,11 +123,7 @@ fn origin_list_supports_boolean_entries() {
 fn origin_list_all_false_entries_disallow() {
     let cors = cors().origin(Origin::list([false])).build();
 
-    let headers = assert_simple(
-        simple_request()
-            .origin("https://deny.boole")
-            .check(&cors),
-    );
+    let headers = assert_simple(simple_request().origin("https://deny.boole").check(&cors));
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
@@ -212,8 +200,7 @@ fn custom_origin_can_skip_processing() {
         }))
         .build();
 
-    let allowed_headers =
-        assert_simple(simple_request().origin("https://allow.me").check(&cors));
+    let allowed_headers = assert_simple(simple_request().origin("https://allow.me").check(&cors));
     assert_eq!(
         header_value(&allowed_headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
         Some("https://allow.me")

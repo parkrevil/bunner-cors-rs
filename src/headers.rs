@@ -1,4 +1,5 @@
 use crate::constants::header;
+use std::collections::HashMap;
 
 /// Simple response header representation used by the CORS engine.
 pub type Headers = std::collections::HashMap<String, String>;
@@ -10,7 +11,9 @@ pub(crate) struct HeaderCollection {
 
 impl HeaderCollection {
     pub(crate) fn new() -> Self {
-        Self::default()
+        Self {
+            headers: HashMap::with_capacity(16),
+        }
     }
 
     pub(crate) fn push(&mut self, name: String, value: String) {

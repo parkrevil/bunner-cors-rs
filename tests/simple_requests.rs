@@ -8,11 +8,7 @@ use common::headers::{has_header, header_value};
 #[test]
 fn default_simple_request_allows_any_origin() {
     let cors = cors().build();
-    let headers = assert_simple(
-        simple_request()
-            .origin("https://example.com")
-            .check(&cors),
-    );
+    let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
 
     assert_eq!(
         header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
