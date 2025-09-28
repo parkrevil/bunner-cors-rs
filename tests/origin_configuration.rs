@@ -343,3 +343,11 @@ fn custom_origin_mirror_with_missing_origin_omits_allow_origin() {
         HashSet::from([header::ORIGIN.to_string()])
     );
 }
+
+#[test]
+fn regex_pattern_compilation_limits_work() {
+    // Test that regex compilation with limits works
+    let matcher = OriginMatcher::pattern_str(r"^https://.*\.test\.com$").unwrap();
+    assert!(matcher.matches("https://sub.test.com"));
+    assert!(!matcher.matches("https://sub.other.com"));
+}
