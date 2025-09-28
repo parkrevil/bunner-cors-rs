@@ -615,6 +615,20 @@ mod misc_configuration {
             Some("600")
         );
     }
+
+    #[test]
+    fn empty_max_age_does_not_emit_header() {
+        let policy = policy().max_age("").build();
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
+    }
 }
 
 mod property_based {
