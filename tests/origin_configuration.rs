@@ -5,6 +5,7 @@ use bunner_cors_rs::{CorsDecision, Origin, OriginDecision, OriginMatcher};
 use common::asserts::assert_simple;
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value, vary_values};
+use regex::Regex;
 use std::collections::HashSet;
 
 #[test]
@@ -354,4 +355,24 @@ fn regex_pattern_compilation_limits_work() {
     // Test that excessive regex compilation fails
     let excessive_pattern = "a".repeat(100000); // Very long pattern that exceeds size limit
     assert!(OriginMatcher::pattern_str(&excessive_pattern).is_err());
+}
+
+#[test]
+fn origin_list_supports_precompiled_regex_matcher() {
+    let cors = cors()
+        .origin(Origin::list([OriginMatcher::pattern(
+            Regex::new(r"^https://precompiled\..*\.dev$").unwrap(),
+        )]))
+        .build();
+
+    let headers = assert_simple(
+        simple_request()
+            .origin("https://precompiled.api.dev")
+            .check(&cors),
+    );
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+        Some("https://precompiled.api.dev"),
+    );
 }
