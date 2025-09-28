@@ -5,6 +5,7 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
+regex = "1"
 
 [dev-dependencies.cargo-husky]
 version = "1"

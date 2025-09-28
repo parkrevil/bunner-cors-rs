@@ -1,6 +1,7 @@
 mod policy;
 
 pub use policy::{
-    CorsDecision, CorsOptions, CorsPolicy, Header, Origin, OriginPredicateFn, PreflightResult,
-    RequestContext, SimpleResult,
+    AllowedHeaders, CorsDecision, CorsOptions, CorsPolicy, Header, Origin, OriginCallbackFn,
+    OriginDecision, OriginMatcher, OriginPredicateFn, PreflightResult, RequestContext,
+    SimpleResult,
 };
