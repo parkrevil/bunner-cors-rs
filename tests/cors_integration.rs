@@ -255,6 +255,36 @@ mod origin_configuration {
     }
 
     #[test]
+    fn predicate_origin_can_inspect_request_method() {
+        let policy = policy()
+            .origin(Origin::predicate(|origin, ctx| {
+                origin == "https://method.dev" && ctx.method.eq_ignore_ascii_case(method::POST)
+            }))
+            .build();
+
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://method.dev")
+                .method(method::POST)
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("https://method.dev")
+        );
+
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://method.dev")
+                .method(method::GET)
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    #[test]
     fn custom_origin_can_skip_processing() {
         let policy = policy()
             .origin(Origin::custom(|origin, _ctx| match origin {
