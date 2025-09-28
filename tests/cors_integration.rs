@@ -388,6 +388,36 @@ mod origin_configuration {
     }
 
     #[test]
+    fn missing_origin_header_with_restrictive_policy_only_sets_vary() {
+        let policy = policy()
+            .origin(Origin::list([OriginMatcher::exact("https://allow.dev")]))
+            .build();
+
+        let headers = assert_simple(simple_request().evaluate(&policy));
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ORIGIN.to_string()])
+        );
+    }
+
+    #[test]
+    fn custom_origin_mirror_with_missing_origin_omits_allow_origin() {
+        let policy = policy()
+            .origin(Origin::custom(|_, _| OriginDecision::Mirror))
+            .build();
+
+        let headers = assert_simple(simple_request().evaluate(&policy));
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ORIGIN.to_string()])
+        );
+    }
+
+    #[test]
     fn disallowed_origin_returns_headers_without_allow_origin() {
         let policy = policy()
             .origin(Origin::list([OriginMatcher::exact("https://allow.one")]))
@@ -687,6 +717,18 @@ mod header_configuration {
     }
 
     #[test]
+    fn credentials_disabled_omits_allow_credentials_header() {
+        let policy = policy().build();
+
+        let headers = assert_simple(simple_request().origin("https://foo.bar").evaluate(&policy));
+
+        assert!(!has_header(
+            &headers,
+            header::ACCESS_CONTROL_ALLOW_CREDENTIALS
+        ));
+    }
+
+    #[test]
     fn vary_headers_are_deduplicated_and_sorted() {
         let policy = policy()
             .origin(Origin::exact("https://allowed.dev"))
@@ -776,6 +818,27 @@ mod header_configuration {
             header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
             Some(requested)
         );
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
+        );
+    }
+
+    #[test]
+    fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
+        let policy = policy()
+            .allowed_headers(AllowedHeaders::MirrorRequest)
+            .build();
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .request_headers("")
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
         assert_eq!(
             vary_values(&headers),
             BTreeSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
