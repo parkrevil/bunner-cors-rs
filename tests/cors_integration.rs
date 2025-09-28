@@ -1,6 +1,7 @@
 use bunner_cors_rs::constants::{header, method};
 use bunner_cors_rs::{
-    AllowedHeaders, CorsDecision, CorsPolicy, Header, Origin, OriginDecision, OriginMatcher,
+    AllowedHeaders, CorsDecision, CorsOptions, CorsPolicy, Header, Origin, OriginDecision,
+    OriginMatcher,
 };
 use std::collections::BTreeSet;
 
@@ -384,6 +385,29 @@ mod header_configuration {
                 header::ORIGIN.to_string()
             ])
         );
+    }
+
+    #[test]
+    fn headers_alias_configures_allow_headers() {
+        let options = CorsOptions {
+            headers: Some(AllowedHeaders::list(["X-Alias", "X-Trace"])),
+            ..CorsOptions::default()
+        };
+        let policy = CorsPolicy::new(options);
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::POST)
+                .request_headers("X-Other")
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+            Some("X-Alias,X-Trace")
+        );
+        assert!(vary_values(&headers).is_empty());
     }
 }
 
