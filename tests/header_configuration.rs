@@ -151,3 +151,21 @@ fn empty_allowed_headers_list_omits_allow_headers() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
     assert!(vary_values(&headers).is_empty());
 }
+
+#[test]
+fn many_exposed_headers_work_correctly() {
+    let cors = cors()
+        .exposed_headers([
+            "X-Header-1", "X-Header-2", "X-Header-3", "X-Header-4", "X-Header-5",
+            "X-Header-6", "X-Header-7", "X-Header-8", "X-Header-9", "X-Header-10",
+            "X-Header-11", "X-Header-12", "X-Header-13", "X-Header-14", "X-Header-15",
+            "X-Header-16", "X-Header-17", "X-Header-18", "X-Header-19", "X-Header-20",
+        ])
+        .build();
+
+    let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
+
+    let exposed = header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS).unwrap();
+    assert!(exposed.contains("X-Header-1"));
+    assert!(exposed.contains("X-Header-20"));
+}
