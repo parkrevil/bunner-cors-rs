@@ -781,6 +781,44 @@ mod header_configuration {
             BTreeSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
         );
     }
+
+    #[test]
+    fn preflight_includes_credentials_header_when_enabled() {
+        let policy = policy().credentials(true).build();
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
+            Some("true")
+        );
+    }
+
+    #[test]
+    fn empty_allowed_headers_list_omits_allow_headers() {
+        let policy = {
+            let empty: Vec<&str> = Vec::new();
+            policy()
+                .allowed_headers(AllowedHeaders::list(empty))
+                .build()
+        };
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .request_headers("X-Test")
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
+        assert!(vary_values(&headers).is_empty());
+    }
 }
 
 mod misc_configuration {
@@ -807,6 +845,24 @@ mod misc_configuration {
             header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
             Some("600")
         );
+    }
+
+    #[test]
+    fn custom_success_status_is_reflected() {
+        let policy = CorsPolicy::new(CorsOptions {
+            options_success_status: 299,
+            ..CorsOptions::default()
+        });
+
+        let (_headers, status, halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .evaluate(&policy),
+        );
+
+        assert_eq!(status, 299);
+        assert!(halt);
     }
 
     #[test]
@@ -852,6 +908,20 @@ mod misc_configuration {
             header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
             Some("0")
         );
+    }
+
+    #[test]
+    fn empty_methods_list_omits_allow_methods_header() {
+        let policy = policy().methods(Vec::<String>::new()).build();
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::PATCH)
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_METHODS));
     }
 }
 
