@@ -350,4 +350,8 @@ fn regex_pattern_compilation_limits_work() {
     let matcher = OriginMatcher::pattern_str(r"^https://.*\.test\.com$").unwrap();
     assert!(matcher.matches("https://sub.test.com"));
     assert!(!matcher.matches("https://sub.other.com"));
+
+    // Test that excessive regex compilation fails
+    let excessive_pattern = "a".repeat(100000); // Very long pattern that exceeds size limit
+    assert!(OriginMatcher::pattern_str(&excessive_pattern).is_err());
 }
