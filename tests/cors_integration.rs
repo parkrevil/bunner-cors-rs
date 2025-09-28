@@ -144,6 +144,55 @@ mod origin_configuration {
     }
 
     #[test]
+    fn origin_list_combines_bool_regex_and_exact_matchers() {
+        let policy = policy()
+            .origin(Origin::list([
+                OriginMatcher::from(false),
+                OriginMatcher::pattern(Regex::new(r"^https://.*\.hybrid\.dev$").unwrap()),
+                OriginMatcher::exact("https://explicit.hybrid"),
+            ]))
+            .build();
+
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://api.hybrid.dev")
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("https://api.hybrid.dev")
+        );
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ORIGIN.to_string()])
+        );
+
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://explicit.hybrid")
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("https://explicit.hybrid")
+        );
+
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://deny.hybrid")
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ORIGIN.to_string()])
+        );
+    }
+
+    #[test]
     fn origin_list_supports_boolean_entries() {
         let policy = policy().origin(Origin::list([false, true])).build();
 
