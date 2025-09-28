@@ -110,7 +110,7 @@ impl SimpleRequestBuilder {
         self
     }
 
-    pub fn evaluate(self, cors: &Cors) -> bunner_cors_rs::CorsDecision {
+    pub fn check(self, cors: &Cors) -> bunner_cors_rs::CorsDecision {
         let SimpleRequestBuilder { method, origin } = self;
         let ctx = RequestContext {
             method: &method,
@@ -118,7 +118,7 @@ impl SimpleRequestBuilder {
             access_control_request_method: "",
             access_control_request_headers: "",
         };
-        cors.evaluate(&ctx)
+        cors.check(&ctx)
     }
 }
 
@@ -149,7 +149,7 @@ impl PreflightRequestBuilder {
         self
     }
 
-    pub fn evaluate(self, cors: &Cors) -> bunner_cors_rs::CorsDecision {
+    pub fn check(self, cors: &Cors) -> bunner_cors_rs::CorsDecision {
         let PreflightRequestBuilder {
             origin,
             request_method,
@@ -162,7 +162,7 @@ impl PreflightRequestBuilder {
             access_control_request_method: request_method.as_deref().unwrap_or(""),
             access_control_request_headers: request_headers.as_deref().unwrap_or(""),
         };
-        cors.evaluate(&ctx)
+        cors.check(&ctx)
     }
 }
 

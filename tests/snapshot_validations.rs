@@ -22,7 +22,7 @@ struct PreflightSnapshot {
 }
 
 fn capture_preflight(cors: &Cors, request: PreflightRequestBuilder) -> PreflightSnapshot {
-    let (headers, status, halt) = assert_preflight(request.evaluate(cors));
+    let (headers, status, halt) = assert_preflight(request.check(cors));
     let mut header_vec: Vec<_> = headers
         .into_iter()
         .map(|(name, value)| HeaderSnapshot { name, value })

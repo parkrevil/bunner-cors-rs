@@ -38,7 +38,7 @@ proptest! {
         let headers = assert_simple(
             simple_request()
                 .origin(origin.as_str())
-                .evaluate(
+                .check(
                     &cors()
                         .origin(Origin::exact(origin.clone()))
                         .build()
@@ -60,7 +60,7 @@ proptest! {
             .origin("https://prop.test")
             .request_method(method::GET)
             .request_headers(request_variant)
-            .evaluate(
+            .check(
                 &cors()
                     .allowed_headers(AllowedHeaders::list([allowed.clone()]))
                     .build()
@@ -82,7 +82,7 @@ proptest! {
         let headers = assert_simple(
             simple_request()
                 .origin(origin.as_str())
-                .evaluate(&cors),
+                .check(&cors),
         );
 
         prop_assert_eq!(

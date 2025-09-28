@@ -14,7 +14,7 @@ fn max_age_and_preflight_continue_affect_preflight_response() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(status, 204);
@@ -36,7 +36,7 @@ fn empty_max_age_does_not_emit_header() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
@@ -50,7 +50,7 @@ fn default_max_age_is_absent() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
@@ -64,7 +64,7 @@ fn zero_max_age_is_emitted() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(
@@ -84,7 +84,7 @@ fn custom_success_status_is_reflected() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(status, 299);
@@ -99,7 +99,7 @@ fn empty_methods_list_omits_allow_methods_header() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::PATCH)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_METHODS));

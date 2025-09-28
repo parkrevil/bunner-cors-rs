@@ -18,7 +18,7 @@ fn preflight_with_explicit_headers_does_not_reflect_request() {
             .origin("https://foo.bar")
             .request_method(method::POST)
             .request_headers("X-Custom")
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(
@@ -38,7 +38,7 @@ fn credentials_and_exposed_headers_are_honored() {
         .exposed_headers(["X-Response-Time", "X-Trace"])
         .build();
 
-    let headers = assert_simple(simple_request().origin("https://foo.bar").evaluate(&cors));
+    let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
 
     assert_eq!(
         header_value(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
@@ -54,7 +54,7 @@ fn credentials_and_exposed_headers_are_honored() {
 fn credentials_disabled_omits_allow_credentials_header() {
     let cors = cors().build();
 
-    let headers = assert_simple(simple_request().origin("https://foo.bar").evaluate(&cors));
+    let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
 
     assert!(!has_header(
         &headers,
@@ -74,7 +74,7 @@ fn vary_headers_are_deduplicated_and_sorted() {
             .origin("https://allowed.dev")
             .request_method(method::PUT)
             .request_headers("X-Test")
-            .evaluate(&cors),
+            .check(&cors),
     );
     let vary = vary_values(&headers);
 
@@ -99,7 +99,7 @@ fn mirror_request_headers_preserves_formatting() {
             .origin("https://foo.bar")
             .request_method(method::PATCH)
             .request_headers(requested)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(
@@ -123,7 +123,7 @@ fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
             .origin("https://foo.bar")
             .request_method(method::GET)
             .request_headers("")
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
@@ -145,7 +145,7 @@ fn empty_allowed_headers_list_omits_allow_headers() {
             .origin("https://foo.bar")
             .request_method(method::GET)
             .request_headers("X-Test")
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));

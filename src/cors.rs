@@ -17,24 +17,24 @@ impl Cors {
         Self { options }
     }
 
-    pub fn evaluate(&self, request: &RequestContext<'_>) -> CorsDecision {
+    pub fn check(&self, request: &RequestContext<'_>) -> CorsDecision {
         let normalized_request = NormalizedRequest::new(request);
         let normalized_ctx = normalized_request.as_context();
 
         if normalized_request.is_options() {
-            match self.evaluate_preflight(request, &normalized_ctx) {
+            match self.process_preflight(request, &normalized_ctx) {
                 Some(result) => CorsDecision::Preflight(result),
                 None => CorsDecision::NotApplicable,
             }
         } else {
-            match self.evaluate_simple(request, &normalized_ctx) {
+            match self.process_simple(request, &normalized_ctx) {
                 Some(result) => CorsDecision::Simple(result),
                 None => CorsDecision::NotApplicable,
             }
         }
     }
 
-    fn evaluate_preflight(
+    fn process_preflight(
         &self,
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
@@ -58,7 +58,7 @@ impl Cors {
         })
     }
 
-    fn evaluate_simple(
+    fn process_simple(
         &self,
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,

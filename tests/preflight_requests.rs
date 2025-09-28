@@ -15,7 +15,7 @@ fn default_preflight_reflects_request_headers() {
             .origin("https://foo.bar")
             .request_method(method::GET)
             .request_headers("X-Test, Content-Type")
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(status, 204);
@@ -43,7 +43,7 @@ fn preflight_without_request_method_still_uses_defaults() {
     let (headers, status, _halt) = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(status, 204);
@@ -59,7 +59,7 @@ fn preflight_with_disallowed_method_still_returns_configured_methods() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::DELETE)
-            .evaluate(&cors().methods([method::GET, method::POST]).build()),
+            .check(&cors().methods([method::GET, method::POST]).build()),
     );
 
     assert_eq!(status, 204);
@@ -76,7 +76,7 @@ fn preflight_with_disallowed_header_returns_configured_list() {
             .origin("https://foo.bar")
             .request_method(method::GET)
             .request_headers("X-Disallowed")
-            .evaluate(
+            .check(
                 &cors()
                     .allowed_headers(AllowedHeaders::list(["X-Allowed"]))
                     .build(),
@@ -96,7 +96,7 @@ fn preflight_without_request_method_still_reflects_request_headers() {
         preflight_request()
             .origin("https://foo.bar")
             .request_headers("X-Reflect")
-            .evaluate(&cors().build()),
+            .check(&cors().build()),
     );
 
     assert_eq!(status, 204);
@@ -120,7 +120,7 @@ fn preflight_mirror_headers_without_request_headers_omits_allow_headers() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::POST)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
@@ -137,7 +137,7 @@ fn preflight_with_disabled_origin_returns_not_applicable() {
     let decision = preflight_request()
         .origin("https://skip.dev")
         .request_method(method::GET)
-        .evaluate(&cors);
+        .check(&cors);
 
     assert!(matches!(decision, CorsDecision::NotApplicable));
 }
@@ -154,7 +154,7 @@ fn preflight_with_custom_origin_skip_returns_not_applicable() {
     let decision = preflight_request()
         .origin("https://skip.dev")
         .request_method(method::POST)
-        .evaluate(&cors);
+        .check(&cors);
 
     assert!(matches!(decision, CorsDecision::NotApplicable));
 }
@@ -173,7 +173,7 @@ fn preflight_custom_origin_requires_request_method() {
 
     let missing_method = preflight_request()
         .origin("https://ctx.dev")
-        .evaluate(&cors);
+        .check(&cors);
 
     assert!(matches!(missing_method, CorsDecision::NotApplicable));
 
@@ -181,7 +181,7 @@ fn preflight_custom_origin_requires_request_method() {
         preflight_request()
             .origin("https://ctx.dev")
             .request_method(method::PUT)
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(
@@ -209,7 +209,7 @@ fn preflight_custom_origin_checks_request_headers() {
     let decision = preflight_request()
         .origin("https://headers.dev")
         .request_method(method::POST)
-        .evaluate(&cors);
+        .check(&cors);
 
     assert!(matches!(decision, CorsDecision::NotApplicable));
 
@@ -218,7 +218,7 @@ fn preflight_custom_origin_checks_request_headers() {
             .origin("https://headers.dev")
             .request_method(method::POST)
             .request_headers("X-Allow, X-Trace")
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(

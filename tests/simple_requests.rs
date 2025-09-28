@@ -11,7 +11,7 @@ fn default_simple_request_allows_any_origin() {
     let headers = assert_simple(
         simple_request()
             .origin("https://example.com")
-            .evaluate(&cors),
+            .check(&cors),
     );
 
     assert_eq!(
@@ -24,7 +24,7 @@ fn default_simple_request_allows_any_origin() {
 #[test]
 fn default_simple_request_without_origin_still_allows_any() {
     let cors = cors().build();
-    let headers = assert_simple(simple_request().evaluate(&cors));
+    let headers = assert_simple(simple_request().check(&cors));
 
     assert_eq!(
         header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
