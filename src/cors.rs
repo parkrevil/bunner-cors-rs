@@ -127,9 +127,8 @@ impl Cors {
 
     fn build_methods_header(&self) -> HeaderCollection {
         let mut headers = HeaderCollection::new();
-        if !self.options.methods.is_empty() {
-            let methods = self.options.methods.join(",");
-            headers.push(header::ACCESS_CONTROL_ALLOW_METHODS.to_string(), methods);
+        if let Some(value) = self.options.methods.header_value() {
+            headers.push(header::ACCESS_CONTROL_ALLOW_METHODS.to_string(), value);
         }
         headers
     }
@@ -164,6 +163,12 @@ impl Cors {
                         request.access_control_request_headers.to_string(),
                     );
                 }
+            }
+            AllowedHeaders::Any => {
+                headers.push(
+                    header::ACCESS_CONTROL_ALLOW_HEADERS.to_string(),
+                    "*".to_string(),
+                );
             }
         }
         headers

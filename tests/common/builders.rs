@@ -1,10 +1,10 @@
 use bunner_cors_rs::constants::method;
-use bunner_cors_rs::{AllowedHeaders, Cors, CorsOptions, Origin, RequestContext};
+use bunner_cors_rs::{AllowedHeaders, AllowedMethods, Cors, CorsOptions, Origin, RequestContext};
 
 #[derive(Default)]
 pub struct CorsBuilder {
     origin: Option<Origin>,
-    methods: Option<Vec<String>>,
+    methods: Option<AllowedMethods>,
     allowed_headers: Option<AllowedHeaders>,
     exposed_headers: Option<Vec<String>>,
     credentials: Option<bool>,
@@ -27,7 +27,12 @@ impl CorsBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        self.methods = Some(methods.into_iter().map(Into::into).collect());
+        self.methods = Some(AllowedMethods::list(methods));
+        self
+    }
+
+    pub fn methods_any(mut self) -> Self {
+        self.methods = Some(AllowedMethods::any());
         self
     }
 

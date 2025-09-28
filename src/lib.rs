@@ -1,4 +1,5 @@
 mod allowed_headers;
+mod allowed_methods;
 pub mod constants;
 mod context;
 mod cors;
@@ -8,6 +9,7 @@ mod origin;
 mod result;
 
 pub use allowed_headers::AllowedHeaders;
+pub use allowed_methods::AllowedMethods;
 pub use context::RequestContext;
 pub use cors::Cors;
 pub use headers::Headers;

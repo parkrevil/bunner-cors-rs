@@ -360,3 +360,39 @@ fn preflight_accepts_mixed_case_options_and_request_method() {
         Some(requested_headers.as_str()),
     );
 }
+
+#[test]
+fn preflight_methods_any_sets_wildcard_header() {
+    let cors = cors().methods_any().build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://wild.dev")
+            .request_method(method::DELETE)
+            .check(&cors),
+    );
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
+        Some("*"),
+    );
+}
+
+#[test]
+fn preflight_allowed_headers_any_sets_wildcard_header() {
+    let cors = cors().allowed_headers(AllowedHeaders::any()).build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://wild.dev")
+            .request_method(method::GET)
+            .request_headers("X-Test")
+            .check(&cors),
+    );
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+        Some("*"),
+    );
+    assert!(vary_values(&headers).is_empty());
+}

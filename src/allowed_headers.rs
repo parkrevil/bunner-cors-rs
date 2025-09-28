@@ -4,6 +4,7 @@ pub enum AllowedHeaders {
     #[default]
     MirrorRequest,
     List(Vec<String>),
+    Any,
 }
 
 impl AllowedHeaders {
@@ -13,5 +14,9 @@ impl AllowedHeaders {
         S: Into<String>,
     {
         Self::List(values.into_iter().map(Into::into).collect())
+    }
+
+    pub fn any() -> Self {
+        Self::Any
     }
 }

@@ -1,11 +1,11 @@
 use crate::allowed_headers::AllowedHeaders;
-use crate::constants::method;
+use crate::allowed_methods::AllowedMethods;
 use crate::origin::Origin;
 
 #[derive(Clone)]
 pub struct CorsOptions {
     pub origin: Origin,
-    pub methods: Vec<String>,
+    pub methods: AllowedMethods,
     pub allowed_headers: AllowedHeaders,
     pub exposed_headers: Option<Vec<String>>,
     pub credentials: bool,
@@ -18,14 +18,7 @@ impl Default for CorsOptions {
     fn default() -> Self {
         Self {
             origin: Origin::Any,
-            methods: vec![
-                method::GET.into(),
-                method::HEAD.into(),
-                method::PUT.into(),
-                method::PATCH.into(),
-                method::POST.into(),
-                method::DELETE.into(),
-            ],
+            methods: AllowedMethods::default(),
             allowed_headers: AllowedHeaders::default(),
             exposed_headers: None,
             credentials: false,
