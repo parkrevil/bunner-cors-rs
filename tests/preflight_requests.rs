@@ -163,7 +163,7 @@ fn preflight_with_custom_origin_skip_returns_not_applicable() {
 fn preflight_custom_origin_requires_request_method() {
     let policy = policy()
         .origin(Origin::custom(|_, ctx| {
-            if ctx.access_control_request_method.is_some() {
+            if !ctx.access_control_request_method.is_empty() {
                 OriginDecision::Any
             } else {
                 OriginDecision::Skip
@@ -194,11 +194,14 @@ fn preflight_custom_origin_requires_request_method() {
 fn preflight_custom_origin_checks_request_headers() {
     let policy = policy()
         .origin(Origin::custom(|_, ctx| {
-            match ctx.access_control_request_headers {
-                Some(headers) if headers.to_ascii_lowercase().contains("x-allow") => {
-                    OriginDecision::Mirror
-                }
-                _ => OriginDecision::Skip,
+            if ctx
+                .access_control_request_headers
+                .to_ascii_lowercase()
+                .contains("x-allow")
+            {
+                OriginDecision::Mirror
+            } else {
+                OriginDecision::Skip
             }
         }))
         .build();

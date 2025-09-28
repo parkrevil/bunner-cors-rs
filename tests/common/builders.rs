@@ -114,8 +114,12 @@ impl SimpleRequestBuilder {
 
     pub fn evaluate(self, policy: &CorsPolicy) -> bunner_cors_rs::CorsDecision {
         let SimpleRequestBuilder { method, origin } = self;
-        let mut ctx = RequestContext::new(&method);
-        ctx = ctx.with_origin(origin.as_deref());
+        let ctx = RequestContext {
+            method: &method,
+            origin: origin.as_deref().unwrap_or(""),
+            access_control_request_method: "",
+            access_control_request_headers: "",
+        };
         policy.evaluate(&ctx)
     }
 }
@@ -154,10 +158,12 @@ impl PreflightRequestBuilder {
             request_headers,
         } = self;
 
-        let mut ctx = RequestContext::new(method::OPTIONS);
-        ctx = ctx.with_origin(origin.as_deref());
-        ctx = ctx.with_access_control_request_method(request_method.as_deref());
-        ctx = ctx.with_access_control_request_headers(request_headers.as_deref());
+        let ctx = RequestContext {
+            method: method::OPTIONS,
+            origin: origin.as_deref().unwrap_or(""),
+            access_control_request_method: request_method.as_deref().unwrap_or(""),
+            access_control_request_headers: request_headers.as_deref().unwrap_or(""),
+        };
         policy.evaluate(&ctx)
     }
 }

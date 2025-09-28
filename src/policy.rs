@@ -75,7 +75,14 @@ impl CorsPolicy {
 
     fn build_origin_headers(&self, request: &RequestContext<'_>) -> (HeaderCollection, bool) {
         let mut headers = HeaderCollection::new();
-        let decision = self.options.origin.resolve(request.origin, request);
+        let decision = self.options.origin.resolve(
+            if request.origin.is_empty() {
+                None
+            } else {
+                Some(request.origin)
+            },
+            request,
+        );
 
         match decision {
             OriginDecision::Any => {
@@ -87,8 +94,11 @@ impl CorsPolicy {
             }
             OriginDecision::Mirror => {
                 headers.add_vary(header::ORIGIN);
-                if let Some(origin) = request.origin {
-                    headers.push(Header::new(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin));
+                if !request.origin.is_empty() {
+                    headers.push(Header::new(
+                        header::ACCESS_CONTROL_ALLOW_ORIGIN,
+                        request.origin,
+                    ));
                 }
             }
             OriginDecision::Disallow => {
@@ -137,12 +147,10 @@ impl CorsPolicy {
             }
             AllowedHeaders::MirrorRequest => {
                 headers.add_vary(header::ACCESS_CONTROL_REQUEST_HEADERS);
-                if let Some(request_headers) = request.access_control_request_headers
-                    && !request_headers.is_empty()
-                {
+                if !request.access_control_request_headers.is_empty() {
                     headers.push(Header::new(
                         header::ACCESS_CONTROL_ALLOW_HEADERS,
-                        request_headers,
+                        request.access_control_request_headers,
                     ));
                 }
             }

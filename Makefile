@@ -52,7 +52,7 @@ coverage:
 	fi
 
 ## Release / Publish
-.PHONY: release publish-dry-run
+.PHONY: release
 release:
 	cargo build --release --all-features
 
