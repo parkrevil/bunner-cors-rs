@@ -251,19 +251,40 @@ mod preflight_requests {
     }
 
     #[test]
-    fn preflight_with_disallowed_method_is_not_applicable() {
-        assert!(matches!(
+    fn preflight_without_request_method_still_uses_defaults() {
+        let policy = policy().build();
+        let (headers, status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .evaluate(&policy),
+        );
+
+        assert_eq!(status, 204);
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
+            Some("GET,HEAD,PUT,PATCH,POST,DELETE")
+        );
+    }
+
+    #[test]
+    fn preflight_with_disallowed_method_still_returns_configured_methods() {
+        let (headers, status, _halt) = assert_preflight(
             preflight_request()
                 .origin("https://foo.bar")
                 .request_method(method::DELETE)
                 .evaluate(&policy().methods([method::GET, method::POST]).build()),
-            CorsDecision::NotApplicable
-        ));
+        );
+
+        assert_eq!(status, 204);
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
+            Some("GET,POST")
+        );
     }
 
     #[test]
-    fn preflight_with_disallowed_header_is_not_applicable() {
-        assert!(matches!(
+    fn preflight_with_disallowed_header_returns_configured_list() {
+        let (headers, status, _halt) = assert_preflight(
             preflight_request()
                 .origin("https://foo.bar")
                 .request_method(method::GET)
@@ -271,10 +292,15 @@ mod preflight_requests {
                 .evaluate(
                     &policy()
                         .allowed_headers(AllowedHeaders::list(["X-Allowed"]))
-                        .build()
+                        .build(),
                 ),
-            CorsDecision::NotApplicable
-        ));
+        );
+
+        assert_eq!(status, 204);
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+            Some("X-Allowed")
+        );
     }
 }
 
