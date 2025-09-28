@@ -144,6 +144,39 @@ mod origin_configuration {
     }
 
     #[test]
+    fn origin_list_supports_boolean_entries() {
+        let policy = policy().origin(Origin::list([false, true])).build();
+
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://boolean.dev")
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("https://boolean.dev")
+        );
+    }
+
+    #[test]
+    fn origin_list_all_false_entries_disallow() {
+        let policy = policy().origin(Origin::list([false])).build();
+
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://deny.boole")
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ORIGIN.to_string()])
+        );
+    }
+
+    #[test]
     fn predicate_origin_allows_custom_logic() {
         let policy = policy()
             .origin(Origin::predicate(|origin, _ctx| {
