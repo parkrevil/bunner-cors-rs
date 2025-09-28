@@ -222,6 +222,10 @@ impl Origin {
         Self::Custom(Arc::new(callback))
     }
 
+    pub fn disabled() -> Self {
+        Self::custom(|_, _| OriginDecision::Skip)
+    }
+
     fn resolve(&self, request_origin: Option<&str>, ctx: &RequestContext<'_>) -> OriginDecision {
         match self {
             Origin::Any => OriginDecision::Any,
