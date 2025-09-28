@@ -3,49 +3,39 @@ PACKAGE := bunner_cors_rs
 TARGET_DIR := target
 DOC_DIR := $(TARGET_DIR)/doc
 
-CLIPPY_FLAGS_STRICT = --workspace --all-features -- -D warnings -D clippy::dbg_macro -D clippy::todo -D clippy::unimplemented -D clippy::panic -D clippy::print_stdout -D clippy::print_stderr
-CLIPPY_FLAGS_RELAXED = --workspace --all-features --all-targets -- -D warnings -A clippy::panic -A clippy::print_stdout -A clippy::print_stderr
-
 ## Default / Meta targets
-.PHONY: help all check
+.PHONY: all
 
-help: ## Show this help
-	@grep -E '^[a-zA-Z0-9_\-]+:.*?## ' $(MAKEFILE_LIST) | sed -E 's/:.*?## /\t- /'
-
-all: format lint test ## Format check, lint and run tests
+all: format lint test
 
 ## Code Quality
 .PHONY: lint format
 
-lint: ## Run strict + relaxed clippy (tests relaxed)
-	cargo clippy $(CLIPPY_FLAGS_STRICT)
-	cargo clippy $(CLIPPY_FLAGS_RELAXED)
+lint:
+	cargo clippy --workspace --all-features --lib --bins -- -D warnings -D clippy::dbg_macro -D clippy::todo -D clippy::unimplemented -D clippy::panic -D clippy::print_stdout -D clippy::print_stderr
+	cargo clippy --workspace --all-features --tests --examples --benches -- -D warnings -A dead_code -A clippy::panic -A clippy::print_stdout -A clippy::print_stderr
 
-format: ## Auto-format all code
+format:
 	cargo fmt --all
 
 ## Testing
 .PHONY: test
 
-test: ## Run test suite (nextest if available, fallback to cargo test)
-	@if command -v cargo-nextest >/dev/null 2>&1; then \
-		INSTA_UPDATE=always cargo nextest run --package $(PACKAGE); \
-	else \
-		INSTA_UPDATE=always cargo test --package $(PACKAGE); \
-	fi
+test:
+	INSTA_UPDATE=always RUSTFLAGS="-A dead_code" cargo nextest run --package $(PACKAGE); \
 
 ## Docs
 .PHONY: doc doc-open
 
-doc: ## Build documentation (including private items)
+doc:
 	cargo doc --all-features --no-deps --document-private-items
 
-doc-open: doc ## Build docs then open in browser
+doc-open: doc
 	@xdg-open $(DOC_DIR)/$(PACKAGE)/index.html 2>/dev/null || true
 
 ## Security / Quality (optional tools: cargo-audit, cargo-deny)
 .PHONY: audit
-audit: ## Run security audit (requires cargo-audit)
+audit:
 	@if command -v cargo-audit >/dev/null 2>&1; then \
 		cargo audit; \
 	else \
@@ -54,7 +44,7 @@ audit: ## Run security audit (requires cargo-audit)
 
 ## Coverage
 .PHONY: coverage
-coverage: ## Generate coverage report (requires cargo-llvm-cov)
+coverage:
 	@if command -v cargo-llvm-cov >/dev/null 2>&1; then \
 		cargo llvm-cov; \
 	else \
@@ -63,14 +53,14 @@ coverage: ## Generate coverage report (requires cargo-llvm-cov)
 
 ## Release / Publish
 .PHONY: release publish-dry-run
-release: ## Build optimized release artifacts
+release:
 	cargo build --release --all-features
 
 ## Cleanup
 .PHONY: clean distclean
-clean: ## Clean cargo artifacts
+clean:
 	cargo clean
 
-distclean: clean ## Remove target directory entirely (alias)
+distclean: clean
 	rm -rf $(TARGET_DIR)
 
