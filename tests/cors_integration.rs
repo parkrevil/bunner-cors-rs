@@ -346,6 +346,35 @@ mod preflight_requests {
             Some("X-Allowed")
         );
     }
+
+    #[test]
+    fn preflight_with_disabled_origin_returns_not_applicable() {
+        let policy = policy().origin(Origin::disabled()).build();
+
+        let decision = preflight_request()
+            .origin("https://skip.dev")
+            .request_method(method::GET)
+            .evaluate(&policy);
+
+        assert!(matches!(decision, CorsDecision::NotApplicable));
+    }
+
+    #[test]
+    fn preflight_with_custom_origin_skip_returns_not_applicable() {
+        let policy = policy()
+            .origin(Origin::custom(|origin, _ctx| match origin {
+                Some("https://skip.dev") => OriginDecision::Skip,
+                _ => OriginDecision::Mirror,
+            }))
+            .build();
+
+        let decision = preflight_request()
+            .origin("https://skip.dev")
+            .request_method(method::POST)
+            .evaluate(&policy);
+
+        assert!(matches!(decision, CorsDecision::NotApplicable));
+    }
 }
 
 mod header_configuration {
