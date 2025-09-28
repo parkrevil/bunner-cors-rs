@@ -23,16 +23,15 @@ struct PreflightSnapshot {
 
 fn capture_preflight(cors: &Cors, request: PreflightRequestBuilder) -> PreflightSnapshot {
     let (headers, status, halt) = assert_preflight(request.evaluate(cors));
+    let mut header_vec: Vec<_> = headers
+        .into_iter()
+        .map(|(name, value)| HeaderSnapshot { name, value })
+        .collect();
+    header_vec.sort_by(|a, b| a.name.cmp(&b.name));
     PreflightSnapshot {
         status,
         halt,
-        headers: headers
-            .into_iter()
-            .map(|header| HeaderSnapshot {
-                name: header.name,
-                value: header.value,
-            })
-            .collect(),
+        headers: header_vec,
     }
 }
 

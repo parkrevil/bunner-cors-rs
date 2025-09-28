@@ -1,26 +1,11 @@
 use crate::constants::header;
-use std::collections::BTreeSet;
 
 /// Simple response header representation used by the CORS engine.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Header {
-    pub name: String,
-    pub value: String,
-}
-
-impl Header {
-    pub fn new<N: Into<String>, V: Into<String>>(name: N, value: V) -> Self {
-        Self {
-            name: name.into(),
-            value: value.into(),
-        }
-    }
-}
+pub type Headers = std::collections::HashMap<String, String>;
 
 #[derive(Default)]
 pub(crate) struct HeaderCollection {
-    headers: Vec<Header>,
-    vary_values: BTreeSet<String>,
+    headers: Headers,
 }
 
 impl HeaderCollection {
@@ -28,37 +13,35 @@ impl HeaderCollection {
         Self::default()
     }
 
-    pub(crate) fn push(&mut self, header: Header) {
-        if header.name.eq_ignore_ascii_case(header::VARY) {
-            self.add_vary(header.value);
+    pub(crate) fn push(&mut self, name: String, value: String) {
+        if name.eq_ignore_ascii_case(header::VARY) {
+            self.add_vary(value);
         } else {
-            self.headers.push(header);
+            self.headers.insert(name, value);
         }
     }
 
     pub(crate) fn add_vary<S: Into<String>>(&mut self, value: S) {
-        for part in value.into().split(',') {
-            let trimmed = part.trim();
-            if !trimmed.is_empty() {
-                self.vary_values.insert(trimmed.to_string());
+        let value = value.into();
+        if let Some(existing) = self.headers.get(header::VARY) {
+            let new_value = format!("{}, {}", existing, value);
+            self.headers.insert(header::VARY.to_string(), new_value);
+        } else {
+            self.headers.insert(header::VARY.to_string(), value);
+        }
+    }
+
+    pub(crate) fn extend(&mut self, other: HeaderCollection) {
+        for (name, value) in other.headers {
+            if name.eq_ignore_ascii_case(header::VARY) {
+                self.add_vary(value);
+            } else {
+                self.headers.insert(name, value);
             }
         }
     }
 
-    pub(crate) fn extend(&mut self, mut other: HeaderCollection) {
-        for header in other.headers.drain(..) {
-            self.push(header);
-        }
-        for value in other.vary_values {
-            self.vary_values.insert(value);
-        }
-    }
-
-    pub(crate) fn into_headers(mut self) -> Vec<Header> {
-        if !self.vary_values.is_empty() {
-            let value = self.vary_values.into_iter().collect::<Vec<_>>().join(", ");
-            self.headers.push(Header::new(header::VARY, value));
-        }
+    pub(crate) fn into_headers(self) -> Headers {
         self.headers
     }
 }

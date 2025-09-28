@@ -5,7 +5,7 @@ use bunner_cors_rs::{AllowedHeaders, CorsDecision, Origin, OriginDecision};
 use common::asserts::assert_preflight;
 use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value, vary_values};
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 #[test]
 fn default_preflight_reflects_request_headers() {
@@ -33,7 +33,7 @@ fn default_preflight_reflects_request_headers() {
     );
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
+        HashSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
     );
 }
 
@@ -126,7 +126,7 @@ fn preflight_mirror_headers_without_request_headers_omits_allow_headers() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
+        HashSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
     );
 }
 

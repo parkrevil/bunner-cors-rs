@@ -1,7 +1,7 @@
 use crate::allowed_headers::AllowedHeaders;
 use crate::constants::header;
 use crate::context::RequestContext;
-use crate::headers::{Header, HeaderCollection};
+use crate::headers::HeaderCollection;
 use crate::options::CorsOptions;
 use crate::origin::OriginDecision;
 use crate::result::{CorsDecision, PreflightResult, SimpleResult};
@@ -94,19 +94,19 @@ impl Cors {
 
         match decision {
             OriginDecision::Any => {
-                headers.push(Header::new(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
+                headers.push(header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(), "*".to_string());
             }
             OriginDecision::Exact(value) => {
                 headers.add_vary(header::ORIGIN);
-                headers.push(Header::new(header::ACCESS_CONTROL_ALLOW_ORIGIN, value));
+                headers.push(header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(), value);
             }
             OriginDecision::Mirror => {
                 headers.add_vary(header::ORIGIN);
                 if !original.origin.is_empty() {
-                    headers.push(Header::new(
-                        header::ACCESS_CONTROL_ALLOW_ORIGIN,
-                        original.origin,
-                    ));
+                    headers.push(
+                        header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
+                        original.origin.to_string(),
+                    );
                 }
             }
             OriginDecision::Disallow => {
@@ -126,7 +126,7 @@ impl Cors {
         let mut headers = HeaderCollection::new();
         if !self.options.methods.is_empty() {
             let methods = self.options.methods.join(",");
-            headers.push(Header::new(header::ACCESS_CONTROL_ALLOW_METHODS, methods));
+            headers.push(header::ACCESS_CONTROL_ALLOW_METHODS.to_string(), methods);
         }
         headers
     }
@@ -134,10 +134,10 @@ impl Cors {
     fn build_credentials_header(&self) -> HeaderCollection {
         let mut headers = HeaderCollection::new();
         if self.options.credentials {
-            headers.push(Header::new(
-                header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
-                "true",
-            ));
+            headers.push(
+                header::ACCESS_CONTROL_ALLOW_CREDENTIALS.to_string(),
+                "true".to_string(),
+            );
         }
         headers
     }
@@ -147,19 +147,19 @@ impl Cors {
         match &self.options.allowed_headers {
             AllowedHeaders::List(values) => {
                 if !values.is_empty() {
-                    headers.push(Header::new(
-                        header::ACCESS_CONTROL_ALLOW_HEADERS,
+                    headers.push(
+                        header::ACCESS_CONTROL_ALLOW_HEADERS.to_string(),
                         values.join(","),
-                    ));
+                    );
                 }
             }
             AllowedHeaders::MirrorRequest => {
                 headers.add_vary(header::ACCESS_CONTROL_REQUEST_HEADERS);
                 if !request.access_control_request_headers.is_empty() {
-                    headers.push(Header::new(
-                        header::ACCESS_CONTROL_ALLOW_HEADERS,
-                        request.access_control_request_headers,
-                    ));
+                    headers.push(
+                        header::ACCESS_CONTROL_ALLOW_HEADERS.to_string(),
+                        request.access_control_request_headers.to_string(),
+                    );
                 }
             }
         }
@@ -171,10 +171,10 @@ impl Cors {
         if let Some(values) = &self.options.exposed_headers
             && !values.is_empty()
         {
-            headers.push(Header::new(
-                header::ACCESS_CONTROL_EXPOSE_HEADERS,
+            headers.push(
+                header::ACCESS_CONTROL_EXPOSE_HEADERS.to_string(),
                 values.join(","),
-            ));
+            );
         }
         headers
     }
@@ -184,7 +184,7 @@ impl Cors {
         if let Some(value) = &self.options.max_age
             && !value.is_empty()
         {
-            headers.push(Header::new(header::ACCESS_CONTROL_MAX_AGE, value.clone()));
+            headers.push(header::ACCESS_CONTROL_MAX_AGE.to_string(), value.clone());
         }
         headers
     }

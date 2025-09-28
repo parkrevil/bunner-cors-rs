@@ -1,9 +1,9 @@
-use crate::headers::Header;
+use crate::headers::Headers;
 
 /// Result for a preflight evaluation.
 #[derive(Debug, Clone)]
 pub struct PreflightResult {
-    pub headers: Vec<Header>,
+    pub headers: Headers,
     pub status: u16,
     pub halt_response: bool,
 }
@@ -11,7 +11,7 @@ pub struct PreflightResult {
 /// Result for a simple request evaluation.
 #[derive(Debug, Clone)]
 pub struct SimpleResult {
-    pub headers: Vec<Header>,
+    pub headers: Headers,
 }
 
 /// Overall decision returned by the policy engine.

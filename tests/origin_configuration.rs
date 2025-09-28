@@ -6,7 +6,7 @@ use common::asserts::assert_simple;
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value, vary_values};
 use regex::Regex;
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 #[test]
 fn exact_origin_is_reflected_with_vary() {
@@ -25,7 +25,7 @@ fn exact_origin_is_reflected_with_vary() {
     );
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -50,7 +50,7 @@ fn origin_list_supports_exact_and_patterns() {
     );
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 
     let headers = assert_simple(simple_request().origin("https://deny.dev").evaluate(&cors));
@@ -58,7 +58,7 @@ fn origin_list_supports_exact_and_patterns() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -84,7 +84,7 @@ fn origin_list_combines_bool_regex_and_exact_matchers() {
     );
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 
     let headers = assert_simple(
@@ -107,7 +107,7 @@ fn origin_list_combines_bool_regex_and_exact_matchers() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -140,7 +140,7 @@ fn origin_list_all_false_entries_disallow() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -245,7 +245,7 @@ fn custom_origin_can_return_exact_value() {
     );
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -263,7 +263,7 @@ fn custom_origin_returning_disallow_adds_vary() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -284,7 +284,7 @@ fn custom_origin_handles_requests_without_origin_header() {
     );
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -314,7 +314,7 @@ fn disallowed_origin_returns_headers_without_allow_origin() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -339,7 +339,7 @@ fn missing_origin_header_with_restrictive_cors_only_sets_vary() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
 
@@ -354,6 +354,6 @@ fn custom_origin_mirror_with_missing_origin_omits_allow_origin() {
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
         vary_values(&headers),
-        BTreeSet::from([header::ORIGIN.to_string()])
+        HashSet::from([header::ORIGIN.to_string()])
     );
 }
