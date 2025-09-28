@@ -94,7 +94,10 @@ impl Cors {
 
         match decision {
             OriginDecision::Any => {
-                headers.push(header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(), "*".to_string());
+                headers.push(
+                    header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
+                    "*".to_string(),
+                );
             }
             OriginDecision::Exact(value) => {
                 headers.add_vary(header::ORIGIN);
