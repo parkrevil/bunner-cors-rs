@@ -10,9 +10,7 @@ use std::collections::BTreeSet;
 
 #[test]
 fn exact_origin_is_reflected_with_vary() {
-    let cors = cors()
-        .origin(Origin::exact("https://allowed.dev"))
-        .build();
+    let cors = cors().origin(Origin::exact("https://allowed.dev")).build();
 
     let headers = assert_simple(
         simple_request()
@@ -55,11 +53,7 @@ fn origin_list_supports_exact_and_patterns() {
         BTreeSet::from([header::ORIGIN.to_string()])
     );
 
-    let headers = assert_simple(
-        simple_request()
-            .origin("https://deny.dev")
-            .evaluate(&cors),
-    );
+    let headers = assert_simple(simple_request().origin("https://deny.dev").evaluate(&cors));
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(
@@ -218,11 +212,8 @@ fn custom_origin_can_skip_processing() {
         }))
         .build();
 
-    let allowed_headers = assert_simple(
-        simple_request()
-            .origin("https://allow.me")
-            .evaluate(&cors),
-    );
+    let allowed_headers =
+        assert_simple(simple_request().origin("https://allow.me").evaluate(&cors));
     assert_eq!(
         header_value(&allowed_headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
         Some("https://allow.me")
@@ -318,11 +309,7 @@ fn disallowed_origin_returns_headers_without_allow_origin() {
         .origin(Origin::list([OriginMatcher::exact("https://allow.one")]))
         .build();
 
-    let headers = assert_simple(
-        simple_request()
-            .origin("https://deny.one")
-            .evaluate(&cors),
-    );
+    let headers = assert_simple(simple_request().origin("https://deny.one").evaluate(&cors));
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_eq!(

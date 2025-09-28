@@ -1,5 +1,5 @@
 use bunner_cors_rs::constants::method;
-use bunner_cors_rs::{AllowedHeaders, CorsOptions, Cors, Origin, RequestContext};
+use bunner_cors_rs::{AllowedHeaders, Cors, CorsOptions, Origin, RequestContext};
 
 #[derive(Default)]
 pub struct CorsBuilder {

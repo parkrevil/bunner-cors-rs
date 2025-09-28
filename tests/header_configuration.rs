@@ -1,7 +1,7 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{AllowedHeaders, CorsOptions, Cors, Origin};
+use bunner_cors_rs::{AllowedHeaders, Cors, CorsOptions, Origin};
 use common::asserts::{assert_preflight, assert_simple};
 use common::builders::{cors, preflight_request, simple_request};
 use common::headers::{has_header, header_value, vary_values};
@@ -183,9 +183,7 @@ fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
 fn empty_allowed_headers_list_omits_allow_headers() {
     let cors = {
         let empty: Vec<&str> = Vec::new();
-        cors()
-            .allowed_headers(AllowedHeaders::list(empty))
-            .build()
+        cors().allowed_headers(AllowedHeaders::list(empty)).build()
     };
 
     let (headers, _status, _halt) = assert_preflight(

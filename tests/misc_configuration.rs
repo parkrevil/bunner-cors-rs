@@ -1,7 +1,7 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{CorsOptions, Cors};
+use bunner_cors_rs::{Cors, CorsOptions};
 use common::asserts::assert_preflight;
 use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
