@@ -139,6 +139,7 @@ where
 pub enum OriginMatcher {
     Exact(String),
     Pattern(Regex),
+    Bool(bool),
 }
 
 impl OriginMatcher {
@@ -154,6 +155,7 @@ impl OriginMatcher {
         match self {
             OriginMatcher::Exact(value) => value == candidate,
             OriginMatcher::Pattern(regex) => regex.is_match(candidate),
+            OriginMatcher::Bool(value) => *value,
         }
     }
 }
@@ -167,6 +169,12 @@ impl From<String> for OriginMatcher {
 impl From<&str> for OriginMatcher {
     fn from(value: &str) -> Self {
         OriginMatcher::Exact(value.to_owned())
+    }
+}
+
+impl From<bool> for OriginMatcher {
+    fn from(value: bool) -> Self {
+        OriginMatcher::Bool(value)
     }
 }
 
