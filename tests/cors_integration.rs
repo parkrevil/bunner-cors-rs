@@ -231,6 +231,21 @@ mod origin_configuration {
     }
 
     #[test]
+    fn custom_origin_returning_any_does_not_emit_vary() {
+        let policy = policy()
+            .origin(Origin::custom(|_, _| OriginDecision::Any))
+            .build();
+
+        let headers = assert_simple(simple_request().origin("https://any.dev").evaluate(&policy));
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("*")
+        );
+        assert!(!has_header(&headers, header::VARY));
+    }
+
+    #[test]
     fn disallowed_origin_returns_headers_without_allow_origin() {
         let policy = policy()
             .origin(Origin::list([OriginMatcher::exact("https://allow.one")]))
