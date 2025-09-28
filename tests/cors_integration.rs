@@ -310,6 +310,69 @@ mod origin_configuration {
     }
 
     #[test]
+    fn custom_origin_can_return_exact_value() {
+        let policy = policy()
+            .origin(Origin::custom(|_, _| {
+                OriginDecision::Exact("https://override.dev".into())
+            }))
+            .build();
+
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://irrelevant.dev")
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("https://override.dev")
+        );
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ORIGIN.to_string()])
+        );
+    }
+
+    #[test]
+    fn custom_origin_returning_disallow_adds_vary() {
+        let policy = policy()
+            .origin(Origin::custom(|origin, _| match origin {
+                Some("https://allow.me") => OriginDecision::Mirror,
+                _ => OriginDecision::Disallow,
+            }))
+            .build();
+
+        let headers = assert_simple(simple_request().origin("https://deny.me").evaluate(&policy));
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ORIGIN.to_string()])
+        );
+    }
+
+    #[test]
+    fn custom_origin_handles_requests_without_origin_header() {
+        let policy = policy()
+            .origin(Origin::custom(|origin, _| {
+                assert!(origin.is_none());
+                OriginDecision::Exact("https://fallback.dev".into())
+            }))
+            .build();
+
+        let headers = assert_simple(simple_request().evaluate(&policy));
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("https://fallback.dev")
+        );
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ORIGIN.to_string()])
+        );
+    }
+
+    #[test]
     fn custom_origin_returning_any_does_not_emit_vary() {
         let policy = policy()
             .origin(Origin::custom(|_, _| OriginDecision::Any))
@@ -442,6 +505,46 @@ mod preflight_requests {
     }
 
     #[test]
+    fn preflight_without_request_method_still_reflects_request_headers() {
+        let (headers, status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_headers("X-Reflect")
+                .evaluate(&policy().build()),
+        );
+
+        assert_eq!(status, 204);
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
+            Some("GET,HEAD,PUT,PATCH,POST,DELETE")
+        );
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+            Some("X-Reflect")
+        );
+    }
+
+    #[test]
+    fn preflight_mirror_headers_without_request_headers_omits_allow_headers() {
+        let policy = policy()
+            .allowed_headers(AllowedHeaders::MirrorRequest)
+            .build();
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::POST)
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
+        );
+    }
+
+    #[test]
     fn preflight_with_disabled_origin_returns_not_applicable() {
         let policy = policy().origin(Origin::disabled()).build();
 
@@ -468,6 +571,71 @@ mod preflight_requests {
             .evaluate(&policy);
 
         assert!(matches!(decision, CorsDecision::NotApplicable));
+    }
+
+    #[test]
+    fn preflight_custom_origin_requires_request_method() {
+        let policy = policy()
+            .origin(Origin::custom(|_, ctx| {
+                if ctx.access_control_request_method.is_some() {
+                    OriginDecision::Any
+                } else {
+                    OriginDecision::Skip
+                }
+            }))
+            .build();
+
+        let missing_method = preflight_request()
+            .origin("https://ctx.dev")
+            .evaluate(&policy);
+
+        assert!(matches!(missing_method, CorsDecision::NotApplicable));
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://ctx.dev")
+                .request_method(method::PUT)
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("*")
+        );
+    }
+
+    #[test]
+    fn preflight_custom_origin_checks_request_headers() {
+        let policy = policy()
+            .origin(Origin::custom(|_, ctx| {
+                match ctx.access_control_request_headers {
+                    Some(headers) if headers.to_ascii_lowercase().contains("x-allow") => {
+                        OriginDecision::Mirror
+                    }
+                    _ => OriginDecision::Skip,
+                }
+            }))
+            .build();
+
+        let decision = preflight_request()
+            .origin("https://headers.dev")
+            .request_method(method::POST)
+            .evaluate(&policy);
+
+        assert!(matches!(decision, CorsDecision::NotApplicable));
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://headers.dev")
+                .request_method(method::POST)
+                .request_headers("X-Allow, X-Trace")
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("https://headers.dev")
+        );
     }
 }
 
@@ -588,6 +756,31 @@ mod header_configuration {
         );
         assert!(vary_values(&headers).is_empty());
     }
+
+    #[test]
+    fn mirror_request_headers_preserves_formatting() {
+        let policy = policy()
+            .allowed_headers(AllowedHeaders::MirrorRequest)
+            .build();
+        let requested = "X-Test , x-next";
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::PATCH)
+                .request_headers(requested)
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+            Some(requested)
+        );
+        assert_eq!(
+            vary_values(&headers),
+            BTreeSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
+        );
+    }
 }
 
 mod misc_configuration {
@@ -628,6 +821,37 @@ mod misc_configuration {
         );
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
+    }
+
+    #[test]
+    fn default_max_age_is_absent() {
+        let policy = policy().build();
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .evaluate(&policy),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
+    }
+
+    #[test]
+    fn zero_max_age_is_emitted() {
+        let policy = policy().max_age("0").build();
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
+            Some("0")
+        );
     }
 }
 
@@ -696,6 +920,28 @@ mod property_based {
 
             prop_assert!(matches!(decision, CorsDecision::Preflight(_)));
         }
+
+        #[test]
+        fn origin_regex_list_accepts_hybrid_subdomains(subdomain in subdomain_strategy()) {
+            let origin = format!("https://{}.hybrid.dev", subdomain);
+            let policy = policy()
+                .origin(Origin::list([
+                    OriginMatcher::from(false),
+                    OriginMatcher::pattern(regex::Regex::new(r"^https://.*\.hybrid\.dev$").unwrap()),
+                ]))
+                .build();
+
+            let headers = assert_simple(
+                simple_request()
+                    .origin(origin.as_str())
+                    .evaluate(&policy),
+            );
+
+            prop_assert_eq!(
+                header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+                Some(origin.as_str())
+            );
+        }
     }
 }
 
@@ -703,6 +949,7 @@ mod snapshot_validations {
     use super::*;
     use super::{PreflightRequestBuilder, method, policy, preflight_request};
     use insta::assert_yaml_snapshot;
+    use regex::Regex;
     use serde::Serialize;
 
     #[derive(Serialize)]
@@ -767,5 +1014,29 @@ mod snapshot_validations {
         );
 
         assert_yaml_snapshot!("mirror_origin_preflight_snapshot", snapshot);
+    }
+
+    #[test]
+    fn strict_origin_preflight_snapshot() {
+        let policy = policy()
+            .origin(Origin::list([OriginMatcher::pattern(
+                Regex::new(r"^https://.*\.strict\.dev$").unwrap(),
+            )]))
+            .methods([method::GET, method::POST])
+            .credentials(true)
+            .allowed_headers(AllowedHeaders::list(["X-Strict", "X-Trace"]))
+            .exposed_headers(["X-Result"])
+            .max_age("0")
+            .build();
+
+        let snapshot = capture_preflight(
+            &policy,
+            preflight_request()
+                .origin("https://api.strict.dev")
+                .request_method(method::POST)
+                .request_headers("X-Strict, X-Trace"),
+        );
+
+        assert_yaml_snapshot!("strict_origin_preflight_snapshot", snapshot);
     }
 }
