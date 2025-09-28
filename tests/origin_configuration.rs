@@ -5,7 +5,6 @@ use bunner_cors_rs::{CorsDecision, Origin, OriginDecision, OriginMatcher};
 use common::asserts::assert_simple;
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value, vary_values};
-use regex::Regex;
 use std::collections::HashSet;
 
 #[test]
@@ -34,7 +33,7 @@ fn origin_list_supports_exact_and_patterns() {
     let cors = cors()
         .origin(Origin::list([
             OriginMatcher::exact("https://exact.example"),
-            OriginMatcher::pattern(Regex::new(r"^https://.*\.allowed\.org$").unwrap()),
+            OriginMatcher::pattern_str(r"^https://.*\.allowed\.org$").unwrap(),
         ]))
         .build();
 
@@ -67,7 +66,7 @@ fn origin_list_combines_bool_regex_and_exact_matchers() {
     let cors = cors()
         .origin(Origin::list([
             OriginMatcher::from(false),
-            OriginMatcher::pattern(Regex::new(r"^https://.*\.hybrid\.dev$").unwrap()),
+            OriginMatcher::pattern_str(r"^https://.*\.hybrid\.dev$").unwrap(),
             OriginMatcher::exact("https://explicit.hybrid"),
         ]))
         .build();

@@ -6,7 +6,6 @@ use common::asserts::assert_simple;
 use common::builders::{cors, preflight_request, simple_request};
 use common::headers::header_value;
 use proptest::prelude::*;
-use regex::Regex;
 
 fn staggered_case(input: &str) -> String {
     input
@@ -75,7 +74,7 @@ proptest! {
         let cors = cors()
             .origin(Origin::list([
                 OriginMatcher::from(false),
-                OriginMatcher::pattern(Regex::new(r"^https://.*\.hybrid\.dev$").unwrap()),
+                OriginMatcher::pattern_str(r"^https://.*\.hybrid\.dev$").unwrap(),
             ]))
             .build();
 

@@ -1,5 +1,5 @@
 use crate::context::RequestContext;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use std::sync::Arc;
 
 pub type OriginPredicateFn = dyn for<'a> Fn(&str, &RequestContext<'a>) -> bool + Send + Sync;
@@ -86,6 +86,14 @@ impl OriginMatcher {
 
     pub fn pattern(regex: Regex) -> Self {
         Self::Pattern(regex)
+    }
+
+    pub fn pattern_str(pattern: &str) -> Result<Self, regex::Error> {
+        let regex = RegexBuilder::new(pattern)
+            .size_limit(1_000_000) // 1MB limit to prevent excessive memory usage
+            .dfa_size_limit(1_000_000) // DFA size limit
+            .build()?;
+        Ok(Self::Pattern(regex))
     }
 
     pub fn matches(&self, candidate: &str) -> bool {

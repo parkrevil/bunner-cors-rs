@@ -5,7 +5,6 @@ use bunner_cors_rs::{AllowedHeaders, Cors, Origin, OriginMatcher};
 use common::asserts::assert_preflight;
 use common::builders::{PreflightRequestBuilder, cors, preflight_request};
 use insta::assert_yaml_snapshot;
-use regex::Regex;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -71,9 +70,10 @@ fn mirror_origin_preflight_snapshot() {
 #[test]
 fn strict_origin_preflight_snapshot() {
     let cors = cors()
-        .origin(Origin::list([OriginMatcher::pattern(
-            Regex::new(r"^https://.*\.strict\.dev$").unwrap(),
-        )]))
+        .origin(Origin::list([OriginMatcher::pattern_str(
+            r"^https://.*\.strict\.dev$",
+        )
+        .unwrap()]))
         .methods([method::GET, method::POST])
         .credentials(true)
         .allowed_headers(AllowedHeaders::list(["X-Strict", "X-Trace"]))
