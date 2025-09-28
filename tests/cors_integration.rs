@@ -471,6 +471,29 @@ mod header_configuration {
         );
         assert!(vary_values(&headers).is_empty());
     }
+
+    #[test]
+    fn headers_alias_does_not_override_explicit_allowed_headers() {
+        let policy = CorsPolicy::new(CorsOptions {
+            allowed_headers: AllowedHeaders::list(["X-Primary"]),
+            headers: Some(AllowedHeaders::list(["X-Alias"])),
+            ..CorsOptions::default()
+        });
+
+        let (headers, _status, _halt) = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .request_headers("X-Other")
+                .evaluate(&policy),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+            Some("X-Primary")
+        );
+        assert!(vary_values(&headers).is_empty());
+    }
 }
 
 mod misc_configuration {
