@@ -1,5 +1,5 @@
-use bunner_cors_rs::constants::header;
 use bunner_cors_rs::Header;
+use bunner_cors_rs::constants::header;
 use std::collections::BTreeSet;
 
 pub fn header_value<'a>(headers: &'a [Header], name: &str) -> Option<&'a str> {
