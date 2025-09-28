@@ -1,8 +1,12 @@
+use bunner_cors_rs::constants::{header, method};
 use bunner_cors_rs::{
-    AllowedHeaders, CorsDecision, CorsOptions, CorsPolicy, Header, Origin, OriginDecision,
-    OriginMatcher, RequestContext,
+    AllowedHeaders, CorsDecision, CorsPolicy, Header, Origin, OriginDecision, OriginMatcher,
 };
 use std::collections::BTreeSet;
+
+mod support;
+
+use support::{PreflightRequestBuilder, policy, preflight_request, simple_request};
 
 fn header_value<'a>(headers: &'a [Header], name: &str) -> Option<&'a str> {
     headers
@@ -16,7 +20,7 @@ fn has_header(headers: &[Header], name: &str) -> bool {
 }
 
 fn vary_values(headers: &[Header]) -> BTreeSet<String> {
-    header_value(headers, constants::HEADER_VARY)
+    header_value(headers, header::VARY)
         .map(|value| {
             value
                 .split(',')
@@ -41,202 +45,9 @@ fn assert_preflight(decision: CorsDecision) -> (Vec<Header>, u16, bool) {
     }
 }
 
-mod constants {
-    pub const HEADER_ALLOW_ORIGIN: &str = "Access-Control-Allow-Origin";
-    pub const HEADER_ALLOW_HEADERS: &str = "Access-Control-Allow-Headers";
-    pub const HEADER_ALLOW_CREDENTIALS: &str = "Access-Control-Allow-Credentials";
-    pub const HEADER_EXPOSE_HEADERS: &str = "Access-Control-Expose-Headers";
-    pub const HEADER_MAX_AGE: &str = "Access-Control-Max-Age";
-    pub const HEADER_VARY: &str = "Vary";
-    pub const HEADER_ORIGIN: &str = "Origin";
-    pub const HEADER_REQUEST_HEADERS: &str = "Access-Control-Request-Headers";
-
-    pub const METHOD_GET: &str = "GET";
-    pub const METHOD_POST: &str = "POST";
-    pub const METHOD_PUT: &str = "PUT";
-    pub const METHOD_DELETE: &str = "DELETE";
-    pub const METHOD_OPTIONS: &str = "OPTIONS";
-}
-
-mod helpers {
-    use super::constants;
-    use super::*;
-
-    #[derive(Default)]
-    pub struct PolicyBuilder {
-        origin: Option<Origin>,
-        methods: Option<Vec<String>>,
-        allowed_headers: Option<AllowedHeaders>,
-        exposed_headers: Option<Vec<String>>,
-        credentials: Option<bool>,
-        max_age: Option<String>,
-        preflight_continue: Option<bool>,
-    }
-
-    impl PolicyBuilder {
-        pub fn new() -> Self {
-            Self::default()
-        }
-
-        pub fn origin(mut self, origin: Origin) -> Self {
-            self.origin = Some(origin);
-            self
-        }
-
-        pub fn methods<I, S>(mut self, methods: I) -> Self
-        where
-            I: IntoIterator<Item = S>,
-            S: Into<String>,
-        {
-            self.methods = Some(methods.into_iter().map(Into::into).collect());
-            self
-        }
-
-        pub fn allowed_headers(mut self, headers: AllowedHeaders) -> Self {
-            self.allowed_headers = Some(headers);
-            self
-        }
-
-        pub fn exposed_headers<I, S>(mut self, headers: I) -> Self
-        where
-            I: IntoIterator<Item = S>,
-            S: Into<String>,
-        {
-            self.exposed_headers = Some(headers.into_iter().map(Into::into).collect());
-            self
-        }
-
-        pub fn credentials(mut self, enabled: bool) -> Self {
-            self.credentials = Some(enabled);
-            self
-        }
-
-        pub fn max_age(mut self, value: impl Into<String>) -> Self {
-            self.max_age = Some(value.into());
-            self
-        }
-
-        pub fn preflight_continue(mut self, enabled: bool) -> Self {
-            self.preflight_continue = Some(enabled);
-            self
-        }
-
-        pub fn build(self) -> CorsPolicy {
-            let CorsOptions {
-                origin: default_origin,
-                methods: default_methods,
-                allowed_headers: default_allowed_headers,
-                exposed_headers: default_exposed_headers,
-                credentials: default_credentials,
-                max_age: default_max_age,
-                preflight_continue: default_preflight_continue,
-                options_success_status: default_success_status,
-            } = CorsOptions::default();
-
-            CorsPolicy::new(CorsOptions {
-                origin: self.origin.unwrap_or(default_origin),
-                methods: self.methods.unwrap_or(default_methods),
-                allowed_headers: self.allowed_headers.unwrap_or(default_allowed_headers),
-                exposed_headers: self.exposed_headers.or(default_exposed_headers),
-                credentials: self.credentials.unwrap_or(default_credentials),
-                max_age: self.max_age.or(default_max_age),
-                preflight_continue: self
-                    .preflight_continue
-                    .unwrap_or(default_preflight_continue),
-                options_success_status: default_success_status,
-            })
-        }
-    }
-
-    pub struct SimpleRequestBuilder {
-        method: String,
-        origin: Option<String>,
-    }
-
-    impl SimpleRequestBuilder {
-        pub fn new() -> Self {
-            Self {
-                method: constants::METHOD_GET.into(),
-                origin: None,
-            }
-        }
-
-        pub fn method(mut self, method: impl Into<String>) -> Self {
-            self.method = method.into();
-            self
-        }
-
-        pub fn origin(mut self, origin: impl Into<String>) -> Self {
-            self.origin = Some(origin.into());
-            self
-        }
-
-        pub fn evaluate(self, policy: &CorsPolicy) -> CorsDecision {
-            let SimpleRequestBuilder { method, origin } = self;
-            let mut ctx = RequestContext::new(&method);
-            ctx = ctx.with_origin(origin.as_deref());
-            policy.evaluate(&ctx)
-        }
-    }
-
-    #[derive(Default)]
-    pub struct PreflightRequestBuilder {
-        origin: Option<String>,
-        request_method: Option<String>,
-        request_headers: Option<String>,
-    }
-
-    impl PreflightRequestBuilder {
-        pub fn new() -> Self {
-            Self::default()
-        }
-
-        pub fn origin(mut self, origin: impl Into<String>) -> Self {
-            self.origin = Some(origin.into());
-            self
-        }
-
-        pub fn request_method(mut self, method: impl Into<String>) -> Self {
-            self.request_method = Some(method.into());
-            self
-        }
-
-        pub fn request_headers(mut self, headers: impl Into<String>) -> Self {
-            self.request_headers = Some(headers.into());
-            self
-        }
-
-        pub fn evaluate(self, policy: &CorsPolicy) -> CorsDecision {
-            let PreflightRequestBuilder {
-                origin,
-                request_method,
-                request_headers,
-            } = self;
-
-            let mut ctx = RequestContext::new(constants::METHOD_OPTIONS);
-            ctx = ctx.with_origin(origin.as_deref());
-            ctx = ctx.with_access_control_request_method(request_method.as_deref());
-            ctx = ctx.with_access_control_request_headers(request_headers.as_deref());
-            policy.evaluate(&ctx)
-        }
-    }
-
-    pub fn policy() -> PolicyBuilder {
-        PolicyBuilder::new()
-    }
-
-    pub fn simple_request() -> SimpleRequestBuilder {
-        SimpleRequestBuilder::new()
-    }
-
-    pub fn preflight_request() -> PreflightRequestBuilder {
-        PreflightRequestBuilder::new()
-    }
-}
-
 mod simple_requests {
-    use super::helpers::{policy, simple_request};
     use super::*;
+    use super::{header, policy, simple_request};
 
     #[test]
     fn default_simple_request_allows_any_origin() {
@@ -248,10 +59,10 @@ mod simple_requests {
         );
 
         assert_eq!(
-            header_value(&headers, constants::HEADER_ALLOW_ORIGIN),
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some("*")
         );
-        assert!(!has_header(&headers, constants::HEADER_VARY));
+        assert!(!has_header(&headers, header::VARY));
     }
 
     #[test]
@@ -260,15 +71,15 @@ mod simple_requests {
         let headers = assert_simple(simple_request().evaluate(&policy));
 
         assert_eq!(
-            header_value(&headers, constants::HEADER_ALLOW_ORIGIN),
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some("*")
         );
     }
 }
 
 mod origin_configuration {
-    use super::helpers::{policy, simple_request};
     use super::*;
+    use super::{header, method, policy, simple_request};
     use regex::Regex;
 
     #[test]
@@ -279,18 +90,18 @@ mod origin_configuration {
 
         let headers = assert_simple(
             simple_request()
-                .method(constants::METHOD_POST)
+                .method(method::POST)
                 .origin("https://other.dev")
                 .evaluate(&policy),
         );
 
         assert_eq!(
-            header_value(&headers, constants::HEADER_ALLOW_ORIGIN),
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some("https://allowed.dev")
         );
         assert_eq!(
             vary_values(&headers),
-            BTreeSet::from([constants::HEADER_ORIGIN.to_string()])
+            BTreeSet::from([header::ORIGIN.to_string()])
         );
     }
 
@@ -310,12 +121,12 @@ mod origin_configuration {
         );
 
         assert_eq!(
-            header_value(&headers, constants::HEADER_ALLOW_ORIGIN),
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some("https://service.allowed.org")
         );
         assert_eq!(
             vary_values(&headers),
-            BTreeSet::from([constants::HEADER_ORIGIN.to_string()])
+            BTreeSet::from([header::ORIGIN.to_string()])
         );
 
         let headers = assert_simple(
@@ -324,10 +135,10 @@ mod origin_configuration {
                 .evaluate(&policy),
         );
 
-        assert!(!has_header(&headers, constants::HEADER_ALLOW_ORIGIN));
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_eq!(
             vary_values(&headers),
-            BTreeSet::from([constants::HEADER_ORIGIN.to_string()])
+            BTreeSet::from([header::ORIGIN.to_string()])
         );
     }
 
@@ -345,7 +156,7 @@ mod origin_configuration {
                 .evaluate(&policy),
         );
         assert_eq!(
-            header_value(&allowed_headers, constants::HEADER_ALLOW_ORIGIN),
+            header_value(&allowed_headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some("https://service.trusted")
         );
 
@@ -354,7 +165,10 @@ mod origin_configuration {
                 .origin("https://service.untrusted")
                 .evaluate(&policy),
         );
-        assert!(!has_header(&denied_headers, constants::HEADER_ALLOW_ORIGIN));
+        assert!(!has_header(
+            &denied_headers,
+            header::ACCESS_CONTROL_ALLOW_ORIGIN
+        ));
     }
 
     #[test]
@@ -372,7 +186,7 @@ mod origin_configuration {
                 .evaluate(&policy),
         );
         assert_eq!(
-            header_value(&allowed_headers, constants::HEADER_ALLOW_ORIGIN),
+            header_value(&allowed_headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some("https://allow.me")
         );
 
@@ -394,17 +208,17 @@ mod origin_configuration {
                 .evaluate(&policy),
         );
 
-        assert!(!has_header(&headers, constants::HEADER_ALLOW_ORIGIN));
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_eq!(
             vary_values(&headers),
-            BTreeSet::from([constants::HEADER_ORIGIN.to_string()])
+            BTreeSet::from([header::ORIGIN.to_string()])
         );
     }
 }
 
 mod preflight_requests {
-    use super::helpers::{policy, preflight_request};
     use super::*;
+    use super::{header, method, policy, preflight_request};
 
     #[test]
     fn default_preflight_reflects_request_headers() {
@@ -412,7 +226,7 @@ mod preflight_requests {
         let (headers, status, halt) = assert_preflight(
             preflight_request()
                 .origin("https://foo.bar")
-                .request_method(constants::METHOD_GET)
+                .request_method(method::GET)
                 .request_headers("X-Test, Content-Type")
                 .evaluate(&policy),
         );
@@ -423,16 +237,16 @@ mod preflight_requests {
             "preflight should halt when preflight_continue is false"
         );
         assert_eq!(
-            header_value(&headers, constants::HEADER_ALLOW_ORIGIN),
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some("*")
         );
         assert_eq!(
-            header_value(&headers, constants::HEADER_ALLOW_HEADERS),
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
             Some("X-Test, Content-Type")
         );
         assert_eq!(
             vary_values(&headers),
-            BTreeSet::from([constants::HEADER_REQUEST_HEADERS.into()])
+            BTreeSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
         );
     }
 
@@ -441,12 +255,8 @@ mod preflight_requests {
         assert!(matches!(
             preflight_request()
                 .origin("https://foo.bar")
-                .request_method(constants::METHOD_DELETE)
-                .evaluate(
-                    &policy()
-                        .methods([constants::METHOD_GET, constants::METHOD_POST])
-                        .build()
-                ),
+                .request_method(method::DELETE)
+                .evaluate(&policy().methods([method::GET, method::POST]).build()),
             CorsDecision::NotApplicable
         ));
     }
@@ -456,7 +266,7 @@ mod preflight_requests {
         assert!(matches!(
             preflight_request()
                 .origin("https://foo.bar")
-                .request_method(constants::METHOD_GET)
+                .request_method(method::GET)
                 .request_headers("X-Disallowed")
                 .evaluate(
                     &policy()
@@ -469,8 +279,8 @@ mod preflight_requests {
 }
 
 mod header_configuration {
-    use super::helpers::{policy, preflight_request, simple_request};
     use super::*;
+    use super::{header, method, policy, preflight_request, simple_request};
 
     #[test]
     fn preflight_with_explicit_headers_does_not_reflect_request() {
@@ -481,13 +291,13 @@ mod header_configuration {
         let (headers, _status, _halt) = assert_preflight(
             preflight_request()
                 .origin("https://foo.bar")
-                .request_method(constants::METHOD_POST)
+                .request_method(method::POST)
                 .request_headers("X-Custom")
                 .evaluate(&policy),
         );
 
         assert_eq!(
-            header_value(&headers, constants::HEADER_ALLOW_HEADERS),
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
             Some("Content-Type,X-Custom")
         );
         assert!(
@@ -506,11 +316,11 @@ mod header_configuration {
         let headers = assert_simple(simple_request().origin("https://foo.bar").evaluate(&policy));
 
         assert_eq!(
-            header_value(&headers, constants::HEADER_ALLOW_CREDENTIALS),
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
             Some("true")
         );
         assert_eq!(
-            header_value(&headers, constants::HEADER_EXPOSE_HEADERS),
+            header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
             Some("X-Response-Time,X-Trace")
         );
     }
@@ -525,7 +335,7 @@ mod header_configuration {
         let (headers, _status, _halt) = assert_preflight(
             preflight_request()
                 .origin("https://allowed.dev")
-                .request_method(constants::METHOD_PUT)
+                .request_method(method::PUT)
                 .request_headers("X-Test")
                 .evaluate(&policy),
         );
@@ -534,16 +344,16 @@ mod header_configuration {
         assert_eq!(
             vary,
             BTreeSet::from([
-                constants::HEADER_REQUEST_HEADERS.to_string(),
-                constants::HEADER_ORIGIN.to_string()
+                header::ACCESS_CONTROL_REQUEST_HEADERS.to_string(),
+                header::ORIGIN.to_string()
             ])
         );
     }
 }
 
 mod misc_configuration {
-    use super::helpers::{policy, preflight_request};
     use super::*;
+    use super::{header, method, policy, preflight_request};
 
     #[test]
     fn max_age_and_preflight_continue_affect_preflight_response() {
@@ -552,7 +362,7 @@ mod misc_configuration {
         let (headers, status, halt) = assert_preflight(
             preflight_request()
                 .origin("https://foo.bar")
-                .request_method(constants::METHOD_GET)
+                .request_method(method::GET)
                 .evaluate(&policy),
         );
 
@@ -562,16 +372,15 @@ mod misc_configuration {
             "halt flag should be false when preflight_continue is true"
         );
         assert_eq!(
-            header_value(&headers, constants::HEADER_MAX_AGE),
+            header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
             Some("600")
         );
     }
 }
 
 mod property_based {
-    use super::constants;
-    use super::helpers::{policy, preflight_request, simple_request};
     use super::*;
+    use super::{header, method, policy, preflight_request, simple_request};
     use proptest::prelude::*;
 
     fn staggered_case(input: &str) -> String {
@@ -612,7 +421,7 @@ mod property_based {
             );
 
             prop_assert_eq!(
-                header_value(&headers, constants::HEADER_ALLOW_ORIGIN),
+                header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
                 Some(origin.as_str())
             );
         }
@@ -624,7 +433,7 @@ mod property_based {
 
             let decision = preflight_request()
                 .origin("https://prop.test")
-                .request_method(constants::METHOD_GET)
+                .request_method(method::GET)
                 .request_headers(request_variant)
                 .evaluate(
                     &policy()
@@ -638,9 +447,8 @@ mod property_based {
 }
 
 mod snapshot_validations {
-    use super::constants;
-    use super::helpers::{policy, preflight_request};
     use super::*;
+    use super::{PreflightRequestBuilder, method, policy, preflight_request};
     use insta::assert_yaml_snapshot;
     use serde::Serialize;
 
@@ -659,7 +467,7 @@ mod snapshot_validations {
 
     fn capture_preflight(
         policy: &CorsPolicy,
-        request: super::helpers::PreflightRequestBuilder,
+        request: PreflightRequestBuilder,
     ) -> PreflightSnapshot {
         let (headers, status, halt) = assert_preflight(request.evaluate(policy));
         PreflightSnapshot {
@@ -681,7 +489,7 @@ mod snapshot_validations {
             &policy().build(),
             preflight_request()
                 .origin("https://snapshot.dev")
-                .request_method(constants::METHOD_GET)
+                .request_method(method::GET)
                 .request_headers("X-Debug, Content-Type"),
         );
 
@@ -701,7 +509,7 @@ mod snapshot_validations {
             &policy,
             preflight_request()
                 .origin("https://mirror.dev")
-                .request_method(constants::METHOD_POST)
+                .request_method(method::POST)
                 .request_headers("X-Trace-Id"),
         );
 

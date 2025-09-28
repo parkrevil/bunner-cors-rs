@@ -1,3 +1,4 @@
+use crate::constants::{header, method};
 use regex::Regex;
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -30,7 +31,7 @@ impl HeaderCollection {
     }
 
     fn push(&mut self, header: Header) {
-        if header.name.eq_ignore_ascii_case("vary") {
+        if header.name.eq_ignore_ascii_case(header::VARY) {
             self.add_vary(header.value);
         } else {
             self.headers.push(header);
@@ -58,7 +59,7 @@ impl HeaderCollection {
     fn into_headers(mut self) -> Vec<Header> {
         if !self.vary_values.is_empty() {
             let value = self.vary_values.into_iter().collect::<Vec<_>>().join(", ");
-            self.headers.push(Header::new("Vary", value));
+            self.headers.push(Header::new(header::VARY, value));
         }
         self.headers
     }
@@ -273,12 +274,12 @@ impl Default for CorsOptions {
         Self {
             origin: Origin::Any,
             methods: vec![
-                "GET".into(),
-                "HEAD".into(),
-                "PUT".into(),
-                "PATCH".into(),
-                "POST".into(),
-                "DELETE".into(),
+                method::GET.into(),
+                method::HEAD.into(),
+                method::PUT.into(),
+                method::PATCH.into(),
+                method::POST.into(),
+                method::DELETE.into(),
             ],
             allowed_headers: AllowedHeaders::default(),
             exposed_headers: None,
@@ -358,7 +359,7 @@ impl CorsPolicy {
     }
 
     pub fn evaluate(&self, request: &RequestContext<'_>) -> CorsDecision {
-        if request.method.eq_ignore_ascii_case("OPTIONS") {
+        if request.method.eq_ignore_ascii_case(method::OPTIONS) {
             match self.evaluate_preflight(request) {
                 Some(result) => CorsDecision::Preflight(result),
                 None => CorsDecision::NotApplicable,
@@ -442,21 +443,21 @@ impl CorsPolicy {
 
         match decision {
             OriginDecision::Any => {
-                headers.push(Header::new("Access-Control-Allow-Origin", "*"));
+                headers.push(Header::new(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*"));
             }
             OriginDecision::Exact(value) => {
-                headers.add_vary("Origin");
-                headers.push(Header::new("Access-Control-Allow-Origin", value));
+                headers.add_vary(header::ORIGIN);
+                headers.push(Header::new(header::ACCESS_CONTROL_ALLOW_ORIGIN, value));
             }
             OriginDecision::Mirror => {
-                headers.add_vary("Origin");
+                headers.add_vary(header::ORIGIN);
                 if let Some(origin) = request.origin {
-                    headers.push(Header::new("Access-Control-Allow-Origin", origin));
+                    headers.push(Header::new(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin));
                 }
             }
             OriginDecision::Disallow => {
                 if self.options.origin.vary_on_disallow() {
-                    headers.add_vary("Origin");
+                    headers.add_vary(header::ORIGIN);
                 }
             }
             OriginDecision::Skip => {
@@ -471,7 +472,7 @@ impl CorsPolicy {
         let mut headers = HeaderCollection::new();
         if !self.options.methods.is_empty() {
             let methods = self.options.methods.join(",");
-            headers.push(Header::new("Access-Control-Allow-Methods", methods));
+            headers.push(Header::new(header::ACCESS_CONTROL_ALLOW_METHODS, methods));
         }
         headers
     }
@@ -479,7 +480,10 @@ impl CorsPolicy {
     fn build_credentials_header(&self) -> HeaderCollection {
         let mut headers = HeaderCollection::new();
         if self.options.credentials {
-            headers.push(Header::new("Access-Control-Allow-Credentials", "true"));
+            headers.push(Header::new(
+                header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
+                "true",
+            ));
         }
         headers
     }
@@ -490,17 +494,20 @@ impl CorsPolicy {
             AllowedHeaders::List(values) => {
                 if !values.is_empty() {
                     headers.push(Header::new(
-                        "Access-Control-Allow-Headers",
+                        header::ACCESS_CONTROL_ALLOW_HEADERS,
                         values.join(","),
                     ));
                 }
             }
             AllowedHeaders::MirrorRequest => {
-                headers.add_vary("Access-Control-Request-Headers");
+                headers.add_vary(header::ACCESS_CONTROL_REQUEST_HEADERS);
                 if let Some(request_headers) = request.access_control_request_headers
                     && !request_headers.is_empty()
                 {
-                    headers.push(Header::new("Access-Control-Allow-Headers", request_headers));
+                    headers.push(Header::new(
+                        header::ACCESS_CONTROL_ALLOW_HEADERS,
+                        request_headers,
+                    ));
                 }
             }
         }
@@ -513,7 +520,7 @@ impl CorsPolicy {
             && !values.is_empty()
         {
             headers.push(Header::new(
-                "Access-Control-Expose-Headers",
+                header::ACCESS_CONTROL_EXPOSE_HEADERS,
                 values.join(","),
             ));
         }
@@ -525,7 +532,7 @@ impl CorsPolicy {
         if let Some(value) = &self.options.max_age
             && !value.is_empty()
         {
-            headers.push(Header::new("Access-Control-Max-Age", value.clone()));
+            headers.push(Header::new(header::ACCESS_CONTROL_MAX_AGE, value.clone()));
         }
         headers
     }
