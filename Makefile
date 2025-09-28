@@ -29,9 +29,9 @@ format: ## Auto-format all code
 
 test: ## Run test suite (nextest if available, fallback to cargo test)
 	@if command -v cargo-nextest >/dev/null 2>&1; then \
-		cargo nextest run --package $(PACKAGE); \
+		INSTA_UPDATE=always cargo nextest run --package $(PACKAGE); \
 	else \
-		cargo test --package $(PACKAGE); \
+		INSTA_UPDATE=always cargo test --package $(PACKAGE); \
 	fi
 
 ## Docs

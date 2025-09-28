@@ -372,6 +372,36 @@ impl CorsPolicy {
     }
 
     fn evaluate_preflight(&self, request: &RequestContext<'_>) -> Option<PreflightResult> {
+        // Preflight requests must have an Access-Control-Request-Method header.
+        // If it's missing, this is not a valid preflight request.
+        let request_method = request.access_control_request_method?;
+
+        if !self
+            .options
+            .methods
+            .iter()
+            .any(|m| m.eq_ignore_ascii_case(request_method))
+        {
+            return None;
+        }
+
+        if let AllowedHeaders::List(allowed_headers) = &self.options.allowed_headers
+            && let Some(request_headers) = request.access_control_request_headers
+        {
+            let requested = request_headers
+                .split(',')
+                .map(|h| h.trim())
+                .filter(|h| !h.is_empty());
+            for header in requested {
+                if !allowed_headers
+                    .iter()
+                    .any(|h| h.eq_ignore_ascii_case(header))
+                {
+                    return None;
+                }
+            }
+        }
+
         let mut headers = HeaderCollection::new();
         let (origin_headers, skip) = self.build_origin_headers(request);
         if skip {

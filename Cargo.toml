@@ -7,6 +7,11 @@ license = "MIT"
 [dependencies]
 regex = "1"
 
+[dev-dependencies]
+proptest = "1"
+insta = { version = "1", features = ["yaml"] }
+serde = { version = "1", features = ["derive"] }
+
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false
