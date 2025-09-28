@@ -7,11 +7,11 @@ use crate::origin::OriginDecision;
 use crate::result::{CorsDecision, PreflightResult, SimpleResult};
 
 /// Core CORS policy engine that evaluates requests using [`CorsOptions`].
-pub struct CorsPolicy {
+pub struct Cors {
     options: CorsOptions,
 }
 
-impl CorsPolicy {
+impl Cors {
     pub fn new(mut options: CorsOptions) -> Self {
         if let Some(headers_alias) = options.headers.take() {
             if matches!(options.allowed_headers, AllowedHeaders::MirrorRequest) {

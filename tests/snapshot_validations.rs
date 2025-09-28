@@ -1,9 +1,9 @@
 mod common;
 
 use bunner_cors_rs::constants::method;
-use bunner_cors_rs::{AllowedHeaders, CorsPolicy, Origin, OriginMatcher};
+use bunner_cors_rs::{AllowedHeaders, Cors, Origin, OriginMatcher};
 use common::asserts::assert_preflight;
-use common::builders::{PreflightRequestBuilder, policy, preflight_request};
+use common::builders::{PreflightRequestBuilder, cors, preflight_request};
 use insta::assert_yaml_snapshot;
 use regex::Regex;
 use serde::Serialize;
@@ -21,8 +21,8 @@ struct PreflightSnapshot {
     headers: Vec<HeaderSnapshot>,
 }
 
-fn capture_preflight(policy: &CorsPolicy, request: PreflightRequestBuilder) -> PreflightSnapshot {
-    let (headers, status, halt) = assert_preflight(request.evaluate(policy));
+fn capture_preflight(cors: &Cors, request: PreflightRequestBuilder) -> PreflightSnapshot {
+    let (headers, status, halt) = assert_preflight(request.evaluate(cors));
     PreflightSnapshot {
         status,
         halt,
@@ -39,7 +39,7 @@ fn capture_preflight(policy: &CorsPolicy, request: PreflightRequestBuilder) -> P
 #[test]
 fn default_preflight_snapshot() {
     let snapshot = capture_preflight(
-        &policy().build(),
+        &cors().build(),
         preflight_request()
             .origin("https://snapshot.dev")
             .request_method(method::GET)
@@ -51,7 +51,7 @@ fn default_preflight_snapshot() {
 
 #[test]
 fn mirror_origin_preflight_snapshot() {
-    let policy = policy()
+    let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://mirror.dev")]))
         .credentials(true)
         .allowed_headers(AllowedHeaders::MirrorRequest)
@@ -59,7 +59,7 @@ fn mirror_origin_preflight_snapshot() {
         .build();
 
     let snapshot = capture_preflight(
-        &policy,
+        &cors,
         preflight_request()
             .origin("https://mirror.dev")
             .request_method(method::POST)
@@ -71,7 +71,7 @@ fn mirror_origin_preflight_snapshot() {
 
 #[test]
 fn strict_origin_preflight_snapshot() {
-    let policy = policy()
+    let cors = cors()
         .origin(Origin::list([OriginMatcher::pattern(
             Regex::new(r"^https://.*\.strict\.dev$").unwrap(),
         )]))
@@ -83,7 +83,7 @@ fn strict_origin_preflight_snapshot() {
         .build();
 
     let snapshot = capture_preflight(
-        &policy,
+        &cors,
         preflight_request()
             .origin("https://api.strict.dev")
             .request_method(method::POST)

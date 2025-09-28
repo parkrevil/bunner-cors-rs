@@ -1,15 +1,15 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{AllowedHeaders, CorsOptions, CorsPolicy, Origin};
+use bunner_cors_rs::{AllowedHeaders, CorsOptions, Cors, Origin};
 use common::asserts::{assert_preflight, assert_simple};
-use common::builders::{policy, preflight_request, simple_request};
+use common::builders::{cors, preflight_request, simple_request};
 use common::headers::{has_header, header_value, vary_values};
 use std::collections::BTreeSet;
 
 #[test]
 fn preflight_with_explicit_headers_does_not_reflect_request() {
-    let policy = policy()
+    let cors = cors()
         .allowed_headers(AllowedHeaders::list(["Content-Type", "X-Custom"]))
         .build();
 
@@ -18,7 +18,7 @@ fn preflight_with_explicit_headers_does_not_reflect_request() {
             .origin("https://foo.bar")
             .request_method(method::POST)
             .request_headers("X-Custom")
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert_eq!(
@@ -33,12 +33,12 @@ fn preflight_with_explicit_headers_does_not_reflect_request() {
 
 #[test]
 fn credentials_and_exposed_headers_are_honored() {
-    let policy = policy()
+    let cors = cors()
         .credentials(true)
         .exposed_headers(["X-Response-Time", "X-Trace"])
         .build();
 
-    let headers = assert_simple(simple_request().origin("https://foo.bar").evaluate(&policy));
+    let headers = assert_simple(simple_request().origin("https://foo.bar").evaluate(&cors));
 
     assert_eq!(
         header_value(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
@@ -52,9 +52,9 @@ fn credentials_and_exposed_headers_are_honored() {
 
 #[test]
 fn credentials_disabled_omits_allow_credentials_header() {
-    let policy = policy().build();
+    let cors = cors().build();
 
-    let headers = assert_simple(simple_request().origin("https://foo.bar").evaluate(&policy));
+    let headers = assert_simple(simple_request().origin("https://foo.bar").evaluate(&cors));
 
     assert!(!has_header(
         &headers,
@@ -64,7 +64,7 @@ fn credentials_disabled_omits_allow_credentials_header() {
 
 #[test]
 fn vary_headers_are_deduplicated_and_sorted() {
-    let policy = policy()
+    let cors = cors()
         .origin(Origin::exact("https://allowed.dev"))
         .allowed_headers(AllowedHeaders::MirrorRequest)
         .build();
@@ -74,7 +74,7 @@ fn vary_headers_are_deduplicated_and_sorted() {
             .origin("https://allowed.dev")
             .request_method(method::PUT)
             .request_headers("X-Test")
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
     let vary = vary_values(&headers);
 
@@ -93,14 +93,14 @@ fn headers_alias_configures_allow_headers() {
         headers: Some(AllowedHeaders::list(["X-Alias", "X-Trace"])),
         ..CorsOptions::default()
     };
-    let policy = CorsPolicy::new(options);
+    let cors = Cors::new(options);
 
     let (headers, _status, _halt) = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::POST)
             .request_headers("X-Other")
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert_eq!(
@@ -112,7 +112,7 @@ fn headers_alias_configures_allow_headers() {
 
 #[test]
 fn headers_alias_does_not_override_explicit_allowed_headers() {
-    let policy = CorsPolicy::new(CorsOptions {
+    let cors = Cors::new(CorsOptions {
         allowed_headers: AllowedHeaders::list(["X-Primary"]),
         headers: Some(AllowedHeaders::list(["X-Alias"])),
         ..CorsOptions::default()
@@ -123,7 +123,7 @@ fn headers_alias_does_not_override_explicit_allowed_headers() {
             .origin("https://foo.bar")
             .request_method(method::GET)
             .request_headers("X-Other")
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert_eq!(
@@ -135,7 +135,7 @@ fn headers_alias_does_not_override_explicit_allowed_headers() {
 
 #[test]
 fn mirror_request_headers_preserves_formatting() {
-    let policy = policy()
+    let cors = cors()
         .allowed_headers(AllowedHeaders::MirrorRequest)
         .build();
     let requested = "X-Test , x-next";
@@ -145,7 +145,7 @@ fn mirror_request_headers_preserves_formatting() {
             .origin("https://foo.bar")
             .request_method(method::PATCH)
             .request_headers(requested)
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert_eq!(
@@ -160,7 +160,7 @@ fn mirror_request_headers_preserves_formatting() {
 
 #[test]
 fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
-    let policy = policy()
+    let cors = cors()
         .allowed_headers(AllowedHeaders::MirrorRequest)
         .build();
 
@@ -169,7 +169,7 @@ fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
             .origin("https://foo.bar")
             .request_method(method::GET)
             .request_headers("")
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
@@ -181,9 +181,9 @@ fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
 
 #[test]
 fn empty_allowed_headers_list_omits_allow_headers() {
-    let policy = {
+    let cors = {
         let empty: Vec<&str> = Vec::new();
-        policy()
+        cors()
             .allowed_headers(AllowedHeaders::list(empty))
             .build()
     };
@@ -193,7 +193,7 @@ fn empty_allowed_headers_list_omits_allow_headers() {
             .origin("https://foo.bar")
             .request_method(method::GET)
             .request_headers("X-Test")
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));

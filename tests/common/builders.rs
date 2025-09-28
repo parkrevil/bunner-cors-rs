@@ -1,8 +1,8 @@
 use bunner_cors_rs::constants::method;
-use bunner_cors_rs::{AllowedHeaders, CorsOptions, CorsPolicy, Origin, RequestContext};
+use bunner_cors_rs::{AllowedHeaders, CorsOptions, Cors, Origin, RequestContext};
 
 #[derive(Default)]
-pub struct PolicyBuilder {
+pub struct CorsBuilder {
     origin: Option<Origin>,
     methods: Option<Vec<String>>,
     allowed_headers: Option<AllowedHeaders>,
@@ -12,7 +12,7 @@ pub struct PolicyBuilder {
     preflight_continue: Option<bool>,
 }
 
-impl PolicyBuilder {
+impl CorsBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -60,7 +60,7 @@ impl PolicyBuilder {
         self
     }
 
-    pub fn build(self) -> CorsPolicy {
+    pub fn build(self) -> Cors {
         let CorsOptions {
             origin: default_origin,
             methods: default_methods,
@@ -73,7 +73,7 @@ impl PolicyBuilder {
             options_success_status: default_success_status,
         } = CorsOptions::default();
 
-        CorsPolicy::new(CorsOptions {
+        Cors::new(CorsOptions {
             origin: self.origin.unwrap_or(default_origin),
             methods: self.methods.unwrap_or(default_methods),
             allowed_headers: self.allowed_headers.unwrap_or(default_allowed_headers),
@@ -112,7 +112,7 @@ impl SimpleRequestBuilder {
         self
     }
 
-    pub fn evaluate(self, policy: &CorsPolicy) -> bunner_cors_rs::CorsDecision {
+    pub fn evaluate(self, cors: &Cors) -> bunner_cors_rs::CorsDecision {
         let SimpleRequestBuilder { method, origin } = self;
         let ctx = RequestContext {
             method: &method,
@@ -120,7 +120,7 @@ impl SimpleRequestBuilder {
             access_control_request_method: "",
             access_control_request_headers: "",
         };
-        policy.evaluate(&ctx)
+        cors.evaluate(&ctx)
     }
 }
 
@@ -151,7 +151,7 @@ impl PreflightRequestBuilder {
         self
     }
 
-    pub fn evaluate(self, policy: &CorsPolicy) -> bunner_cors_rs::CorsDecision {
+    pub fn evaluate(self, cors: &Cors) -> bunner_cors_rs::CorsDecision {
         let PreflightRequestBuilder {
             origin,
             request_method,
@@ -164,12 +164,12 @@ impl PreflightRequestBuilder {
             access_control_request_method: request_method.as_deref().unwrap_or(""),
             access_control_request_headers: request_headers.as_deref().unwrap_or(""),
         };
-        policy.evaluate(&ctx)
+        cors.evaluate(&ctx)
     }
 }
 
-pub fn policy() -> PolicyBuilder {
-    PolicyBuilder::new()
+pub fn cors() -> CorsBuilder {
+    CorsBuilder::new()
 }
 
 pub fn simple_request() -> SimpleRequestBuilder {

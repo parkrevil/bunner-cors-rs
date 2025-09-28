@@ -1,20 +1,20 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{CorsOptions, CorsPolicy};
+use bunner_cors_rs::{CorsOptions, Cors};
 use common::asserts::assert_preflight;
-use common::builders::{policy, preflight_request};
+use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
 
 #[test]
 fn max_age_and_preflight_continue_affect_preflight_response() {
-    let policy = policy().max_age("600").preflight_continue(true).build();
+    let cors = cors().max_age("600").preflight_continue(true).build();
 
     let (headers, status, halt) = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert_eq!(status, 204);
@@ -30,13 +30,13 @@ fn max_age_and_preflight_continue_affect_preflight_response() {
 
 #[test]
 fn empty_max_age_does_not_emit_header() {
-    let policy = policy().max_age("").build();
+    let cors = cors().max_age("").build();
 
     let (headers, _status, _halt) = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
@@ -44,13 +44,13 @@ fn empty_max_age_does_not_emit_header() {
 
 #[test]
 fn default_max_age_is_absent() {
-    let policy = policy().build();
+    let cors = cors().build();
 
     let (headers, _status, _halt) = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
@@ -58,13 +58,13 @@ fn default_max_age_is_absent() {
 
 #[test]
 fn zero_max_age_is_emitted() {
-    let policy = policy().max_age("0").build();
+    let cors = cors().max_age("0").build();
 
     let (headers, _status, _halt) = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert_eq!(
@@ -75,7 +75,7 @@ fn zero_max_age_is_emitted() {
 
 #[test]
 fn custom_success_status_is_reflected() {
-    let policy = CorsPolicy::new(CorsOptions {
+    let cors = Cors::new(CorsOptions {
         options_success_status: 299,
         ..CorsOptions::default()
     });
@@ -84,7 +84,7 @@ fn custom_success_status_is_reflected() {
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert_eq!(status, 299);
@@ -93,13 +93,13 @@ fn custom_success_status_is_reflected() {
 
 #[test]
 fn empty_methods_list_omits_allow_methods_header() {
-    let policy = policy().methods(Vec::<String>::new()).build();
+    let cors = cors().methods(Vec::<String>::new()).build();
 
     let (headers, _status, _halt) = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::PATCH)
-            .evaluate(&policy),
+            .evaluate(&cors),
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_METHODS));

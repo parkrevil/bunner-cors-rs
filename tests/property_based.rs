@@ -3,7 +3,7 @@ mod common;
 use bunner_cors_rs::constants::{header, method};
 use bunner_cors_rs::{AllowedHeaders, CorsDecision, Origin, OriginMatcher};
 use common::asserts::assert_simple;
-use common::builders::{policy, preflight_request, simple_request};
+use common::builders::{cors, preflight_request, simple_request};
 use common::headers::header_value;
 use proptest::prelude::*;
 use regex::Regex;
@@ -39,7 +39,7 @@ proptest! {
             simple_request()
                 .origin(origin.as_str())
                 .evaluate(
-                    &policy()
+                    &cors()
                         .origin(Origin::exact(origin.clone()))
                         .build()
                 ),
@@ -61,7 +61,7 @@ proptest! {
             .request_method(method::GET)
             .request_headers(request_variant)
             .evaluate(
-                &policy()
+                &cors()
                     .allowed_headers(AllowedHeaders::list([allowed.clone()]))
                     .build()
             );
@@ -72,7 +72,7 @@ proptest! {
     #[test]
     fn origin_regex_list_accepts_hybrid_subdomains(subdomain in subdomain_strategy()) {
         let origin = format!("https://{}.hybrid.dev", subdomain);
-        let policy = policy()
+        let cors = cors()
             .origin(Origin::list([
                 OriginMatcher::from(false),
                 OriginMatcher::pattern(Regex::new(r"^https://.*\.hybrid\.dev$").unwrap()),
@@ -82,7 +82,7 @@ proptest! {
         let headers = assert_simple(
             simple_request()
                 .origin(origin.as_str())
-                .evaluate(&policy),
+                .evaluate(&cors),
         );
 
         prop_assert_eq!(
