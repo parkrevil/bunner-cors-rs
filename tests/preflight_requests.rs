@@ -53,6 +53,83 @@ fn preflight_without_request_method_still_uses_defaults() {
 }
 
 #[test]
+fn preflight_methods_any_without_request_method_still_sets_wildcard_header() {
+    let cors = cors().methods_any().build();
+
+    let (headers, _status, _halt) =
+        assert_preflight(preflight_request().origin("https://wild.dev").check(&cors));
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
+        Some("*"),
+    );
+}
+
+#[test]
+fn preflight_allowed_headers_any_without_request_headers_still_sets_wildcard() {
+    let cors = cors().allowed_headers(AllowedHeaders::any()).build();
+
+    let (headers, _status, _halt) =
+        assert_preflight(preflight_request().origin("https://wild.dev").check(&cors));
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+        Some("*"),
+    );
+    assert!(vary_values(&headers).is_empty());
+}
+
+#[test]
+fn preflight_allowed_headers_any_with_credentials_retains_wildcard() {
+    let cors = cors()
+        .origin(Origin::exact("https://wild.dev"))
+        .credentials(true)
+        .allowed_headers(AllowedHeaders::any())
+        .build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://wild.dev")
+            .request_method(method::POST)
+            .request_headers("X-Test")
+            .check(&cors),
+    );
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+        Some("https://wild.dev"),
+    );
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+        Some("*"),
+    );
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
+        Some("true"),
+    );
+    assert_eq!(
+        vary_values(&headers),
+        HashSet::from([header::ORIGIN.to_string()]),
+    );
+}
+
+#[test]
+fn preflight_custom_methods_preserve_case() {
+    let cors = cors().methods(["post", "FETCH"]).build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://wild.dev")
+            .request_method(method::GET)
+            .check(&cors),
+    );
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
+        Some("post,FETCH"),
+    );
+}
+#[test]
 fn preflight_with_disallowed_method_still_returns_configured_methods() {
     let (headers, status, _halt) = assert_preflight(
         preflight_request()
