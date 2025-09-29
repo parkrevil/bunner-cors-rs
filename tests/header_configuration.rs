@@ -88,6 +88,36 @@ fn vary_headers_are_deduplicated_and_sorted() {
 }
 
 #[test]
+fn vary_header_contains_unique_entries() {
+    let cors = cors()
+        .origin(Origin::exact("https://allowed.dev"))
+        .allowed_headers(AllowedHeaders::MirrorRequest)
+        .build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://allowed.dev")
+            .request_method(method::POST)
+            .request_headers("X-Test")
+            .check(&cors),
+    );
+
+    let vary_header = header_value(&headers, header::VARY).expect("vary header is present");
+    let parts: Vec<_> = vary_header
+        .split(',')
+        .map(|part| part.trim())
+        .filter(|part| !part.is_empty())
+        .collect();
+    let unique: HashSet<_> = parts.iter().map(|part| part.to_ascii_lowercase()).collect();
+
+    assert_eq!(
+        parts.len(),
+        unique.len(),
+        "vary header should not contain duplicates"
+    );
+}
+
+#[test]
 fn mirror_request_headers_preserves_formatting() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::MirrorRequest)

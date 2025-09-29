@@ -25,11 +25,36 @@ impl HeaderCollection {
     }
 
     pub(crate) fn add_vary<S: Into<String>>(&mut self, value: S) {
-        let value = value.into();
-        if let Some(existing) = self.headers.get(header::VARY) {
-            let new_value = format!("{}, {}", existing, value);
-            self.headers.insert(header::VARY.to_string(), new_value);
+        let mut entries: Vec<String> = self
+            .headers
+            .get(header::VARY)
+            .map(|existing| {
+                existing
+                    .split(',')
+                    .map(|part| part.trim().to_string())
+                    .filter(|part| !part.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let incoming = value.into().trim().to_string();
+        entries.push(incoming);
+
+        let mut deduped: Vec<String> = Vec::with_capacity(entries.len());
+        for entry in entries {
+            if deduped
+                .iter()
+                .any(|existing| existing.eq_ignore_ascii_case(&entry))
+            {
+                continue;
+            }
+            deduped.push(entry);
+        }
+
+        if deduped.is_empty() {
+            self.headers.remove(header::VARY);
         } else {
+            let value = deduped.join(", ");
             self.headers.insert(header::VARY.to_string(), value);
         }
     }
