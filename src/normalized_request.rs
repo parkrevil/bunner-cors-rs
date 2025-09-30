@@ -43,3 +43,7 @@ impl<'a> NormalizedRequest<'a> {
         self.method.as_ref() == "options"
     }
 }
+
+#[cfg(test)]
+#[path = "normalized_request_test.rs"]
+mod normalized_request_test;
