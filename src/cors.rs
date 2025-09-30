@@ -2,7 +2,7 @@ use crate::context::RequestContext;
 use crate::header_builder::HeaderBuilder;
 use crate::headers::HeaderCollection;
 use crate::normalized_request::NormalizedRequest;
-use crate::options::CorsOptions;
+use crate::options::{CorsOptions, ValidationError};
 use crate::result::{CorsDecision, PreflightResult, SimpleResult};
 
 /// Core CORS policy engine that evaluates requests using [`CorsOptions`].
@@ -11,11 +11,7 @@ pub struct Cors {
 }
 
 impl Cors {
-    pub fn new(options: CorsOptions) -> Self {
-        Self::try_new(options).expect("invalid CORS configuration")
-    }
-
-    pub fn try_new(options: CorsOptions) -> Result<Self, &'static str> {
+    pub fn new(options: CorsOptions) -> Result<Self, ValidationError> {
         options.validate()?;
         Ok(Self { options })
     }
@@ -71,17 +67,11 @@ impl Cors {
         headers.extend(builder.build_exposed_headers());
         headers.extend(builder.build_timing_allow_origin_header());
 
-        let mut result = PreflightResult {
+        Some(PreflightResult {
             headers: headers.into_headers(),
             status: self.options.options_success_status,
             end_response: !self.options.preflight_continue,
-        };
-
-        if let Some(hook) = &self.options.preflight_response_hook {
-            hook(normalized, &mut result);
-        }
-
-        Some(result)
+        })
     }
 
     fn process_simple(

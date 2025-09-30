@@ -55,7 +55,10 @@ mod validate {
         let result = options.validate();
 
         // Assert
-        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(ValidationError::CredentialsRequireSpecificOrigin)
+        ));
     }
 
     #[test]
@@ -70,7 +73,10 @@ mod validate {
         let result = options.validate();
 
         // Assert
-        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(ValidationError::AllowedHeadersListCannotContainWildcard)
+        ));
     }
 
     #[test]
@@ -85,7 +91,10 @@ mod validate {
         let result = options.validate();
 
         // Assert
-        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(ValidationError::ExposeHeadersListCannotContainWildcard)
+        ));
     }
 
     #[test]
@@ -105,5 +114,41 @@ mod validate {
 
         // Assert
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn when_success_status_out_of_range_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            options_success_status: 399,
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::InvalidSuccessStatus(399))
+        ));
+    }
+
+    #[test]
+    fn when_max_age_not_numeric_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            max_age: Some("ten minutes".into()),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::InvalidMaxAge(value)) if value == "ten minutes"
+        ));
     }
 }

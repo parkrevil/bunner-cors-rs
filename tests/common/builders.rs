@@ -2,8 +2,7 @@
 
 use bunner_cors_rs::constants::method;
 use bunner_cors_rs::{
-    AllowedHeaders, AllowedMethods, Cors, CorsOptions, Origin, PreflightResponseHook,
-    RequestContext, TimingAllowOrigin,
+    AllowedHeaders, AllowedMethods, Cors, CorsOptions, Origin, RequestContext, TimingAllowOrigin,
 };
 
 #[derive(Default)]
@@ -17,7 +16,6 @@ pub struct CorsBuilder {
     private_network: Option<bool>,
     preflight_continue: Option<bool>,
     timing_allow_origin: Option<TimingAllowOrigin>,
-    preflight_response_hook: Option<PreflightResponseHook>,
 }
 
 impl CorsBuilder {
@@ -83,11 +81,6 @@ impl CorsBuilder {
         self
     }
 
-    pub fn preflight_hook(mut self, hook: PreflightResponseHook) -> Self {
-        self.preflight_response_hook = Some(hook);
-        self
-    }
-
     pub fn build(self) -> Cors {
         let CorsOptions {
             origin: default_origin,
@@ -100,7 +93,6 @@ impl CorsBuilder {
             options_success_status: default_success_status,
             allow_private_network: default_private_network,
             timing_allow_origin: default_timing_allow_origin,
-            preflight_response_hook: default_preflight_hook,
         } = CorsOptions::default();
 
         let mut origin = self.origin.unwrap_or(default_origin);
@@ -126,8 +118,8 @@ impl CorsBuilder {
             options_success_status: default_success_status,
             allow_private_network: self.private_network.unwrap_or(default_private_network),
             timing_allow_origin: self.timing_allow_origin.or(default_timing_allow_origin),
-            preflight_response_hook: self.preflight_response_hook.or(default_preflight_hook),
         })
+        .expect("valid CORS configuration")
     }
 }
 

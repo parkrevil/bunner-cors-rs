@@ -29,17 +29,20 @@ fn max_age_and_preflight_continue_affect_preflight_response() {
 }
 
 #[test]
-fn empty_max_age_does_not_emit_header() {
-    let cors = cors().max_age("").build();
+fn empty_max_age_is_rejected() {
+    let result = Cors::new(CorsOptions {
+        max_age: Some(String::new()),
+        ..CorsOptions::default()
+    });
 
-    let (headers, _status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .check(&cors),
+    let error = match result {
+        Ok(_) => panic!("empty max-age should be rejected"),
+        Err(error) => error,
+    };
+    assert_eq!(
+        error.to_string(),
+        "The max-age value '' must be a non-negative integer representing seconds."
     );
-
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
 }
 
 #[test]
@@ -78,7 +81,8 @@ fn custom_success_status_is_reflected() {
     let cors = Cors::new(CorsOptions {
         options_success_status: 299,
         ..CorsOptions::default()
-    });
+    })
+    .expect("valid CORS configuration");
 
     let (_headers, status, halt) = assert_preflight(
         preflight_request()
