@@ -16,7 +16,7 @@ pub use allowed_methods::AllowedMethods;
 pub use context::RequestContext;
 pub use cors::Cors;
 pub use headers::Headers;
-pub use options::CorsOptions;
+pub use options::{CorsOptions, PreflightResponseHook};
 pub use origin::{Origin, OriginCallbackFn, OriginDecision, OriginMatcher, OriginPredicateFn};
 pub use result::{CorsDecision, PreflightResult, SimpleResult};
 pub use timing_allow_origin::TimingAllowOrigin;

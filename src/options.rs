@@ -1,7 +1,13 @@
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
+use crate::context::RequestContext;
 use crate::origin::Origin;
+use crate::result::PreflightResult;
 use crate::timing_allow_origin::TimingAllowOrigin;
+use std::sync::Arc;
+
+pub type PreflightResponseHook =
+    Arc<dyn for<'a> Fn(&RequestContext<'a>, &mut PreflightResult) + Send + Sync + 'static>;
 
 #[derive(Clone)]
 pub struct CorsOptions {
@@ -15,6 +21,7 @@ pub struct CorsOptions {
     pub options_success_status: u16,
     pub allow_private_network: bool,
     pub timing_allow_origin: Option<TimingAllowOrigin>,
+    pub preflight_response_hook: Option<PreflightResponseHook>,
 }
 
 impl Default for CorsOptions {
@@ -30,6 +37,7 @@ impl Default for CorsOptions {
             options_success_status: 204,
             allow_private_network: false,
             timing_allow_origin: None,
+            preflight_response_hook: None,
         }
     }
 }

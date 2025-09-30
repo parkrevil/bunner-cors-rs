@@ -71,11 +71,17 @@ impl Cors {
         headers.extend(builder.build_exposed_headers());
         headers.extend(builder.build_timing_allow_origin_header());
 
-        Some(PreflightResult {
+        let mut result = PreflightResult {
             headers: headers.into_headers(),
             status: self.options.options_success_status,
             end_response: !self.options.preflight_continue,
-        })
+        };
+
+        if let Some(hook) = &self.options.preflight_response_hook {
+            hook(normalized, &mut result);
+        }
+
+        Some(result)
     }
 
     fn process_simple(

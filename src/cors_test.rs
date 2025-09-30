@@ -224,6 +224,8 @@ mod check {
 
 mod process_preflight {
     use super::*;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     #[test]
     fn when_origin_skip_should_return_none() {
@@ -473,6 +475,33 @@ mod process_preflight {
             result.headers.get(header::TIMING_ALLOW_ORIGIN),
             Some(&"https://metrics.test https://dash.test".to_string())
         );
+    }
+
+    #[test]
+    fn when_preflight_hook_registered_should_mutate_result() {
+        // Arrange
+        let called = Arc::new(AtomicBool::new(false));
+        let hook_called = Arc::clone(&called);
+        let options = CorsOptions {
+            preflight_response_hook: Some(Arc::new(move |_, result: &mut PreflightResult| {
+                hook_called.store(true, Ordering::SeqCst);
+                result.headers.insert("x-hooked".into(), "enabled".into());
+                result.status = 299;
+                result.end_response = false;
+            })),
+            ..CorsOptions::default()
+        };
+        let cors = cors_with(options);
+        let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
+
+        // Act
+        let result = preflight_result(&cors, &original).expect("expected preflight result");
+
+        // Assert
+        assert!(called.load(Ordering::SeqCst));
+        assert_eq!(result.status, 299);
+        assert!(!result.end_response);
+        assert_eq!(result.headers.get("x-hooked"), Some(&"enabled".to_string()));
     }
 }
 
