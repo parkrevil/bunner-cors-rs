@@ -62,6 +62,26 @@ mod validate {
     }
 
     #[test]
+    fn when_credentials_and_allowed_headers_any_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            credentials: true,
+            origin: Origin::list(["https://api.test"]),
+            allowed_headers: AllowedHeaders::any(),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::AllowedHeadersAnyNotAllowedWithCredentials)
+        ));
+    }
+
+    #[test]
     fn when_allowed_headers_list_contains_wildcard_should_return_error() {
         // Arrange
         let options = CorsOptions {

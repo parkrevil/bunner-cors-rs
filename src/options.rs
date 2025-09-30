@@ -35,6 +35,7 @@ fn is_http_token(value: &str) -> bool {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
     CredentialsRequireSpecificOrigin,
+    AllowedHeadersAnyNotAllowedWithCredentials,
     AllowedHeadersListCannotContainWildcard,
     AllowedHeadersListContainsInvalidToken,
     ExposeHeadersWildcardRequiresCredentialsDisabled,
@@ -58,6 +59,9 @@ impl Display for ValidationError {
         match self {
             ValidationError::CredentialsRequireSpecificOrigin => f.write_str(
                 "When credentials are enabled, you must configure a specific allowed origin instead of \"*\".",
+            ),
+            ValidationError::AllowedHeadersAnyNotAllowedWithCredentials => f.write_str(
+                "AllowedHeaders::any() cannot be used when credentials are enabled. Configure an explicit header allow list instead.",
             ),
             ValidationError::AllowedHeadersListCannotContainWildcard => f.write_str(
                 "Allowed headers lists cannot include \"*\". Use AllowedHeaders::any() to allow all headers.",
@@ -151,6 +155,10 @@ impl CorsOptions {
     pub fn validate(&self) -> Result<(), ValidationError> {
         if self.credentials && matches!(self.origin, Origin::Any) {
             return Err(ValidationError::CredentialsRequireSpecificOrigin);
+        }
+
+        if self.credentials && matches!(self.allowed_headers, AllowedHeaders::Any) {
+            return Err(ValidationError::AllowedHeadersAnyNotAllowedWithCredentials);
         }
 
         if let AllowedHeaders::List(values) = &self.allowed_headers

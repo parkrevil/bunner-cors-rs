@@ -2,10 +2,11 @@ mod common;
 
 use bunner_cors_rs::constants::{header, method};
 use bunner_cors_rs::{
-    AllowedHeaders, CorsDecision, Origin, OriginDecision, OriginMatcher, RequestContext,
+    AllowedHeaders, Cors, CorsDecision, CorsOptions, Origin, OriginDecision, OriginMatcher,
+    RequestContext, ValidationError,
 };
 use common::asserts::{
-    assert_header_eq, assert_preflight, assert_vary_contains, assert_vary_eq, assert_vary_is_empty,
+    assert_header_eq, assert_preflight, assert_vary_contains, assert_vary_is_empty,
 };
 use common::builders::{cors, preflight_request};
 use common::headers::has_header;
@@ -47,29 +48,18 @@ fn preflight_allowed_headers_any_without_request_headers_still_sets_wildcard() {
 }
 
 #[test]
-fn preflight_allowed_headers_any_with_credentials_retains_wildcard() {
-    let cors = cors()
-        .origin(Origin::exact("https://wild.dev"))
-        .credentials(true)
-        .allowed_headers(AllowedHeaders::any())
-        .build();
+fn preflight_allowed_headers_any_with_credentials_is_rejected() {
+    let result = Cors::new(CorsOptions {
+        origin: Origin::exact("https://wild.dev"),
+        credentials: true,
+        allowed_headers: AllowedHeaders::any(),
+        ..CorsOptions::default()
+    });
 
-    let (headers, _status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://wild.dev")
-            .request_method(method::POST)
-            .request_headers("X-Test")
-            .check(&cors),
-    );
-
-    assert_header_eq(
-        &headers,
-        header::ACCESS_CONTROL_ALLOW_ORIGIN,
-        "https://wild.dev",
-    );
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "*");
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
-    assert_vary_eq(&headers, [header::ORIGIN]);
+    assert!(matches!(
+        result,
+        Err(ValidationError::AllowedHeadersAnyNotAllowedWithCredentials)
+    ));
 }
 
 #[test]
