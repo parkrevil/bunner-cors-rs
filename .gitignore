@@ -1,4 +1,3 @@
 /target
 Cargo.lock
-cors
 tests/snapshots
