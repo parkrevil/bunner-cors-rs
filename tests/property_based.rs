@@ -65,7 +65,11 @@ proptest! {
                     .build()
             );
 
-        prop_assert!(matches!(decision, CorsDecision::Preflight(_)));
+        let is_preflight_accepted = matches!(
+            decision,
+            CorsDecision::PreflightAccepted { .. }
+        );
+        prop_assert!(is_preflight_accepted);
     }
 
     #[test]

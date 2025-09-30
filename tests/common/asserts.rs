@@ -8,30 +8,15 @@ use super::headers::{header_value, vary_values};
 
 pub fn assert_simple(decision: CorsDecision) -> Headers {
     match decision {
-        CorsDecision::Simple(result) => {
-            assert!(
-                result.status.is_none(),
-                "simple responses should not override status"
-            );
-            assert!(
-                !result.end_response,
-                "simple responses should not halt the underlying request"
-            );
-            result.headers
-        }
-        other => panic!("expected simple decision, got {:?}", other),
+        CorsDecision::SimpleAccepted { headers } => headers,
+        other => panic!("expected simple acceptance, got {:?}", other),
     }
 }
 
-pub fn assert_preflight(decision: CorsDecision) -> (Headers, u16, bool) {
+pub fn assert_preflight(decision: CorsDecision) -> Headers {
     match decision {
-        CorsDecision::Preflight(result) => (
-            result.headers,
-            result
-                .status
-                .expect("preflight responses must include a status code"),
-            result.end_response,
-        ),
+        CorsDecision::PreflightAccepted { headers } => headers,
+        CorsDecision::PreflightRejected(rejection) => rejection.headers,
         other => panic!("expected preflight decision, got {:?}", other),
     }
 }

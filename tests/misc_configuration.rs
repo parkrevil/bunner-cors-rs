@@ -10,15 +10,13 @@ use common::headers::{has_header, header_value};
 fn max_age_affects_preflight_response() {
     let cors = cors().max_age("600").build();
 
-    let (headers, status, halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
             .check(&cors),
     );
 
-    assert_eq!(status, 204);
-    assert!(halt, "preflight should halt by default");
     assert_eq!(
         header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
         Some("600")
@@ -46,7 +44,7 @@ fn empty_max_age_is_rejected() {
 fn default_max_age_is_absent() {
     let cors = cors().build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
@@ -60,7 +58,7 @@ fn default_max_age_is_absent() {
 fn zero_max_age_is_emitted() {
     let cors = cors().max_age("0").build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
@@ -71,25 +69,6 @@ fn zero_max_age_is_emitted() {
         header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
         Some("0")
     );
-}
-
-#[test]
-fn custom_success_status_is_reflected() {
-    let cors = Cors::new(CorsOptions {
-        options_success_status: 299,
-        ..CorsOptions::default()
-    })
-    .expect("valid CORS configuration");
-
-    let (_headers, status, halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .check(&cors),
-    );
-
-    assert_eq!(status, 299);
-    assert!(halt);
 }
 
 #[test]
@@ -110,7 +89,7 @@ fn when_origin_list_is_configured_should_emit_vary_origin_header() {
         .origin(Origin::list(["https://foo.bar", "https://bar.baz"]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
@@ -124,7 +103,7 @@ fn when_origin_list_is_configured_should_emit_vary_origin_header() {
 fn when_origin_allows_any_should_not_emit_vary_header() {
     let cors = cors().origin(Origin::any()).build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)

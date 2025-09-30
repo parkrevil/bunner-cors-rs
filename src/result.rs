@@ -1,19 +1,28 @@
 use crate::headers::Headers;
 use thiserror::Error;
 
-/// Headers and response metadata emitted for either a preflight or simple request.
-#[derive(Debug, Clone)]
-pub struct CorsResult {
+/// Reasons why a preflight request was rejected.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PreflightRejectionReason {
+    OriginNotAllowed,
+    MethodNotAllowed { requested_method: String },
+    HeadersNotAllowed { requested_headers: String },
+    MissingAccessControlRequestMethod,
+}
+
+/// Detailed outcome when a preflight request is rejected.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PreflightRejection {
     pub headers: Headers,
-    pub status: Option<u16>,
-    pub end_response: bool,
+    pub reason: PreflightRejectionReason,
 }
 
 /// Overall decision returned by the policy engine.
 #[derive(Debug, Clone)]
 pub enum CorsDecision {
-    Preflight(CorsResult),
-    Simple(CorsResult),
+    PreflightAccepted { headers: Headers },
+    PreflightRejected(PreflightRejection),
+    SimpleAccepted { headers: Headers },
     NotApplicable,
 }
 

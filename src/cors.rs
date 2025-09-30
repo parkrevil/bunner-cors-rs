@@ -3,7 +3,7 @@ use crate::header_builder::{HeaderBuilder, OriginOutcome};
 use crate::headers::HeaderCollection;
 use crate::normalized_request::NormalizedRequest;
 use crate::options::{CorsOptions, ValidationError};
-use crate::result::{CorsDecision, CorsError, CorsResult};
+use crate::result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
 
 /// Core CORS policy engine that evaluates requests using [`CorsOptions`].
 pub struct Cors {
@@ -21,15 +21,9 @@ impl Cors {
         let normalized_ctx = normalized_request.as_context();
 
         if normalized_request.is_options() {
-            match self.process_preflight(request, &normalized_ctx)? {
-                Some(result) => Ok(CorsDecision::Preflight(result)),
-                None => Ok(CorsDecision::NotApplicable),
-            }
+            self.process_preflight(request, &normalized_ctx)
         } else {
-            match self.process_simple(request, &normalized_ctx)? {
-                Some(result) => Ok(CorsDecision::Simple(result)),
-                None => Ok(CorsDecision::NotApplicable),
-            }
+            self.process_simple(request, &normalized_ctx)
         }
     }
 
@@ -37,25 +31,23 @@ impl Cors {
         &self,
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
-    ) -> Result<Option<CorsResult>, CorsError> {
+    ) -> Result<CorsDecision, CorsError> {
         if normalized.access_control_request_method.trim().is_empty() {
-            return Ok(None);
+            return Ok(CorsDecision::NotApplicable);
         }
         let builder = HeaderBuilder::new(&self.options);
-        let mut headers = HeaderCollection::new();
         let origin = Self::resolve_origin_headers(&builder, original, normalized)?;
 
         let Some((origin_headers, origin_allowed)) = origin else {
-            return Ok(None);
+            return Ok(CorsDecision::NotApplicable);
         };
 
-        headers.extend(origin_headers);
+        let mut headers = origin_headers;
 
         if !origin_allowed {
-            return Ok(Some(CorsResult {
+            return Ok(CorsDecision::PreflightRejected(PreflightRejection {
                 headers: headers.into_headers(),
-                status: Some(self.options.options_success_status),
-                end_response: true,
+                reason: PreflightRejectionReason::OriginNotAllowed,
             }));
         }
 
@@ -64,14 +56,14 @@ impl Cors {
             .methods
             .allows_method(normalized.access_control_request_method)
         {
-            return Ok(None);
+            return Ok(CorsDecision::NotApplicable);
         }
         if !self
             .options
             .allowed_headers
             .allows_headers(normalized.access_control_request_headers)
         {
-            return Ok(None);
+            return Ok(CorsDecision::NotApplicable);
         }
         headers.extend(builder.build_credentials_header());
         headers.extend(builder.build_methods_header());
@@ -80,49 +72,42 @@ impl Cors {
         headers.extend(builder.build_max_age_header());
         headers.extend(builder.build_timing_allow_origin_header());
 
-        Ok(Some(CorsResult {
+        Ok(CorsDecision::PreflightAccepted {
             headers: headers.into_headers(),
-            status: Some(self.options.options_success_status),
-            end_response: true,
-        }))
+        })
     }
 
     fn process_simple(
         &self,
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
-    ) -> Result<Option<CorsResult>, CorsError> {
+    ) -> Result<CorsDecision, CorsError> {
         let builder = HeaderBuilder::new(&self.options);
-        let mut headers = HeaderCollection::new();
         let origin = Self::resolve_origin_headers(&builder, original, normalized)?;
 
         let Some((origin_headers, origin_allowed)) = origin else {
-            return Ok(None);
+            return Ok(CorsDecision::NotApplicable);
         };
 
-        headers.extend(origin_headers);
+        let mut headers = origin_headers;
 
         if !origin_allowed {
-            return Ok(Some(CorsResult {
+            return Ok(CorsDecision::SimpleAccepted {
                 headers: headers.into_headers(),
-                status: None,
-                end_response: false,
-            }));
+            });
         }
 
         if !self.options.methods.allows_method(normalized.method) {
-            return Ok(None);
+            return Ok(CorsDecision::NotApplicable);
         }
         headers.extend(builder.build_credentials_header());
         headers.extend(builder.build_private_network_header(original));
         headers.extend(builder.build_exposed_headers());
         headers.extend(builder.build_timing_allow_origin_header());
 
-        Ok(Some(CorsResult {
+        Ok(CorsDecision::SimpleAccepted {
             headers: headers.into_headers(),
-            status: None,
-            end_response: false,
-        }))
+        })
     }
 
     fn resolve_origin_headers(

@@ -23,7 +23,7 @@ fn cors_can_be_shared_across_threads() {
         let cors = Arc::clone(&cors);
         handles.push(thread::spawn(move || {
             let origin = format!("https://thread{}.example", i);
-            let (headers, status, halt) = assert_preflight(
+            let headers = assert_preflight(
                 preflight_request()
                     .origin(origin.as_str())
                     .request_method(method::POST)
@@ -31,8 +31,6 @@ fn cors_can_be_shared_across_threads() {
                     .check(&cors),
             );
 
-            assert_eq!(status, 204);
-            assert!(halt);
             assert_eq!(
                 header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
                 Some(origin.as_str()),

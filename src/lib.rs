@@ -18,5 +18,5 @@ pub use cors::Cors;
 pub use headers::Headers;
 pub use options::{CorsOptions, ValidationError};
 pub use origin::{Origin, OriginCallbackFn, OriginDecision, OriginMatcher, OriginPredicateFn};
-pub use result::{CorsDecision, CorsError, CorsResult};
+pub use result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
 pub use timing_allow_origin::TimingAllowOrigin;

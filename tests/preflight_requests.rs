@@ -36,7 +36,7 @@ fn preflight_without_request_method_is_not_applicable() {
 fn preflight_allowed_headers_any_without_request_headers_still_sets_wildcard() {
     let cors = cors().allowed_headers(AllowedHeaders::any()).build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://wild.dev")
             .request_method(method::GET)
@@ -69,7 +69,7 @@ fn preflight_custom_methods_preserve_case() {
         .allowed_headers(AllowedHeaders::list(["X-MiXeD", "Content-Type"]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://wild.dev")
             .request_method("FETCH")
@@ -125,7 +125,7 @@ fn preflight_without_request_headers_emits_configured_list() {
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::POST)
@@ -181,7 +181,7 @@ fn preflight_custom_origin_requires_request_method() {
 
     assert!(matches!(missing_method, CorsDecision::NotApplicable));
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://ctx.dev")
             .request_method(method::PUT)
@@ -215,7 +215,7 @@ fn preflight_custom_origin_checks_request_headers() {
 
     assert!(matches!(decision, CorsDecision::NotApplicable));
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://headers.dev")
             .request_method(method::POST)
@@ -237,18 +237,13 @@ fn preflight_with_credentials_sets_allow_credentials_header() {
         .credentials(true)
         .build();
 
-    let (headers, status, halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://cred.dev")
             .request_method(method::POST)
             .check(&cors),
     );
 
-    assert_eq!(status, 204);
-    assert!(
-        halt,
-        "preflight should halt when preflight_continue is false"
-    );
     assert_header_eq(
         &headers,
         header::ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -267,7 +262,7 @@ fn preflight_origin_list_matches_request_origin() {
         ]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://api.allow.dev")
             .request_method(method::PUT)
@@ -292,7 +287,7 @@ fn preflight_origin_predicate_observes_normalized_request() {
         }))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://predicate.dev")
             .request_method(method::POST)
@@ -313,7 +308,7 @@ fn preflight_disallowed_origin_sets_vary_without_allow_origin() {
         .origin(Origin::list([OriginMatcher::exact("https://allow.dev")]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://deny.dev")
             .request_method(method::GET)
@@ -335,7 +330,7 @@ fn preflight_disallowed_origin_omits_sensitive_headers() {
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://deny.dev")
             .request_method(method::GET)
@@ -370,13 +365,11 @@ fn preflight_accepts_mixed_case_options_and_request_method() {
         access_control_request_private_network: false,
     };
 
-    let (headers, status, halt) = assert_preflight(
+    let headers = assert_preflight(
         cors.check(&ctx)
             .expect("preflight evaluation should succeed"),
     );
 
-    assert_eq!(status, 204);
-    assert!(halt);
     assert_header_eq(
         &headers,
         header::ACCESS_CONTROL_ALLOW_METHODS,
@@ -393,7 +386,7 @@ fn preflight_accepts_mixed_case_options_and_request_method() {
 fn preflight_allowed_headers_any_sets_wildcard_header() {
     let cors = cors().allowed_headers(AllowedHeaders::any()).build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://wild.dev")
             .request_method(method::GET)
@@ -413,7 +406,7 @@ fn preflight_with_private_network_request_emits_allow_header() {
         .private_network(true)
         .build();
 
-    let (headers, status, halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://intranet.dev")
             .request_method(method::GET)
@@ -421,8 +414,6 @@ fn preflight_with_private_network_request_emits_allow_header() {
             .check(&cors),
     );
 
-    assert_eq!(status, 204);
-    assert!(halt);
     assert_header_eq(
         &headers,
         header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK,
@@ -438,7 +429,7 @@ fn preflight_without_private_network_request_omits_allow_header() {
         .private_network(true)
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://intranet.dev")
             .request_method(method::GET)
@@ -457,7 +448,7 @@ fn preflight_with_multiple_allowed_headers_emits_configured_list() {
         .allowed_headers(AllowedHeaders::list(["X-Allowed", "X-Trace"]))
         .build();
 
-    let (headers, status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
@@ -465,7 +456,6 @@ fn preflight_with_multiple_allowed_headers_emits_configured_list() {
             .check(&cors),
     );
 
-    assert_eq!(status, 204);
     assert_header_eq(
         &headers,
         header::ACCESS_CONTROL_ALLOW_HEADERS,

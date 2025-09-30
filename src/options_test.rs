@@ -19,8 +19,6 @@ mod default {
         assert_eq!(options.exposed_headers, None);
         assert!(!options.credentials);
         assert!(options.max_age.is_none());
-        // preflight_continue removed
-        assert_eq!(options.options_success_status, 204);
         assert!(!options.allow_private_network);
         assert!(options.timing_allow_origin.is_none());
     }
@@ -296,24 +294,6 @@ mod validate {
         assert!(matches!(
             result,
             Err(ValidationError::TimingAllowOriginCannotContainEmptyValue)
-        ));
-    }
-
-    #[test]
-    fn when_success_status_out_of_range_should_return_error() {
-        // Arrange
-        let options = CorsOptions {
-            options_success_status: 399,
-            ..CorsOptions::default()
-        };
-
-        // Act
-        let result = options.validate();
-
-        // Assert
-        assert!(matches!(
-            result,
-            Err(ValidationError::InvalidSuccessStatus(399))
         ));
     }
 

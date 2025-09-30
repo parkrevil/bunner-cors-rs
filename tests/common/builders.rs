@@ -79,8 +79,6 @@ impl CorsBuilder {
             exposed_headers: default_exposed_headers,
             credentials: default_credentials,
             max_age: default_max_age,
-
-            options_success_status: default_success_status,
             allow_private_network: default_private_network,
             timing_allow_origin: default_timing_allow_origin,
         } = CorsOptions::default();
@@ -102,7 +100,6 @@ impl CorsBuilder {
             exposed_headers: self.exposed_headers.or(default_exposed_headers),
             credentials,
             max_age: self.max_age.or(default_max_age),
-            options_success_status: default_success_status,
             allow_private_network: self.private_network.unwrap_or(default_private_network),
             timing_allow_origin: self.timing_allow_origin.or(default_timing_allow_origin),
         })

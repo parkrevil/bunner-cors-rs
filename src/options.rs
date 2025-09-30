@@ -41,7 +41,6 @@ pub enum ValidationError {
     ExposeHeadersWildcardRequiresCredentialsDisabled,
     ExposeHeadersWildcardCannotBeCombined,
     ExposeHeadersListContainsInvalidToken,
-    InvalidSuccessStatus(u16),
     InvalidMaxAge(String),
     PrivateNetworkRequiresCredentials,
     PrivateNetworkRequiresSpecificOrigin,
@@ -78,10 +77,6 @@ impl Display for ValidationError {
             ),
             ValidationError::ExposeHeadersListContainsInvalidToken => f.write_str(
                 "Exposed headers lists may only contain valid HTTP header field names.",
-            ),
-            ValidationError::InvalidSuccessStatus(status) => write!(
-                f,
-                "The options success status of {status} is outside the 200-299 range required by the CORS spec."
             ),
             ValidationError::InvalidMaxAge(value) => write!(
                 f,
@@ -130,7 +125,6 @@ pub struct CorsOptions {
     pub exposed_headers: Option<Vec<String>>,
     pub credentials: bool,
     pub max_age: Option<String>,
-    pub options_success_status: u16,
     pub allow_private_network: bool,
     pub timing_allow_origin: Option<TimingAllowOrigin>,
 }
@@ -144,7 +138,6 @@ impl Default for CorsOptions {
             exposed_headers: None,
             credentials: false,
             max_age: None,
-            options_success_status: 204,
             allow_private_network: false,
             timing_allow_origin: None,
         }
@@ -222,12 +215,6 @@ impl CorsOptions {
             {
                 return Err(ValidationError::ExposeHeadersListContainsInvalidToken);
             }
-        }
-
-        if !(200..=299).contains(&self.options_success_status) {
-            return Err(ValidationError::InvalidSuccessStatus(
-                self.options_success_status,
-            ));
         }
 
         if let Some(value) = &self.max_age {

@@ -15,7 +15,7 @@ fn preflight_with_explicit_headers_does_not_reflect_request() {
         .allowed_headers(AllowedHeaders::list(["Content-Type", "X-Custom"]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::POST)
@@ -67,7 +67,7 @@ fn vary_headers_are_deduplicated_and_sorted() {
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://allowed.dev")
             .request_method(method::PUT)
@@ -84,7 +84,7 @@ fn vary_header_contains_unique_entries() {
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://allowed.dev")
             .request_method(method::POST)
@@ -129,7 +129,7 @@ fn preflight_without_request_headers_emits_configured_list() {
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
@@ -209,7 +209,7 @@ fn timing_allow_origin_list_is_emitted_on_preflight() {
         ]))
         .build();
 
-    let (headers, _status, _halt) = assert_preflight(
+    let headers = assert_preflight(
         preflight_request()
             .origin("https://foo.bar")
             .request_method(method::GET)
