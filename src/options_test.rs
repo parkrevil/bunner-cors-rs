@@ -80,6 +80,60 @@ mod validate {
     }
 
     #[test]
+    fn when_allowed_methods_list_contains_wildcard_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            methods: AllowedMethods::list(["GET", "*"]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::AllowedMethodsCannotContainWildcard)
+        ));
+    }
+
+    #[test]
+    fn when_allowed_methods_list_contains_invalid_token_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            methods: AllowedMethods::list(["GET", "PO ST"]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::AllowedMethodsListContainsInvalidToken)
+        ));
+    }
+
+    #[test]
+    fn when_allowed_headers_list_contains_invalid_token_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            allowed_headers: AllowedHeaders::list(["X-Trace", "X Header"]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::AllowedHeadersListContainsInvalidToken)
+        ));
+    }
+
+    #[test]
     fn when_expose_headers_wildcard_with_credentials_should_return_error() {
         // Arrange
         let options = CorsOptions {
@@ -96,6 +150,24 @@ mod validate {
         assert!(matches!(
             result,
             Err(ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled)
+        ));
+    }
+
+    #[test]
+    fn when_expose_headers_contains_invalid_token_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            exposed_headers: Some(vec!["X-Trace".to_string(), "X Header".to_string()]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::ExposeHeadersListContainsInvalidToken)
         ));
     }
 

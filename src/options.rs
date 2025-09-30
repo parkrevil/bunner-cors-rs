@@ -6,18 +6,49 @@ use crate::timing_allow_origin::TimingAllowOrigin;
 use std::error::Error;
 use std::fmt::{self, Display};
 
+fn is_http_token(value: &str) -> bool {
+    !value.is_empty()
+        && value.bytes().all(|byte| {
+            matches!(
+                byte,
+                b'0'..=b'9'
+                    | b'A'..=b'Z'
+                    | b'a'..=b'z'
+                    | b'!'
+                    | b'#'
+                    | b'$'
+                    | b'%'
+                    | b'&'
+                    | b'\''
+                    | b'*'
+                    | b'+'
+                    | b'-'
+                    | b'.'
+                    | b'^'
+                    | b'_'
+                    | b'`'
+                    | b'|'
+                    | b'~'
+            )
+        })
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
     CredentialsRequireSpecificOrigin,
     AllowedHeadersListCannotContainWildcard,
+    AllowedHeadersListContainsInvalidToken,
     ExposeHeadersWildcardRequiresCredentialsDisabled,
     ExposeHeadersWildcardCannotBeCombined,
+    ExposeHeadersListContainsInvalidToken,
     InvalidSuccessStatus(u16),
     InvalidMaxAge(String),
     PrivateNetworkRequiresCredentials,
     PrivateNetworkRequiresSpecificOrigin,
     PrivateNetworkRequestHeaderNotAllowed,
     AllowedMethodsCannotContainEmptyToken,
+    AllowedMethodsCannotContainWildcard,
+    AllowedMethodsListContainsInvalidToken,
     AllowedHeadersCannotContainEmptyToken,
     ExposeHeadersCannotContainEmptyValue,
     TimingAllowOriginWildcardNotAllowedWithCredentials,
@@ -33,12 +64,18 @@ impl Display for ValidationError {
             ValidationError::AllowedHeadersListCannotContainWildcard => f.write_str(
                 "Allowed headers lists cannot include \"*\". Use AllowedHeaders::any() to allow all headers.",
             ),
+            ValidationError::AllowedHeadersListContainsInvalidToken => f.write_str(
+                "Allowed headers lists may only contain valid HTTP header field names.",
+            ),
             ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled => f
                 .write_str(
                     "Exposed headers wildcard (\"*\") can only be used when credentials are disabled.",
                 ),
             ValidationError::ExposeHeadersWildcardCannotBeCombined => f.write_str(
                 "The exposed headers wildcard (\"*\") cannot be combined with additional header names.",
+            ),
+            ValidationError::ExposeHeadersListContainsInvalidToken => f.write_str(
+                "Exposed headers lists may only contain valid HTTP header field names.",
             ),
             ValidationError::InvalidSuccessStatus(status) => write!(
                 f,
@@ -59,6 +96,12 @@ impl Display for ValidationError {
             ),
             ValidationError::AllowedMethodsCannotContainEmptyToken => f.write_str(
                 "Allowed methods lists cannot contain empty or whitespace-only entries.",
+            ),
+            ValidationError::AllowedMethodsCannotContainWildcard => f.write_str(
+                "Allowed methods lists cannot include the wildcard (\"*\").",
+            ),
+            ValidationError::AllowedMethodsListContainsInvalidToken => f.write_str(
+                "Allowed methods lists may only contain valid HTTP method tokens.",
             ),
             ValidationError::AllowedHeadersCannotContainEmptyToken => f.write_str(
                 "Allowed headers lists cannot contain empty or whitespace-only entries.",
@@ -127,6 +170,16 @@ impl CorsOptions {
                 if values.iter().any(|value| value.trim().is_empty()) {
                     return Err(ValidationError::AllowedMethodsCannotContainEmptyToken);
                 }
+                if values.iter().any(|value| value.trim() == "*") {
+                    return Err(ValidationError::AllowedMethodsCannotContainWildcard);
+                }
+                if values
+                    .iter()
+                    .map(|value| value.trim())
+                    .any(|value| !is_http_token(value))
+                {
+                    return Err(ValidationError::AllowedMethodsListContainsInvalidToken);
+                }
             }
         }
 
@@ -134,6 +187,15 @@ impl CorsOptions {
             && values.iter().any(|value| value.trim().is_empty())
         {
             return Err(ValidationError::AllowedHeadersCannotContainEmptyToken);
+        }
+
+        if let AllowedHeaders::List(values) = &self.allowed_headers
+            && values
+                .iter()
+                .map(|value| value.trim())
+                .any(|value| !is_http_token(value))
+        {
+            return Err(ValidationError::AllowedHeadersListContainsInvalidToken);
         }
 
         if let Some(values) = &self.exposed_headers {
@@ -149,6 +211,14 @@ impl CorsOptions {
                 if values.len() > 1 {
                     return Err(ValidationError::ExposeHeadersWildcardCannotBeCombined);
                 }
+            }
+
+            if values
+                .iter()
+                .map(|value| value.trim())
+                .any(|value| !is_http_token(value))
+            {
+                return Err(ValidationError::ExposeHeadersListContainsInvalidToken);
             }
         }
 
