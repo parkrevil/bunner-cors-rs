@@ -1,8 +1,8 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{Cors, CorsOptions};
-use common::asserts::assert_preflight;
+use bunner_cors_rs::{Cors, CorsOptions, Origin};
+use common::asserts::{assert_preflight, assert_vary_contains, assert_vary_not_contains};
 use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
 
@@ -103,4 +103,34 @@ fn empty_methods_list_omits_allow_methods_header() {
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_METHODS));
+}
+
+#[test]
+fn when_origin_list_is_configured_should_emit_vary_origin_header() {
+    let cors = cors()
+        .origin(Origin::list(["https://foo.bar", "https://bar.baz"]))
+        .build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://foo.bar")
+            .request_method(method::GET)
+            .check(&cors),
+    );
+
+    assert_vary_contains(&headers, header::ORIGIN);
+}
+
+#[test]
+fn when_origin_allows_any_should_not_emit_vary_header() {
+    let cors = cors().origin(Origin::any()).build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://foo.bar")
+            .request_method(method::GET)
+            .check(&cors),
+    );
+
+    assert_vary_not_contains(&headers, header::ORIGIN);
 }

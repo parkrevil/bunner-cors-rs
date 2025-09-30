@@ -6,18 +6,38 @@ use crate::context::RequestContext;
 use crate::options::CorsOptions;
 use crate::origin::{Origin, OriginDecision};
 
-fn request(
+fn build_request(
     method: &'static str,
     origin: &'static str,
     acrm: &'static str,
     acrh: &'static str,
+    private_network: bool,
 ) -> RequestContext<'static> {
     RequestContext {
         method,
         origin,
         access_control_request_method: acrm,
         access_control_request_headers: acrh,
+        access_control_request_private_network: private_network,
     }
+}
+
+fn request(
+    method: &'static str,
+    origin: &'static str,
+    acrm: &'static str,
+    acrh: &'static str,
+) -> RequestContext<'static> {
+    build_request(method, origin, acrm, acrh, false)
+}
+
+fn request_with_private_network(
+    method: &'static str,
+    origin: &'static str,
+    acrm: &'static str,
+    acrh: &'static str,
+) -> RequestContext<'static> {
+    build_request(method, origin, acrm, acrh, true)
 }
 
 fn options_with_origin(origin: Origin) -> CorsOptions {
@@ -120,6 +140,44 @@ mod build_origin_headers {
         assert_eq!(map.get(header::VARY), Some(&"Origin".to_string()));
         assert!(!map.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
     }
+
+    #[test]
+    fn when_origin_mirror_has_empty_request_should_not_emit_header() {
+        // Arrange
+        let options = options_with_origin(Origin::list(["https://app.test"]));
+        let builder = HeaderBuilder::new(&options);
+        let original = request("GET", "", "", "");
+        let normalized = request("get", "https://app.test", "", "");
+
+        // Act
+        let (headers, skip) = builder.build_origin_headers(&original, &normalized);
+        let map = headers.into_headers();
+
+        // Assert
+        assert!(!skip);
+        assert_eq!(map.get(header::VARY), Some(&"Origin".to_string()));
+        assert!(!map.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    #[test]
+    fn when_origin_mirror_should_preserve_original_casing() {
+        // Arrange
+        let options = options_with_origin(Origin::list(["https://app.test"]));
+        let builder = HeaderBuilder::new(&options);
+        let original = request("GET", "https://API.test", "", "");
+        let normalized = request("get", "https://app.test", "", "");
+
+        // Act
+        let (headers, skip) = builder.build_origin_headers(&original, &normalized);
+        let map = headers.into_headers();
+
+        // Assert
+        assert!(!skip);
+        assert_eq!(
+            map.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"https://API.test".to_string())
+        );
+    }
 }
 
 mod build_methods_header {
@@ -219,6 +277,23 @@ mod build_allowed_headers {
             Some(&"X-Trace,X-Auth".to_string())
         );
         assert!(!map.contains_key(header::VARY));
+    }
+
+    #[test]
+    fn when_configured_list_is_empty_should_return_empty_collection() {
+        // Arrange
+        let options = CorsOptions {
+            allowed_headers: AllowedHeaders::list(Vec::<String>::new()),
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request("OPTIONS", "https://api.test", "", "");
+
+        // Act
+        let map = builder.build_allowed_headers(&ctx).into_headers();
+
+        // Assert
+        assert!(map.is_empty());
     }
 
     #[test]
@@ -369,6 +444,41 @@ mod build_max_age_header {
 
         // Act
         let map = builder.build_max_age_header().into_headers();
+
+        // Assert
+        assert!(map.is_empty());
+    }
+}
+
+mod build_private_network_header {
+    use super::*;
+
+    #[test]
+    fn when_request_includes_private_network_should_emit_allow_header() {
+        // Arrange
+        let options = CorsOptions::default();
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request_with_private_network("OPTIONS", "https://api.test", "POST", "X-Test");
+
+        // Act
+        let map = builder.build_private_network_header(&ctx).into_headers();
+
+        // Assert
+        assert_eq!(
+            map.get(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
+            Some(&"true".to_string())
+        );
+    }
+
+    #[test]
+    fn when_request_does_not_include_private_network_should_return_empty_collection() {
+        // Arrange
+        let options = CorsOptions::default();
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request("OPTIONS", "https://api.test", "POST", "X-Test");
+
+        // Act
+        let map = builder.build_private_network_header(&ctx).into_headers();
 
         // Assert
         assert!(map.is_empty());

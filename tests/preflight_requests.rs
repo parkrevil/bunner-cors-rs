@@ -4,10 +4,11 @@ use bunner_cors_rs::constants::{header, method};
 use bunner_cors_rs::{
     AllowedHeaders, CorsDecision, Origin, OriginDecision, OriginMatcher, RequestContext,
 };
-use common::asserts::assert_preflight;
+use common::asserts::{
+    assert_header_eq, assert_preflight, assert_vary_contains, assert_vary_eq, assert_vary_is_empty,
+};
 use common::builders::{cors, preflight_request};
-use common::headers::{has_header, header_value, vary_values};
-use std::collections::HashSet;
+use common::headers::has_header;
 
 #[test]
 fn default_preflight_reflects_request_headers() {
@@ -25,18 +26,13 @@ fn default_preflight_reflects_request_headers() {
         halt,
         "preflight should halt when preflight_continue is false"
     );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("*")
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_HEADERS,
+        "X-Test, Content-Type",
     );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("X-Test, Content-Type")
-    );
-    assert_eq!(
-        vary_values(&headers),
-        HashSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
-    );
+    assert_vary_eq(&headers, [header::ACCESS_CONTROL_REQUEST_HEADERS]);
 }
 
 #[test]
@@ -46,9 +42,10 @@ fn preflight_without_request_method_still_uses_defaults() {
         assert_preflight(preflight_request().origin("https://foo.bar").check(&cors));
 
     assert_eq!(status, 204);
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
-        Some("GET,HEAD,PUT,PATCH,POST,DELETE")
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_METHODS,
+        "GET,HEAD,PUT,PATCH,POST,DELETE",
     );
 }
 
@@ -59,10 +56,7 @@ fn preflight_methods_any_without_request_method_still_sets_wildcard_header() {
     let (headers, _status, _halt) =
         assert_preflight(preflight_request().origin("https://wild.dev").check(&cors));
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
-        Some("*"),
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "*");
 }
 
 #[test]
@@ -72,11 +66,8 @@ fn preflight_allowed_headers_any_without_request_headers_still_sets_wildcard() {
     let (headers, _status, _halt) =
         assert_preflight(preflight_request().origin("https://wild.dev").check(&cors));
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("*"),
-    );
-    assert!(vary_values(&headers).is_empty());
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "*");
+    assert_vary_is_empty(&headers);
 }
 
 #[test]
@@ -95,22 +86,14 @@ fn preflight_allowed_headers_any_with_credentials_retains_wildcard() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("https://wild.dev"),
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        "https://wild.dev",
     );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("*"),
-    );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
-        Some("true"),
-    );
-    assert_eq!(
-        vary_values(&headers),
-        HashSet::from([header::ORIGIN.to_string()]),
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "*");
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+    assert_vary_eq(&headers, [header::ORIGIN]);
 }
 
 #[test]
@@ -124,10 +107,7 @@ fn preflight_custom_methods_preserve_case() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
-        Some("post,FETCH"),
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "post,FETCH");
 }
 #[test]
 fn preflight_with_disallowed_method_still_returns_configured_methods() {
@@ -139,10 +119,7 @@ fn preflight_with_disallowed_method_still_returns_configured_methods() {
     );
 
     assert_eq!(status, 204);
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
-        Some("GET,POST")
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "GET,POST");
 }
 
 #[test]
@@ -160,10 +137,7 @@ fn preflight_with_disallowed_header_returns_configured_list() {
     );
 
     assert_eq!(status, 204);
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("X-Allowed")
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "X-Allowed");
 }
 
 #[test]
@@ -176,14 +150,12 @@ fn preflight_without_request_method_still_reflects_request_headers() {
     );
 
     assert_eq!(status, 204);
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
-        Some("GET,HEAD,PUT,PATCH,POST,DELETE")
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_METHODS,
+        "GET,HEAD,PUT,PATCH,POST,DELETE",
     );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("X-Reflect")
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "X-Reflect");
 }
 
 #[test]
@@ -200,10 +172,7 @@ fn preflight_mirror_headers_without_request_headers_omits_allow_headers() {
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
-    assert_eq!(
-        vary_values(&headers),
-        HashSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
-    );
+    assert_vary_eq(&headers, [header::ACCESS_CONTROL_REQUEST_HEADERS]);
 }
 
 #[test]
@@ -258,10 +227,7 @@ fn preflight_custom_origin_requires_request_method() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("*")
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN, "*");
 }
 
 #[test]
@@ -295,9 +261,10 @@ fn preflight_custom_origin_checks_request_headers() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("https://headers.dev")
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        "https://headers.dev",
     );
 }
 
@@ -320,18 +287,13 @@ fn preflight_with_credentials_sets_allow_credentials_header() {
         halt,
         "preflight should halt when preflight_continue is false"
     );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("https://cred.dev"),
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        "https://cred.dev",
     );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
-        Some("true"),
-    );
-    assert!(
-        vary_values(&headers).contains(header::ORIGIN),
-        "origin should be part of vary when it is reflected",
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+    assert_vary_contains(&headers, header::ORIGIN);
 }
 
 #[test]
@@ -350,14 +312,12 @@ fn preflight_origin_list_matches_request_origin() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("https://api.allow.dev"),
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        "https://api.allow.dev",
     );
-    assert!(
-        vary_values(&headers).contains(header::ORIGIN),
-        "origin should be part of vary when origin list is restrictive",
-    );
+    assert_vary_contains(&headers, header::ORIGIN);
 }
 
 #[test]
@@ -377,14 +337,12 @@ fn preflight_origin_predicate_observes_normalized_request() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("https://predicate.dev"),
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        "https://predicate.dev",
     );
-    assert!(
-        vary_values(&headers).contains(header::ORIGIN),
-        "predicate-based origins should add vary for Origin",
-    );
+    assert_vary_contains(&headers, header::ORIGIN);
 }
 
 #[test]
@@ -404,10 +362,7 @@ fn preflight_disallowed_origin_sets_vary_without_allow_origin() {
         !has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
         "disallowed origin should not emit allow-origin",
     );
-    assert!(
-        vary_values(&headers).contains(header::ORIGIN),
-        "disallowed origin should still signal vary on Origin",
-    );
+    assert_vary_contains(&headers, header::ORIGIN);
 }
 
 #[test]
@@ -422,19 +377,22 @@ fn preflight_accepts_mixed_case_options_and_request_method() {
         origin: "https://case.dev",
         access_control_request_method: &requested_method,
         access_control_request_headers: &requested_headers,
+        access_control_request_private_network: false,
     };
 
     let (headers, status, halt) = assert_preflight(cors.check(&ctx));
 
     assert_eq!(status, 204);
     assert!(halt);
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
-        Some("GET,HEAD,PUT,PATCH,POST,DELETE"),
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_METHODS,
+        "GET,HEAD,PUT,PATCH,POST,DELETE",
     );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some(requested_headers.as_str()),
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_HEADERS,
+        requested_headers.as_str(),
     );
 }
 
@@ -449,10 +407,7 @@ fn preflight_methods_any_sets_wildcard_header() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_METHODS),
-        Some("*"),
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "*");
 }
 
 #[test]
@@ -467,9 +422,49 @@ fn preflight_allowed_headers_any_sets_wildcard_header() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("*"),
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "*");
+    assert_vary_is_empty(&headers);
+}
+
+#[test]
+fn preflight_with_private_network_request_emits_allow_header() {
+    let cors = cors().build();
+
+    let (headers, status, halt) = assert_preflight(
+        preflight_request()
+            .origin("https://intranet.dev")
+            .request_method(method::GET)
+            .private_network(true)
+            .check(&cors),
     );
-    assert!(vary_values(&headers).is_empty());
+
+    assert_eq!(status, 204);
+    assert!(halt);
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK,
+        "true",
+    );
+}
+
+#[test]
+fn preflight_with_multiple_allowed_headers_emits_configured_list() {
+    let cors = cors()
+        .allowed_headers(AllowedHeaders::list(["X-Allowed", "X-Trace"]))
+        .build();
+
+    let (headers, status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://foo.bar")
+            .request_method(method::GET)
+            .request_headers("X-Allowed, X-Trace")
+            .check(&cors),
+    );
+
+    assert_eq!(status, 204);
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_HEADERS,
+        "X-Allowed,X-Trace",
+    );
 }

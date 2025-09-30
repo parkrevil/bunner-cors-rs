@@ -29,6 +29,28 @@ impl Default for CorsOptions {
     }
 }
 
+impl CorsOptions {
+    pub fn validate(&self) -> Result<(), &'static str> {
+        if self.credentials && matches!(self.origin, Origin::Any) {
+            return Err("credentials_require_specific_origin");
+        }
+
+        if let AllowedHeaders::List(values) = &self.allowed_headers
+            && values.iter().any(|value| value == "*")
+        {
+            return Err("allowed_headers_wildcard_not_supported");
+        }
+
+        if let Some(values) = &self.exposed_headers
+            && values.iter().any(|value| value == "*")
+        {
+            return Err("expose_headers_wildcard_not_supported");
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 #[path = "options_test.rs"]
 mod options_test;

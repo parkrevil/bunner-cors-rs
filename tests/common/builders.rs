@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use bunner_cors_rs::constants::method;
 use bunner_cors_rs::{AllowedHeaders, AllowedMethods, Cors, CorsOptions, Origin, RequestContext};
 
@@ -122,6 +124,7 @@ impl SimpleRequestBuilder {
             origin: origin.as_deref().unwrap_or(""),
             access_control_request_method: "",
             access_control_request_headers: "",
+            access_control_request_private_network: false,
         };
         cors.check(&ctx)
     }
@@ -132,6 +135,7 @@ pub struct PreflightRequestBuilder {
     origin: Option<String>,
     request_method: Option<String>,
     request_headers: Option<String>,
+    private_network: bool,
 }
 
 impl PreflightRequestBuilder {
@@ -154,11 +158,17 @@ impl PreflightRequestBuilder {
         self
     }
 
+    pub fn private_network(mut self, enabled: bool) -> Self {
+        self.private_network = enabled;
+        self
+    }
+
     pub fn check(self, cors: &Cors) -> bunner_cors_rs::CorsDecision {
         let PreflightRequestBuilder {
             origin,
             request_method,
             request_headers,
+            private_network,
         } = self;
 
         let ctx = RequestContext {
@@ -166,6 +176,7 @@ impl PreflightRequestBuilder {
             origin: origin.as_deref().unwrap_or(""),
             access_control_request_method: request_method.as_deref().unwrap_or(""),
             access_control_request_headers: request_headers.as_deref().unwrap_or(""),
+            access_control_request_private_network: private_network,
         };
         cors.check(&ctx)
     }

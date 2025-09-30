@@ -27,3 +27,27 @@ fn default_simple_request_without_origin_still_allows_any() {
         Some("*")
     );
 }
+
+#[test]
+fn simple_request_with_expose_headers_should_emit_expose_header() {
+    let cors = cors().exposed_headers(["X-Trace", "X-Auth"]).build();
+
+    let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
+        Some("X-Trace,X-Auth"),
+    );
+}
+
+#[test]
+fn simple_request_without_expose_headers_should_not_emit_expose_header() {
+    let cors = cors().build();
+
+    let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
+
+    assert!(
+        !has_header(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
+        "expose headers should be absent when not configured",
+    );
+}

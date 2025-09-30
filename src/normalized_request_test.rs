@@ -13,6 +13,7 @@ fn request(
         origin,
         access_control_request_method: acrm,
         access_control_request_headers: acrh,
+        access_control_request_private_network: false,
     }
 }
 
@@ -49,6 +50,19 @@ mod new {
             Cow::Borrowed("https://api.test")
         ));
     }
+
+    #[test]
+    fn when_origin_is_empty_should_remain_empty_without_allocation() {
+        // Arrange
+        let ctx = request("get", "", "post", "x-custom");
+
+        // Act
+        let normalized = NormalizedRequest::new(&ctx);
+
+        // Assert
+        assert!(normalized.origin.is_empty());
+        assert!(matches!(normalized.origin, Cow::Borrowed("")));
+    }
 }
 
 mod as_context {
@@ -68,6 +82,26 @@ mod as_context {
         assert_eq!(view.origin, "https://api.test");
         assert_eq!(view.access_control_request_method, "post");
         assert_eq!(view.access_control_request_headers, "x-custom");
+        assert!(!view.access_control_request_private_network);
+    }
+
+    #[test]
+    fn when_private_network_flag_set_should_preserve_true() {
+        // Arrange
+        let ctx = RequestContext {
+            method: "OPTIONS",
+            origin: "https://api.test",
+            access_control_request_method: "POST",
+            access_control_request_headers: "X-CUSTOM",
+            access_control_request_private_network: true,
+        };
+        let normalized = NormalizedRequest::new(&ctx);
+
+        // Act
+        let view = normalized.as_context();
+
+        // Assert
+        assert!(view.access_control_request_private_network);
     }
 }
 

@@ -8,6 +8,7 @@ fn request_context(method: &'static str, origin: &'static str) -> RequestContext
         origin,
         access_control_request_method: "GET",
         access_control_request_headers: "X-Test",
+        access_control_request_private_network: false,
     }
 }
 
@@ -422,6 +423,45 @@ mod origin_type {
         }
 
         #[test]
+        fn when_origin_list_has_different_scheme_should_disallow() {
+            // Arrange
+            let origin = Origin::list(["https://api.test"]);
+            let ctx = request_context("GET", "http://api.test");
+
+            // Act
+            let decision = origin.resolve(Some("http://api.test"), &ctx);
+
+            // Assert
+            assert!(matches!(decision, OriginDecision::Disallow));
+        }
+
+        #[test]
+        fn when_origin_list_contains_false_matcher_should_disallow() {
+            // Arrange
+            let origin = Origin::list([OriginMatcher::Bool(false)]);
+            let ctx = request_context("GET", "https://api.test");
+
+            // Act
+            let decision = origin.resolve(Some("https://api.test"), &ctx);
+
+            // Assert
+            assert!(matches!(decision, OriginDecision::Disallow));
+        }
+
+        #[test]
+        fn when_origin_list_has_different_port_should_disallow() {
+            // Arrange
+            let origin = Origin::list(["https://api.test:8443"]);
+            let ctx = request_context("GET", "https://api.test");
+
+            // Act
+            let decision = origin.resolve(Some("https://api.test"), &ctx);
+
+            // Assert
+            assert!(matches!(decision, OriginDecision::Disallow));
+        }
+
+        #[test]
         fn when_list_without_origin_header_should_disallow() {
             // Arrange
             let origin = Origin::list(["https://api.test"]);
@@ -432,6 +472,32 @@ mod origin_type {
 
             // Assert
             assert!(matches!(decision, OriginDecision::Disallow));
+        }
+
+        #[test]
+        fn when_origin_list_contains_null_string_should_allow_null_origin() {
+            // Arrange
+            let origin = Origin::list(["null"]);
+            let ctx = request_context("GET", "null");
+
+            // Act
+            let decision = origin.resolve(Some("null"), &ctx);
+
+            // Assert
+            assert!(matches!(decision, OriginDecision::Mirror));
+        }
+
+        #[test]
+        fn when_origin_any_receives_null_string_should_allow_all() {
+            // Arrange
+            let origin = Origin::any();
+            let ctx = request_context("GET", "null");
+
+            // Act
+            let decision = origin.resolve(Some("null"), &ctx);
+
+            // Assert
+            assert!(matches!(decision, OriginDecision::Any));
         }
 
         #[test]
@@ -461,6 +527,43 @@ mod origin_type {
         }
 
         #[test]
+        fn when_predicate_returns_false_should_not_mirror_origin() {
+            // Arrange
+            let origin = Origin::predicate(|value, _| value == "https://allowed.test");
+            let ctx = request_context("GET", "https://blocked.test");
+
+            // Act
+            let decision = origin.resolve(Some("https://blocked.test"), &ctx);
+
+            // Assert
+            assert!(matches!(decision, OriginDecision::Disallow));
+        }
+
+        #[test]
+        fn when_predicate_without_origin_header_should_disallow_without_invoking_predicate() {
+            use std::sync::Arc;
+            use std::sync::atomic::{AtomicBool, Ordering};
+
+            // Arrange
+            let invoked = Arc::new(AtomicBool::new(false));
+            let origin = {
+                let invoked = Arc::clone(&invoked);
+                Origin::predicate(move |_, _| {
+                    invoked.store(true, Ordering::Relaxed);
+                    true
+                })
+            };
+            let ctx = request_context("GET", "");
+
+            // Act
+            let decision = origin.resolve(None, &ctx);
+
+            // Assert
+            assert!(matches!(decision, OriginDecision::Disallow));
+            assert!(!invoked.load(Ordering::Relaxed));
+        }
+
+        #[test]
         fn when_custom_callback_returns_decision_should_forward() {
             // Arrange
             let origin = Origin::custom(|_, _| OriginDecision::Exact("https://custom.test".into()));
@@ -474,6 +577,22 @@ mod origin_type {
                 OriginDecision::Exact(value) => assert_eq!(value, "https://custom.test"),
                 _ => panic!("expected custom decision"),
             }
+        }
+
+        #[test]
+        fn when_custom_receives_no_origin_header_should_allow_custom_logic() {
+            // Arrange
+            let origin = Origin::custom(|origin, _| {
+                assert!(origin.is_none());
+                OriginDecision::Disallow
+            });
+            let ctx = request_context("GET", "");
+
+            // Act
+            let decision = origin.resolve(None, &ctx);
+
+            // Assert
+            assert!(matches!(decision, OriginDecision::Disallow));
         }
     }
 

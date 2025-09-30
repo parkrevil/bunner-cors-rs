@@ -111,6 +111,20 @@ impl<'a> HeaderBuilder<'a> {
         headers
     }
 
+    pub(crate) fn build_private_network_header(
+        &self,
+        request: &RequestContext<'_>,
+    ) -> HeaderCollection {
+        let mut headers = HeaderCollection::new();
+        if request.access_control_request_private_network {
+            headers.push(
+                header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK.to_string(),
+                "true".to_string(),
+            );
+        }
+        headers
+    }
+
     pub(crate) fn build_exposed_headers(&self) -> HeaderCollection {
         let mut headers = HeaderCollection::new();
         if let Some(values) = &self.options.exposed_headers

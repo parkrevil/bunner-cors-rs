@@ -47,6 +47,7 @@ impl Cors {
         headers.extend(builder.build_credentials_header());
         headers.extend(builder.build_methods_header());
         headers.extend(builder.build_allowed_headers(original));
+        headers.extend(builder.build_private_network_header(original));
         headers.extend(builder.build_max_age_header());
         headers.extend(builder.build_exposed_headers());
 

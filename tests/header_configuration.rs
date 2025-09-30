@@ -2,9 +2,11 @@ mod common;
 
 use bunner_cors_rs::constants::{header, method};
 use bunner_cors_rs::{AllowedHeaders, Origin};
-use common::asserts::{assert_preflight, assert_simple};
+use common::asserts::{
+    assert_header_eq, assert_preflight, assert_simple, assert_vary_eq, assert_vary_is_empty,
+};
 use common::builders::{cors, preflight_request, simple_request};
-use common::headers::{has_header, header_value, vary_values};
+use common::headers::{has_header, header_value};
 use std::collections::HashSet;
 
 #[test]
@@ -21,14 +23,12 @@ fn preflight_with_explicit_headers_does_not_reflect_request() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some("Content-Type,X-Custom")
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_HEADERS,
+        "Content-Type,X-Custom",
     );
-    assert!(
-        vary_values(&headers).is_empty(),
-        "should not add Vary when headers list is explicit"
-    );
+    assert_vary_is_empty(&headers);
 }
 
 #[test]
@@ -40,13 +40,11 @@ fn credentials_and_exposed_headers_are_honored() {
 
     let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
-        Some("true")
-    );
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
-        Some("X-Response-Time,X-Trace")
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_EXPOSE_HEADERS,
+        "X-Response-Time,X-Trace",
     );
 }
 
@@ -76,14 +74,9 @@ fn vary_headers_are_deduplicated_and_sorted() {
             .request_headers("X-Test")
             .check(&cors),
     );
-    let vary = vary_values(&headers);
-
-    assert_eq!(
-        vary,
-        HashSet::from([
-            header::ACCESS_CONTROL_REQUEST_HEADERS.to_string(),
-            header::ORIGIN.to_string()
-        ])
+    assert_vary_eq(
+        &headers,
+        [header::ACCESS_CONTROL_REQUEST_HEADERS, header::ORIGIN],
     );
 }
 
@@ -132,14 +125,8 @@ fn mirror_request_headers_preserves_formatting() {
             .check(&cors),
     );
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-        Some(requested)
-    );
-    assert_eq!(
-        vary_values(&headers),
-        HashSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
-    );
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, requested);
+    assert_vary_eq(&headers, [header::ACCESS_CONTROL_REQUEST_HEADERS]);
 }
 
 #[test]
@@ -157,10 +144,7 @@ fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
-    assert_eq!(
-        vary_values(&headers),
-        HashSet::from([header::ACCESS_CONTROL_REQUEST_HEADERS.into()])
-    );
+    assert_vary_eq(&headers, [header::ACCESS_CONTROL_REQUEST_HEADERS]);
 }
 
 #[test]
@@ -179,7 +163,7 @@ fn empty_allowed_headers_list_omits_allow_headers() {
     );
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
-    assert!(vary_values(&headers).is_empty());
+    assert_vary_is_empty(&headers);
 }
 
 #[test]

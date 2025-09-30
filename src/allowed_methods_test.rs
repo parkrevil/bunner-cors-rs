@@ -18,6 +18,38 @@ mod list {
             _ => panic!("expected list variant"),
         }
     }
+
+    #[test]
+    fn when_iterator_is_empty_should_create_empty_list_variant() {
+        // Arrange
+        let methods: [&str; 0] = [];
+
+        // Act
+        let result = AllowedMethods::list(methods);
+
+        // Assert
+        match result {
+            AllowedMethods::List(values) => assert!(values.is_empty()),
+            _ => panic!("expected list variant"),
+        }
+    }
+
+    #[test]
+    fn when_values_include_empty_entries_should_preserve_order() {
+        // Arrange
+        let methods = ["", "GET"];
+
+        // Act
+        let result = AllowedMethods::list(methods);
+
+        // Assert
+        match result {
+            AllowedMethods::List(values) => {
+                assert_eq!(values, vec![String::new(), "GET".to_string()])
+            }
+            _ => panic!("expected list variant"),
+        }
+    }
 }
 
 mod any {
@@ -73,6 +105,18 @@ mod header_value {
 
         // Assert
         assert_eq!(result.as_deref(), Some("GET,PATCH"));
+    }
+
+    #[test]
+    fn when_list_contains_empty_and_value_should_include_separator() {
+        // Arrange
+        let methods = AllowedMethods::list(["", "GET"]);
+
+        // Act
+        let result = methods.header_value();
+
+        // Assert
+        assert_eq!(result.as_deref(), Some(",GET"));
     }
 }
 

@@ -35,3 +35,71 @@ mod default {
         assert_ne!(first.credentials, second.credentials);
     }
 }
+
+mod validate {
+    use super::*;
+
+    #[test]
+    fn when_credentials_allow_any_origin_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            origin: Origin::any(),
+            credentials: true,
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn when_allowed_headers_list_contains_wildcard_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            allowed_headers: AllowedHeaders::list(["*", "X-Test"]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn when_expose_headers_contains_wildcard_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            exposed_headers: Some(vec!["*".to_string()]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn when_configuration_is_specific_should_return_ok() {
+        // Arrange
+        let options = CorsOptions {
+            origin: Origin::list(["https://api.test"]),
+            allowed_headers: AllowedHeaders::list(["X-Test"]),
+            exposed_headers: Some(vec!["X-Expose".to_string()]),
+            credentials: true,
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(result.is_ok());
+    }
+}

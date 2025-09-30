@@ -6,6 +6,7 @@ pub(crate) struct NormalizedRequest<'a> {
     origin: Cow<'a, str>,
     access_control_request_method: Cow<'a, str>,
     access_control_request_headers: Cow<'a, str>,
+    access_control_request_private_network: bool,
 }
 
 impl<'a> NormalizedRequest<'a> {
@@ -19,6 +20,7 @@ impl<'a> NormalizedRequest<'a> {
             access_control_request_headers: Self::normalize_component(
                 request.access_control_request_headers,
             ),
+            access_control_request_private_network: request.access_control_request_private_network,
         }
     }
 
@@ -36,6 +38,7 @@ impl<'a> NormalizedRequest<'a> {
             origin: self.origin.as_ref(),
             access_control_request_method: self.access_control_request_method.as_ref(),
             access_control_request_headers: self.access_control_request_headers.as_ref(),
+            access_control_request_private_network: self.access_control_request_private_network,
         }
     }
 
