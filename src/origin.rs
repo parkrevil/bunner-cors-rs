@@ -199,3 +199,7 @@ impl Origin {
         !matches!(self, Origin::Any)
     }
 }
+
+#[cfg(test)]
+#[path = "origin_test.rs"]
+mod origin_test;
