@@ -1,5 +1,6 @@
 mod common;
 
+use bunner_cors_rs::Origin;
 use bunner_cors_rs::constants::header;
 use common::asserts::assert_simple;
 use common::builders::{cors, simple_request};
@@ -54,9 +55,13 @@ fn simple_request_without_expose_headers_should_not_emit_expose_header() {
 
 #[test]
 fn simple_request_with_private_network_support_does_not_emit_header() {
-    let cors = cors().private_network(true).build();
+    let cors = cors()
+        .origin(Origin::exact("https://example.com"))
+        .credentials(true)
+        .private_network(true)
+        .build();
 
-    let headers = assert_simple(simple_request().check(&cors));
+    let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
 
     assert!(
         !has_header(&headers, header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),

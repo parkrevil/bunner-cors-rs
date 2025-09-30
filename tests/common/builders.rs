@@ -37,11 +37,6 @@ impl CorsBuilder {
         self
     }
 
-    pub fn methods_any(mut self) -> Self {
-        self.methods = Some(AllowedMethods::any());
-        self
-    }
-
     pub fn allowed_headers(mut self, headers: AllowedHeaders) -> Self {
         self.allowed_headers = Some(headers);
         self

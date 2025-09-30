@@ -137,10 +137,15 @@ impl<'a> HeaderBuilder<'a> {
         if let Some(values) = &self.options.exposed_headers
             && !values.is_empty()
         {
-            headers.push(
-                header::ACCESS_CONTROL_EXPOSE_HEADERS.to_string(),
-                values.join(","),
-            );
+            let value = values
+                .iter()
+                .map(|entry| entry.trim())
+                .collect::<Vec<_>>()
+                .join(",");
+
+            if !value.is_empty() {
+                headers.push(header::ACCESS_CONTROL_EXPOSE_HEADERS.to_string(), value);
+            }
         }
         headers
     }

@@ -3,8 +3,6 @@ use crate::constants::method;
 /// Configuration for the `Access-Control-Allow-Methods` response header.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum AllowedMethods {
-    /// Emit the wildcard `*` to allow any method, mirroring express-cors behaviour.
-    Any,
     /// Emit a comma-separated list of methods. Case-sensitive to preserve caller intent.
     List(Vec<String>),
 }
@@ -16,18 +14,17 @@ impl AllowedMethods {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        Self::List(values.into_iter().map(Into::into).collect())
-    }
-
-    /// Construct the wildcard variant (`*`).
-    pub fn any() -> Self {
-        Self::Any
+        Self::List(
+            values
+                .into_iter()
+                .map(|value| value.into().trim().to_string())
+                .collect(),
+        )
     }
 
     /// Return the header value representation, if any.
     pub fn header_value(&self) -> Option<String> {
         match self {
-            AllowedMethods::Any => Some("*".to_string()),
             AllowedMethods::List(values) if values.is_empty() => None,
             AllowedMethods::List(values) => Some(values.join(",")),
         }
@@ -37,11 +34,10 @@ impl AllowedMethods {
     pub fn allows_method(&self, method: &str) -> bool {
         let method = method.trim();
         if method.is_empty() {
-            return true;
+            return false;
         }
 
         match self {
-            AllowedMethods::Any => true,
             AllowedMethods::List(values) => values
                 .iter()
                 .any(|allowed| allowed.eq_ignore_ascii_case(method)),

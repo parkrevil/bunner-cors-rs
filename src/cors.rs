@@ -38,6 +38,9 @@ impl Cors {
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
     ) -> Option<PreflightResult> {
+        if normalized.access_control_request_method.trim().is_empty() {
+            return None;
+        }
         let builder = HeaderBuilder::new(&self.options);
         let mut headers = HeaderCollection::new();
         let (origin_headers, skip) = builder.build_origin_headers(original, normalized);
@@ -64,8 +67,6 @@ impl Cors {
         headers.extend(builder.build_allowed_headers(original));
         headers.extend(builder.build_private_network_header(original));
         headers.extend(builder.build_max_age_header());
-        headers.extend(builder.build_exposed_headers());
-        headers.extend(builder.build_timing_allow_origin_header());
 
         Some(PreflightResult {
             headers: headers.into_headers(),

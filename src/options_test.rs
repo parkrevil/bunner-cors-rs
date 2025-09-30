@@ -80,7 +80,27 @@ mod validate {
     }
 
     #[test]
-    fn when_expose_headers_contains_wildcard_should_return_error() {
+    fn when_expose_headers_wildcard_with_credentials_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            exposed_headers: Some(vec!["*".to_string()]),
+            credentials: true,
+            origin: Origin::list(["https://api.test"]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled)
+        ));
+    }
+
+    #[test]
+    fn when_expose_headers_wildcard_without_credentials_should_return_ok() {
         // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["*".to_string()]),
@@ -91,9 +111,42 @@ mod validate {
         let result = options.validate();
 
         // Assert
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn when_expose_headers_wildcard_combined_with_headers_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            exposed_headers: Some(vec!["*".to_string(), "X-Test".to_string()]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
         assert!(matches!(
             result,
-            Err(ValidationError::ExposeHeadersListCannotContainWildcard)
+            Err(ValidationError::ExposeHeadersWildcardCannotBeCombined)
+        ));
+    }
+
+    #[test]
+    fn when_expose_headers_contains_empty_value_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            exposed_headers: Some(vec!["  ".to_string(), "X-Trace".to_string()]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::ExposeHeadersCannotContainEmptyValue)
         ));
     }
 
@@ -105,7 +158,7 @@ mod validate {
             allowed_headers: AllowedHeaders::list(["X-Test"]),
             exposed_headers: Some(vec!["X-Expose".to_string()]),
             credentials: true,
-            timing_allow_origin: Some(TimingAllowOrigin::any()),
+            timing_allow_origin: Some(TimingAllowOrigin::list(["https://metrics.test"])),
             ..CorsOptions::default()
         };
 
@@ -114,6 +167,44 @@ mod validate {
 
         // Assert
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn when_timing_allow_origin_any_with_credentials_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            credentials: true,
+            timing_allow_origin: Some(TimingAllowOrigin::any()),
+            origin: Origin::list(["https://api.test"]),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::TimingAllowOriginWildcardNotAllowedWithCredentials)
+        ));
+    }
+
+    #[test]
+    fn when_timing_allow_origin_contains_empty_entry_should_return_error() {
+        // Arrange
+        let options = CorsOptions {
+            timing_allow_origin: Some(TimingAllowOrigin::list([" ", "https://metrics.test"])),
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = options.validate();
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ValidationError::TimingAllowOriginCannotContainEmptyValue)
+        ));
     }
 
     #[test]

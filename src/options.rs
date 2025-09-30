@@ -1,5 +1,6 @@
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
+use crate::constants::header;
 use crate::origin::Origin;
 use crate::timing_allow_origin::TimingAllowOrigin;
 use std::error::Error;
@@ -9,9 +10,18 @@ use std::fmt::{self, Display};
 pub enum ValidationError {
     CredentialsRequireSpecificOrigin,
     AllowedHeadersListCannotContainWildcard,
-    ExposeHeadersListCannotContainWildcard,
+    ExposeHeadersWildcardRequiresCredentialsDisabled,
+    ExposeHeadersWildcardCannotBeCombined,
     InvalidSuccessStatus(u16),
     InvalidMaxAge(String),
+    PrivateNetworkRequiresCredentials,
+    PrivateNetworkRequiresSpecificOrigin,
+    PrivateNetworkRequestHeaderNotAllowed,
+    AllowedMethodsCannotContainEmptyToken,
+    AllowedHeadersCannotContainEmptyToken,
+    ExposeHeadersCannotContainEmptyValue,
+    TimingAllowOriginWildcardNotAllowedWithCredentials,
+    TimingAllowOriginCannotContainEmptyValue,
 }
 
 impl Display for ValidationError {
@@ -23,8 +33,12 @@ impl Display for ValidationError {
             ValidationError::AllowedHeadersListCannotContainWildcard => f.write_str(
                 "Allowed headers lists cannot include \"*\". Use AllowedHeaders::any() to allow all headers.",
             ),
-            ValidationError::ExposeHeadersListCannotContainWildcard => f.write_str(
-                "Exposed headers lists cannot include \"*\". Use None to omit the header or list specific names.",
+            ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled => f
+                .write_str(
+                    "Exposed headers wildcard (\"*\") can only be used when credentials are disabled.",
+                ),
+            ValidationError::ExposeHeadersWildcardCannotBeCombined => f.write_str(
+                "The exposed headers wildcard (\"*\") cannot be combined with additional header names.",
             ),
             ValidationError::InvalidSuccessStatus(status) => write!(
                 f,
@@ -33,6 +47,31 @@ impl Display for ValidationError {
             ValidationError::InvalidMaxAge(value) => write!(
                 f,
                 "The max-age value '{value}' must be a non-negative integer representing seconds."
+            ),
+            ValidationError::PrivateNetworkRequiresCredentials => f.write_str(
+                "Allowing private network access requires enabling credentials so Access-Control-Allow-Credentials can be set to true.",
+            ),
+            ValidationError::PrivateNetworkRequiresSpecificOrigin => f.write_str(
+                "Allowing private network access requires configuring a specific allowed origin instead of \"*\".",
+            ),
+            ValidationError::PrivateNetworkRequestHeaderNotAllowed => f.write_str(
+                "Allowing private network access requires permitting the Access-Control-Request-Private-Network header.",
+            ),
+            ValidationError::AllowedMethodsCannotContainEmptyToken => f.write_str(
+                "Allowed methods lists cannot contain empty or whitespace-only entries.",
+            ),
+            ValidationError::AllowedHeadersCannotContainEmptyToken => f.write_str(
+                "Allowed headers lists cannot contain empty or whitespace-only entries.",
+            ),
+            ValidationError::ExposeHeadersCannotContainEmptyValue => f.write_str(
+                "Exposed headers cannot contain empty or whitespace-only entries.",
+            ),
+            ValidationError::TimingAllowOriginWildcardNotAllowedWithCredentials => f
+                .write_str(
+                    "Timing-Allow-Origin cannot be a wildcard when credentials are enabled.",
+                ),
+            ValidationError::TimingAllowOriginCannotContainEmptyValue => f.write_str(
+                "Timing-Allow-Origin lists cannot contain empty or whitespace-only entries.",
             ),
         }
     }
@@ -83,10 +122,34 @@ impl CorsOptions {
             return Err(ValidationError::AllowedHeadersListCannotContainWildcard);
         }
 
-        if let Some(values) = &self.exposed_headers
-            && values.iter().any(|value| value == "*")
+        match &self.methods {
+            AllowedMethods::List(values) => {
+                if values.iter().any(|value| value.trim().is_empty()) {
+                    return Err(ValidationError::AllowedMethodsCannotContainEmptyToken);
+                }
+            }
+        }
+
+        if let AllowedHeaders::List(values) = &self.allowed_headers
+            && values.iter().any(|value| value.trim().is_empty())
         {
-            return Err(ValidationError::ExposeHeadersListCannotContainWildcard);
+            return Err(ValidationError::AllowedHeadersCannotContainEmptyToken);
+        }
+
+        if let Some(values) = &self.exposed_headers {
+            if values.iter().any(|value| value.trim().is_empty()) {
+                return Err(ValidationError::ExposeHeadersCannotContainEmptyValue);
+            }
+
+            if values.iter().any(|value| value.trim() == "*") {
+                if self.credentials {
+                    return Err(ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled);
+                }
+
+                if values.len() > 1 {
+                    return Err(ValidationError::ExposeHeadersWildcardCannotBeCombined);
+                }
+            }
         }
 
         if !(200..=299).contains(&self.options_success_status) {
@@ -100,6 +163,33 @@ impl CorsOptions {
             if trimmed.is_empty() || trimmed.parse::<u64>().is_err() {
                 return Err(ValidationError::InvalidMaxAge(value.clone()));
             }
+        }
+
+        if self.allow_private_network {
+            if !self.credentials {
+                return Err(ValidationError::PrivateNetworkRequiresCredentials);
+            }
+            if matches!(self.origin, Origin::Any) {
+                return Err(ValidationError::PrivateNetworkRequiresSpecificOrigin);
+            }
+            if let AllowedHeaders::List(values) = &self.allowed_headers {
+                let header_allowed = values.iter().any(|value| {
+                    value.eq_ignore_ascii_case(header::ACCESS_CONTROL_REQUEST_PRIVATE_NETWORK)
+                });
+                if !header_allowed {
+                    return Err(ValidationError::PrivateNetworkRequestHeaderNotAllowed);
+                }
+            }
+        }
+
+        if self.credentials && matches!(self.timing_allow_origin, Some(TimingAllowOrigin::Any)) {
+            return Err(ValidationError::TimingAllowOriginWildcardNotAllowedWithCredentials);
+        }
+
+        if let Some(TimingAllowOrigin::List(values)) = &self.timing_allow_origin
+            && values.iter().any(|value| value.trim().is_empty())
+        {
+            return Err(ValidationError::TimingAllowOriginCannotContainEmptyValue);
         }
 
         Ok(())

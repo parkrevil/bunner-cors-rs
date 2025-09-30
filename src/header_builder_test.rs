@@ -432,6 +432,25 @@ mod build_exposed_headers {
         // Assert
         assert!(map.is_empty());
     }
+
+    #[test]
+    fn when_values_have_whitespace_and_wildcard_should_emit_trimmed_value() {
+        // Arrange
+        let options = CorsOptions {
+            exposed_headers: Some(vec!["  *  ".into()]),
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+
+        // Act
+        let map = builder.build_exposed_headers().into_headers();
+
+        // Assert
+        assert_eq!(
+            map.get(header::ACCESS_CONTROL_EXPOSE_HEADERS),
+            Some(&"*".to_string())
+        );
+    }
 }
 
 mod build_max_age_header {

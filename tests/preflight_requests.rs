@@ -36,35 +36,24 @@ fn default_preflight_reflects_request_headers() {
 }
 
 #[test]
-fn preflight_without_request_method_still_uses_defaults() {
+fn preflight_without_request_method_is_not_applicable() {
     let cors = cors().build();
-    let (headers, status, _halt) =
-        assert_preflight(preflight_request().origin("https://foo.bar").check(&cors));
-
-    assert_eq!(status, 204);
-    assert_header_eq(
-        &headers,
-        header::ACCESS_CONTROL_ALLOW_METHODS,
-        "GET,HEAD,PUT,PATCH,POST,DELETE",
-    );
+    let decision = preflight_request().origin("https://foo.bar").check(&cors);
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
-#[test]
-fn preflight_methods_any_without_request_method_still_sets_wildcard_header() {
-    let cors = cors().methods_any().build();
-
-    let (headers, _status, _halt) =
-        assert_preflight(preflight_request().origin("https://wild.dev").check(&cors));
-
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "*");
-}
+// removed: wildcard methods support
 
 #[test]
 fn preflight_allowed_headers_any_without_request_headers_still_sets_wildcard() {
     let cors = cors().allowed_headers(AllowedHeaders::any()).build();
 
-    let (headers, _status, _halt) =
-        assert_preflight(preflight_request().origin("https://wild.dev").check(&cors));
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://wild.dev")
+            .request_method(method::GET)
+            .check(&cors),
+    );
 
     assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "*");
     assert_vary_is_empty(&headers);
@@ -135,21 +124,13 @@ fn preflight_with_disallowed_header_is_rejected() {
 }
 
 #[test]
-fn preflight_without_request_method_still_reflects_request_headers() {
-    let (headers, status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_headers("X-Reflect")
-            .check(&cors().build()),
-    );
+fn preflight_without_request_method_does_not_reflect_request_headers() {
+    let decision = preflight_request()
+        .origin("https://foo.bar")
+        .request_headers("X-Reflect")
+        .check(&cors().build());
 
-    assert_eq!(status, 204);
-    assert_header_eq(
-        &headers,
-        header::ACCESS_CONTROL_ALLOW_METHODS,
-        "GET,HEAD,PUT,PATCH,POST,DELETE",
-    );
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "X-Reflect");
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]
@@ -391,20 +372,6 @@ fn preflight_accepts_mixed_case_options_and_request_method() {
 }
 
 #[test]
-fn preflight_methods_any_sets_wildcard_header() {
-    let cors = cors().methods_any().build();
-
-    let (headers, _status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://wild.dev")
-            .request_method(method::DELETE)
-            .check(&cors),
-    );
-
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "*");
-}
-
-#[test]
 fn preflight_allowed_headers_any_sets_wildcard_header() {
     let cors = cors().allowed_headers(AllowedHeaders::any()).build();
 
@@ -422,7 +389,11 @@ fn preflight_allowed_headers_any_sets_wildcard_header() {
 
 #[test]
 fn preflight_with_private_network_request_emits_allow_header() {
-    let cors = cors().private_network(true).build();
+    let cors = cors()
+        .origin(Origin::exact("https://intranet.dev"))
+        .credentials(true)
+        .private_network(true)
+        .build();
 
     let (headers, status, halt) = assert_preflight(
         preflight_request()
@@ -443,7 +414,11 @@ fn preflight_with_private_network_request_emits_allow_header() {
 
 #[test]
 fn preflight_without_private_network_request_omits_allow_header() {
-    let cors = cors().private_network(true).build();
+    let cors = cors()
+        .origin(Origin::exact("https://intranet.dev"))
+        .credentials(true)
+        .private_network(true)
+        .build();
 
     let (headers, _status, _halt) = assert_preflight(
         preflight_request()

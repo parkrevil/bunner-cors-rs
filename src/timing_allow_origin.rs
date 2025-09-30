@@ -19,7 +19,12 @@ impl TimingAllowOrigin {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        Self::List(values.into_iter().map(Into::into).collect())
+        Self::List(
+            values
+                .into_iter()
+                .map(|value| value.into().trim().to_string())
+                .collect(),
+        )
     }
 
     /// Return the header value representation.

@@ -207,7 +207,7 @@ fn timing_allow_origin_wildcard_emits_on_simple_response() {
 }
 
 #[test]
-fn timing_allow_origin_list_emits_on_preflight() {
+fn timing_allow_origin_list_is_omitted_on_preflight() {
     let cors = cors()
         .timing_allow_origin(TimingAllowOrigin::list([
             "https://metrics.foo",
@@ -222,9 +222,8 @@ fn timing_allow_origin_list_emits_on_preflight() {
             .check(&cors),
     );
 
-    assert_header_eq(
-        &headers,
-        header::TIMING_ALLOW_ORIGIN,
-        "https://metrics.foo https://dash.foo",
+    assert!(
+        !has_header(&headers, header::TIMING_ALLOW_ORIGIN),
+        "Timing-Allow-Origin should not be present in preflight responses"
     );
 }

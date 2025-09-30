@@ -293,7 +293,7 @@ mod process_preflight {
                 .contains_key(header::ACCESS_CONTROL_ALLOW_HEADERS)
         );
         assert!(
-            result
+            !result
                 .headers
                 .contains_key(header::ACCESS_CONTROL_EXPOSE_HEADERS)
         );
@@ -301,19 +301,16 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_request_method_missing_should_still_emit_default_methods() {
+    fn when_request_method_missing_should_return_none() {
         // Arrange
         let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "", "X-Test");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = preflight_result(&cors, &original);
 
         // Assert
-        assert_eq!(
-            result.headers.get(header::ACCESS_CONTROL_ALLOW_METHODS),
-            Some(&"GET,HEAD,PUT,PATCH,POST,DELETE".to_string())
-        );
+        assert!(result.is_none());
     }
 
     #[test]
@@ -345,27 +342,6 @@ mod process_preflight {
 
         // Assert
         assert!(result.end_response);
-    }
-
-    #[test]
-    fn when_allowed_methods_any_should_emit_wildcard_header() {
-        // Arrange
-        let cors = Cors::new(CorsOptions {
-            origin: Origin::any(),
-            methods: AllowedMethods::any(),
-            ..CorsOptions::default()
-        })
-        .expect("valid CORS configuration");
-        let original = request("OPTIONS", "https://allowed.test", "DELETE", "");
-
-        // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
-
-        // Assert
-        assert_eq!(
-            result.headers.get(header::ACCESS_CONTROL_ALLOW_METHODS),
-            Some(&"*".to_string())
-        );
     }
 
     #[test]
@@ -430,6 +406,8 @@ mod process_preflight {
         // Arrange
         let cors = Cors::new(CorsOptions {
             allow_private_network: true,
+            credentials: true,
+            origin: Origin::list(["https://intranet.test"]),
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");
@@ -481,9 +459,9 @@ mod process_preflight {
         let result = preflight_result(&cors, &original).expect("expected preflight result");
 
         // Assert
-        assert_eq!(
-            result.headers.get(header::TIMING_ALLOW_ORIGIN),
-            Some(&"https://metrics.test https://dash.test".to_string())
+        assert!(
+            !result.headers.contains_key(header::TIMING_ALLOW_ORIGIN),
+            "Timing-Allow-Origin should not be present in preflight"
         );
     }
 }
@@ -609,6 +587,8 @@ mod process_simple {
         // Arrange
         let cors = Cors::new(CorsOptions {
             allow_private_network: true,
+            credentials: true,
+            origin: Origin::list(["https://intranet.test"]),
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");

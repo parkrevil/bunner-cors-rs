@@ -1,8 +1,8 @@
-use super::*;
+use crate::allowed_methods::AllowedMethods;
 use crate::constants::method;
 
 mod list {
-    use super::*;
+    use super::AllowedMethods;
 
     #[test]
     fn when_values_provided_should_collect_into_list_variant() {
@@ -13,10 +13,10 @@ mod list {
         let result = AllowedMethods::list(methods);
 
         // Assert
-        match result {
-            AllowedMethods::List(values) => assert_eq!(values, vec!["GET", "POST"]),
-            _ => panic!("expected list variant"),
-        }
+        let values = match result {
+            AllowedMethods::List(values) => values,
+        };
+        assert_eq!(values, vec!["GET", "POST"]);
     }
 
     #[test]
@@ -28,10 +28,10 @@ mod list {
         let result = AllowedMethods::list(methods);
 
         // Assert
-        match result {
-            AllowedMethods::List(values) => assert!(values.is_empty()),
-            _ => panic!("expected list variant"),
-        }
+        let values = match result {
+            AllowedMethods::List(values) => values,
+        };
+        assert!(values.is_empty());
     }
 
     #[test]
@@ -43,45 +43,15 @@ mod list {
         let result = AllowedMethods::list(methods);
 
         // Assert
-        match result {
-            AllowedMethods::List(values) => {
-                assert_eq!(values, vec![String::new(), "GET".to_string()])
-            }
-            _ => panic!("expected list variant"),
-        }
-    }
-}
-
-mod any {
-    use super::*;
-
-    #[test]
-    fn when_called_should_return_any_variant() {
-        // Arrange & Act
-        let result = AllowedMethods::any();
-
-        // Assert
-        match result {
-            AllowedMethods::Any => {}
-            _ => panic!("expected any variant"),
-        }
+        let values = match result {
+            AllowedMethods::List(values) => values,
+        };
+        assert_eq!(values, vec![String::new(), "GET".to_string()]);
     }
 }
 
 mod header_value {
-    use super::*;
-
-    #[test]
-    fn when_variant_is_any_should_return_wildcard() {
-        // Arrange
-        let methods = AllowedMethods::any();
-
-        // Act
-        let result = methods.header_value();
-
-        // Assert
-        assert_eq!(result.as_deref(), Some("*"));
-    }
+    use super::AllowedMethods;
 
     #[test]
     fn when_list_is_empty_should_return_none() {
@@ -121,13 +91,7 @@ mod header_value {
 }
 
 mod allows_method {
-    use super::*;
-
-    #[test]
-    fn when_any_should_allow_any_method() {
-        let methods = AllowedMethods::any();
-        assert!(methods.allows_method("DELETE"));
-    }
+    use super::AllowedMethods;
 
     #[test]
     fn when_list_should_compare_case_insensitively() {
@@ -137,15 +101,15 @@ mod allows_method {
     }
 
     #[test]
-    fn when_method_missing_should_allow() {
+    fn when_method_missing_should_reject() {
         let methods = AllowedMethods::list(["GET"]);
-        assert!(methods.allows_method(""));
-        assert!(methods.allows_method("  "));
+        assert!(!methods.allows_method(""));
+        assert!(!methods.allows_method("  "));
     }
 }
 
 mod default {
-    use super::*;
+    use super::{method, AllowedMethods};
 
     #[test]
     fn when_called_should_return_standard_method_list() {
@@ -153,19 +117,18 @@ mod default {
         let methods = AllowedMethods::default();
 
         // Assert
-        match methods {
-            AllowedMethods::List(values) => {
-                let expected = vec![
-                    method::GET.to_string(),
-                    method::HEAD.to_string(),
-                    method::PUT.to_string(),
-                    method::PATCH.to_string(),
-                    method::POST.to_string(),
-                    method::DELETE.to_string(),
-                ];
-                assert_eq!(values, expected);
-            }
-            _ => panic!("expected list variant"),
-        }
+        let values = match methods {
+            AllowedMethods::List(values) => values,
+        };
+
+        let expected = vec![
+            method::GET.to_string(),
+            method::HEAD.to_string(),
+            method::PUT.to_string(),
+            method::PATCH.to_string(),
+            method::POST.to_string(),
+            method::DELETE.to_string(),
+        ];
+        assert_eq!(values, expected);
     }
 }
