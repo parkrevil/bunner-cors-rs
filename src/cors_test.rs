@@ -6,7 +6,7 @@ use crate::context::RequestContext;
 use crate::normalized_request::NormalizedRequest;
 use crate::options::{CorsOptions, ValidationError};
 use crate::origin::{Origin, OriginDecision};
-use crate::result::{CorsDecision, PreflightResult, SimpleResult};
+use crate::result::{CorsDecision, CorsError, CorsResult};
 use crate::timing_allow_origin::TimingAllowOrigin;
 
 fn build_request(
@@ -43,13 +43,19 @@ fn request_with_private_network(
     build_request(method, origin, acrm, acrh, true)
 }
 
-fn preflight_result(cors: &Cors, request: &RequestContext<'static>) -> Option<PreflightResult> {
+fn preflight_result(
+    cors: &Cors,
+    request: &RequestContext<'static>,
+) -> Result<Option<CorsResult>, CorsError> {
     let normalized_request = NormalizedRequest::new(request);
     let normalized = normalized_request.as_context();
     cors.process_preflight(request, &normalized)
 }
 
-fn simple_result(cors: &Cors, request: &RequestContext<'static>) -> Option<SimpleResult> {
+fn simple_result(
+    cors: &Cors,
+    request: &RequestContext<'static>,
+) -> Result<Option<CorsResult>, CorsError> {
     let normalized_request = NormalizedRequest::new(request);
     let normalized = normalized_request.as_context();
     cors.process_simple(request, &normalized)
@@ -79,7 +85,7 @@ mod new {
         let request = request("GET", "https://allowed.test", "", "");
 
         // Act
-        let decision = cors.check(&request);
+        let decision = cors.check(&request).expect("cors evaluation succeeded");
 
         // Assert
         match decision {
@@ -89,6 +95,8 @@ mod new {
                         .headers
                         .contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN)
                 );
+                assert!(result.status.is_none());
+                assert!(!result.end_response);
             }
             _ => panic!("expected simple decision"),
         }
@@ -106,11 +114,19 @@ mod new {
         let request = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
         // Act
-        let decision = cors.check(&request);
+        let decision = cors.check(&request).expect("cors evaluation succeeded");
 
         // Assert
         match decision {
-            CorsDecision::Preflight(result) => assert_eq!(result.status, 208),
+            CorsDecision::Preflight(result) => {
+                assert!(
+                    result
+                        .headers
+                        .contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+                );
+                assert_eq!(result.status, Some(208));
+                assert!(result.end_response);
+            }
             _ => panic!("expected preflight decision"),
         }
     }
@@ -149,17 +165,20 @@ mod check {
         let request = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
         // Act
-        let decision = cors.check(&request);
+        let decision = cors
+            .check(&request)
+            .expect("cors evaluation should succeed");
 
         // Assert
         match decision {
             CorsDecision::Preflight(result) => {
-                assert_eq!(result.status, 204);
                 assert!(
                     result
                         .headers
                         .contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN)
                 );
+                assert_eq!(result.status, Some(204));
+                assert!(result.end_response);
             }
             _ => panic!("expected preflight decision"),
         }
@@ -176,7 +195,9 @@ mod check {
         let request = request("GET", "https://allowed.test", "", "");
 
         // Act
-        let decision = cors.check(&request);
+        let decision = cors
+            .check(&request)
+            .expect("cors evaluation should succeed");
 
         // Assert
         match decision {
@@ -186,6 +207,8 @@ mod check {
                         .headers
                         .contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN)
                 );
+                assert!(result.status.is_none());
+                assert!(!result.end_response);
             }
             _ => panic!("expected simple decision"),
         }
@@ -202,7 +225,9 @@ mod check {
         let request = request("OPTIONS", "https://denied.test", "GET", "X-Test");
 
         // Act
-        let decision = cors.check(&request);
+        let decision = cors
+            .check(&request)
+            .expect("cors evaluation should succeed");
 
         // Assert
         assert!(matches!(decision, CorsDecision::NotApplicable));
@@ -219,7 +244,9 @@ mod check {
         let request = request("OPTIONS", "https://denied.test", "GET", "X-Test");
 
         // Act
-        let decision = cors.check(&request);
+        let decision = cors
+            .check(&request)
+            .expect("cors evaluation should succeed");
 
         // Assert
         assert!(matches!(decision, CorsDecision::NotApplicable));
@@ -228,6 +255,23 @@ mod check {
 
 mod process_preflight {
     use super::*;
+
+    fn expect_some(result: Result<Option<CorsResult>, CorsError>) -> CorsResult {
+        let outcome = result
+            .expect("preflight evaluation should succeed")
+            .expect("preflight should produce headers");
+        assert!(outcome.status.is_some());
+        assert!(outcome.end_response);
+        outcome
+    }
+
+    fn expect_none(result: Result<Option<CorsResult>, CorsError>) {
+        assert!(
+            result
+                .expect("preflight evaluation should succeed")
+                .is_none()
+        );
+    }
 
     #[test]
     fn when_origin_skip_should_return_none() {
@@ -243,11 +287,11 @@ mod process_preflight {
         let result = preflight_result(&cors, &original);
 
         // Assert
-        assert!(result.is_none());
+        expect_none(result);
     }
 
     #[test]
-    fn when_origin_returns_any_with_credentials_should_return_none() {
+    fn when_origin_returns_any_with_credentials_should_fail() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Any),
@@ -258,10 +302,11 @@ mod process_preflight {
         let original = request("OPTIONS", "https://wild.test", "GET", "");
 
         // Act
-        let result = preflight_result(&cors, &original);
+        let error = preflight_result(&cors, &original)
+            .expect_err("preflight should reject any origin when credentials required");
 
         // Assert
-        assert!(result.is_none());
+        assert!(matches!(error, CorsError::InvalidOriginAnyWithCredentials));
     }
 
     #[test]
@@ -276,11 +321,9 @@ mod process_preflight {
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = expect_some(preflight_result(&cors, &original));
 
         // Assert
-        assert_eq!(result.status, 204);
-        assert!(result.end_response);
         assert!(
             result
                 .headers
@@ -309,7 +352,7 @@ mod process_preflight {
         let result = preflight_result(&cors, &original);
 
         // Assert
-        assert!(result.is_none());
+        expect_none(result);
     }
 
     #[test]
@@ -327,7 +370,7 @@ mod process_preflight {
         let result = preflight_result(&cors, &original);
 
         // Assert
-        assert!(result.is_none());
+        expect_none(result);
     }
 
     #[test]
@@ -341,7 +384,7 @@ mod process_preflight {
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = expect_some(preflight_result(&cors, &original));
 
         // Assert
         assert!(result.end_response);
@@ -362,7 +405,7 @@ mod process_preflight {
         let result = preflight_result(&cors, &original);
 
         // Assert
-        assert!(result.is_none());
+        expect_none(result);
     }
 
     #[test]
@@ -377,7 +420,7 @@ mod process_preflight {
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Anything");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = expect_some(preflight_result(&cors, &original));
 
         // Assert
         assert_eq!(
@@ -399,7 +442,7 @@ mod process_preflight {
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = expect_some(preflight_result(&cors, &original));
 
         // Assert
         assert!(!result.headers.contains_key(header::ACCESS_CONTROL_MAX_AGE));
@@ -418,7 +461,7 @@ mod process_preflight {
         let original = request_with_private_network("OPTIONS", "https://intranet.test", "GET", "");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = expect_some(preflight_result(&cors, &original));
 
         // Assert
         assert_eq!(
@@ -436,7 +479,7 @@ mod process_preflight {
         let original = request_with_private_network("OPTIONS", "https://intranet.test", "GET", "");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = expect_some(preflight_result(&cors, &original));
 
         // Assert
         assert!(
@@ -461,7 +504,7 @@ mod process_preflight {
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = expect_some(preflight_result(&cors, &original));
 
         // Assert
         assert_eq!(
@@ -473,6 +516,19 @@ mod process_preflight {
 
 mod process_simple {
     use super::*;
+
+    fn expect_some(result: Result<Option<CorsResult>, CorsError>) -> CorsResult {
+        let outcome = result
+            .expect("simple evaluation should succeed")
+            .expect("simple request should produce headers");
+        assert!(outcome.status.is_none());
+        assert!(!outcome.end_response);
+        outcome
+    }
+
+    fn expect_none(result: Result<Option<CorsResult>, CorsError>) {
+        assert!(result.expect("simple evaluation should succeed").is_none());
+    }
 
     #[test]
     fn when_origin_skip_should_return_none() {
@@ -488,11 +544,11 @@ mod process_simple {
         let result = simple_result(&cors, &original);
 
         // Assert
-        assert!(result.is_none());
+        expect_none(result);
     }
 
     #[test]
-    fn when_origin_returns_any_with_credentials_should_return_none() {
+    fn when_origin_returns_any_with_credentials_should_fail() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Any),
@@ -503,10 +559,11 @@ mod process_simple {
         let original = request("GET", "https://wild.test", "", "");
 
         // Act
-        let result = simple_result(&cors, &original);
+        let error = simple_result(&cors, &original)
+            .expect_err("simple request should reject any origin when credentials required");
 
         // Assert
-        assert!(result.is_none());
+        assert!(matches!(error, CorsError::InvalidOriginAnyWithCredentials));
     }
 
     #[test]
@@ -521,7 +578,7 @@ mod process_simple {
         let original = request("GET", "https://allowed.test", "", "");
 
         // Act
-        let result = simple_result(&cors, &original).expect("expected simple result");
+        let result = expect_some(simple_result(&cors, &original));
 
         // Assert
         assert!(
@@ -546,7 +603,7 @@ mod process_simple {
         let original = request("GET", "https://allowed.test", "", "");
 
         // Act
-        let result = simple_result(&cors, &original).expect("expected simple result");
+        let result = expect_some(simple_result(&cors, &original));
 
         // Assert
         assert!(
@@ -573,7 +630,7 @@ mod process_simple {
         let original = request("GET", "https://allowed.test", "", "");
 
         // Act
-        let result = simple_result(&cors, &original).expect("expected simple result");
+        let result = expect_some(simple_result(&cors, &original));
 
         // Assert
         assert_eq!(
@@ -600,7 +657,7 @@ mod process_simple {
         let original = request("GET", "https://intranet.test", "", "");
 
         // Act
-        let result = simple_result(&cors, &original).expect("expected simple result");
+        let result = expect_some(simple_result(&cors, &original));
 
         // Assert
         assert!(
@@ -621,7 +678,7 @@ mod process_simple {
         let original = request("GET", "https://allowed.test", "", "");
 
         // Act
-        let result = simple_result(&cors, &original).expect("expected simple result");
+        let result = expect_some(simple_result(&cors, &original));
 
         // Assert
         assert_eq!(

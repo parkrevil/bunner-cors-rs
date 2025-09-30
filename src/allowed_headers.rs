@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 /// Configuration for the `Access-Control-Allow-Headers` response value.
 #[derive(Clone, PartialEq, Eq)]
 pub enum AllowedHeaders {
@@ -18,16 +20,14 @@ impl AllowedHeaders {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
+        let mut seen = HashSet::new();
         let mut deduped: Vec<String> = Vec::new();
         for value in values.into_iter() {
             let trimmed = value.into().trim().to_string();
-            if deduped
-                .iter()
-                .any(|existing| existing.eq_ignore_ascii_case(trimmed.as_str()))
-            {
-                continue;
+            let key = trimmed.to_ascii_lowercase();
+            if seen.insert(key) {
+                deduped.push(trimmed);
             }
-            deduped.push(trimmed);
         }
 
         Self::List(deduped)

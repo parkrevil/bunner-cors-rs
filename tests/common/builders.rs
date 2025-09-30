@@ -154,6 +154,7 @@ impl SimpleRequestBuilder {
             access_control_request_private_network: private_network,
         };
         cors.check(&ctx)
+            .expect("simple request evaluation should succeed")
     }
 }
 
@@ -206,6 +207,7 @@ impl PreflightRequestBuilder {
             access_control_request_private_network: private_network,
         };
         cors.check(&ctx)
+            .expect("preflight request evaluation should succeed")
     }
 }
 

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 /// Configuration for the `Timing-Allow-Origin` response header.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TimingAllowOrigin {
@@ -19,12 +21,18 @@ impl TimingAllowOrigin {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        Self::List(
-            values
-                .into_iter()
-                .map(|value| value.into().trim().to_string())
-                .collect(),
-        )
+        let mut seen = HashSet::new();
+        let mut deduped: Vec<String> = Vec::new();
+
+        for value in values.into_iter() {
+            let trimmed = value.into().trim().to_string();
+            let key = trimmed.to_ascii_lowercase();
+            if seen.insert(key) {
+                deduped.push(trimmed);
+            }
+        }
+
+        Self::List(deduped)
     }
 
     /// Return the header value representation.

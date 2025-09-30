@@ -1,23 +1,27 @@
 use crate::headers::Headers;
+use thiserror::Error;
 
-/// Result for a preflight evaluation.
+/// Headers and response metadata emitted for either a preflight or simple request.
 #[derive(Debug, Clone)]
-pub struct PreflightResult {
+pub struct CorsResult {
     pub headers: Headers,
-    pub status: u16,
+    pub status: Option<u16>,
     pub end_response: bool,
-}
-
-/// Result for a simple request evaluation.
-#[derive(Debug, Clone)]
-pub struct SimpleResult {
-    pub headers: Headers,
 }
 
 /// Overall decision returned by the policy engine.
 #[derive(Debug, Clone)]
 pub enum CorsDecision {
-    Preflight(PreflightResult),
-    Simple(SimpleResult),
+    Preflight(CorsResult),
+    Simple(CorsResult),
     NotApplicable,
+}
+
+/// Errors that can be produced during CORS evaluation.
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum CorsError {
+    #[error(
+        "custom origin callback returned OriginDecision::Any while credentials are enabled; this combination is forbidden by the CORS specification"
+    )]
+    InvalidOriginAnyWithCredentials,
 }

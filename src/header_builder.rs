@@ -4,11 +4,13 @@ use crate::context::RequestContext;
 use crate::headers::HeaderCollection;
 use crate::options::CorsOptions;
 use crate::origin::OriginDecision;
+use crate::result::CorsError;
 
 pub(crate) struct HeaderBuilder<'a> {
     options: &'a CorsOptions,
 }
 
+#[derive(Debug)]
 pub(crate) enum OriginOutcome {
     Allow(HeaderCollection),
     Disallow(HeaderCollection),
@@ -24,7 +26,7 @@ impl<'a> HeaderBuilder<'a> {
         &self,
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
-    ) -> OriginOutcome {
+    ) -> Result<OriginOutcome, CorsError> {
         let mut headers = HeaderCollection::new();
         let decision = self.options.origin.resolve(
             if normalized.origin.is_empty() {
@@ -38,7 +40,7 @@ impl<'a> HeaderBuilder<'a> {
         match decision {
             OriginDecision::Any => {
                 if self.options.credentials {
-                    return OriginOutcome::Skip;
+                    return Err(CorsError::InvalidOriginAnyWithCredentials);
                 }
                 headers.push(
                     header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
@@ -57,21 +59,21 @@ impl<'a> HeaderBuilder<'a> {
                         original.origin.to_string(),
                     );
                 } else {
-                    return OriginOutcome::Disallow(headers);
+                    return Ok(OriginOutcome::Disallow(headers));
                 }
             }
             OriginDecision::Disallow => {
                 if self.options.origin.vary_on_disallow() {
                     headers.add_vary(header::ORIGIN);
                 }
-                return OriginOutcome::Disallow(headers);
+                return Ok(OriginOutcome::Disallow(headers));
             }
             OriginDecision::Skip => {
-                return OriginOutcome::Skip;
+                return Ok(OriginOutcome::Skip);
             }
         }
 
-        OriginOutcome::Allow(headers)
+        Ok(OriginOutcome::Allow(headers))
     }
 
     pub(crate) fn build_methods_header(&self) -> HeaderCollection {

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 /// Simple response header representation used by the CORS engine.
 pub type Headers = std::collections::HashMap<String, String>;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub(crate) struct HeaderCollection {
     headers: Headers,
 }

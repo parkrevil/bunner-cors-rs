@@ -5,6 +5,7 @@ use crate::constants::header;
 use crate::context::RequestContext;
 use crate::options::CorsOptions;
 use crate::origin::{Origin, OriginDecision};
+use crate::result::CorsError;
 use crate::timing_allow_origin::TimingAllowOrigin;
 
 fn build_request(
@@ -48,24 +49,24 @@ fn options_with_origin(origin: Origin) -> CorsOptions {
     }
 }
 
-fn expect_allow(outcome: OriginOutcome) -> HeaderCollection {
-    match outcome {
+fn expect_allow(outcome: Result<OriginOutcome, CorsError>) -> HeaderCollection {
+    match outcome.expect("expected allow outcome") {
         OriginOutcome::Allow(collection) => collection,
         OriginOutcome::Disallow(_) => panic!("expected allow outcome, got disallow"),
         OriginOutcome::Skip => panic!("expected allow outcome, got skip"),
     }
 }
 
-fn expect_disallow(outcome: OriginOutcome) -> HeaderCollection {
-    match outcome {
+fn expect_disallow(outcome: Result<OriginOutcome, CorsError>) -> HeaderCollection {
+    match outcome.expect("expected disallow outcome") {
         OriginOutcome::Disallow(collection) => collection,
         OriginOutcome::Allow(_) => panic!("expected disallow outcome, got allow"),
         OriginOutcome::Skip => panic!("expected disallow outcome, got skip"),
     }
 }
 
-fn expect_skip(outcome: OriginOutcome) {
-    match outcome {
+fn expect_skip(outcome: Result<OriginOutcome, CorsError>) {
+    match outcome.expect("expected skip outcome") {
         OriginOutcome::Skip => {}
         OriginOutcome::Allow(_) => panic!("expected skip outcome, got allow"),
         OriginOutcome::Disallow(_) => panic!("expected skip outcome, got disallow"),
@@ -145,7 +146,7 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn when_any_origin_with_credentials_should_skip_processing() {
+    fn when_any_origin_with_credentials_should_error() {
         // Arrange
         let mut options = options_with_origin(Origin::any());
         options.credentials = true;
@@ -153,14 +154,16 @@ mod build_origin_headers {
         let ctx = request("OPTIONS", "https://wild.test", "", "");
 
         // Act
-        let outcome = builder.build_origin_headers(&ctx, &ctx);
+        let error = builder
+            .build_origin_headers(&ctx, &ctx)
+            .expect_err("expected invalid origin error");
 
         // Assert
-        expect_skip(outcome);
+        assert_eq!(error, CorsError::InvalidOriginAnyWithCredentials);
     }
 
     #[test]
-    fn when_custom_origin_returns_any_with_credentials_should_skip() {
+    fn when_custom_origin_returns_any_with_credentials_should_error() {
         // Arrange
         let base = options_with_origin(Origin::custom(|_, _| OriginDecision::Any));
         let options = CorsOptions {
@@ -171,10 +174,12 @@ mod build_origin_headers {
         let ctx = request("OPTIONS", "https://wild.test", "", "");
 
         // Act
-        let outcome = builder.build_origin_headers(&ctx, &ctx);
+        let error = builder
+            .build_origin_headers(&ctx, &ctx)
+            .expect_err("expected invalid origin error");
 
         // Assert
-        expect_skip(outcome);
+        assert_eq!(error, CorsError::InvalidOriginAnyWithCredentials);
     }
 
     #[test]

@@ -370,7 +370,10 @@ fn preflight_accepts_mixed_case_options_and_request_method() {
         access_control_request_private_network: false,
     };
 
-    let (headers, status, halt) = assert_preflight(cors.check(&ctx));
+    let (headers, status, halt) = assert_preflight(
+        cors.check(&ctx)
+            .expect("preflight evaluation should succeed"),
+    );
 
     assert_eq!(status, 204);
     assert!(halt);
