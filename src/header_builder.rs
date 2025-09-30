@@ -134,3 +134,7 @@ impl<'a> HeaderBuilder<'a> {
         headers
     }
 }
+
+#[cfg(test)]
+#[path = "header_builder_test.rs"]
+mod header_builder_test;
