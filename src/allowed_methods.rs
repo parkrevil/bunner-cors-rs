@@ -46,3 +46,7 @@ impl Default for AllowedMethods {
         ])
     }
 }
+
+#[cfg(test)]
+#[path = "allowed_methods_test.rs"]
+mod allowed_methods_test;
