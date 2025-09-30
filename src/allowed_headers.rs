@@ -20,3 +20,7 @@ impl AllowedHeaders {
         Self::Any
     }
 }
+
+#[cfg(test)]
+#[path = "allowed_headers_test.rs"]
+mod allowed_headers_test;
