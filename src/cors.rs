@@ -12,7 +12,12 @@ pub struct Cors {
 
 impl Cors {
     pub fn new(options: CorsOptions) -> Self {
-        Self { options }
+        Self::try_new(options).expect("invalid CORS configuration")
+    }
+
+    pub fn try_new(options: CorsOptions) -> Result<Self, &'static str> {
+        options.validate()?;
+        Ok(Self { options })
     }
 
     pub fn check(&self, request: &RequestContext<'_>) -> CorsDecision {

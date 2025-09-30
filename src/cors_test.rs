@@ -60,12 +60,12 @@ fn cors_with(options: CorsOptions) -> Cors {
         methods: AllowedMethods::list(["GET"]),
         allowed_headers: AllowedHeaders::list(["X-Test"]),
         exposed_headers: Some(vec!["X-Test".into()]),
-        credentials: true,
         ..options
     })
 }
 
 mod new {
+    use super::*;
 
     #[test]
     fn when_preflight_continue_enabled_simple_request_should_return_simple_decision() {
@@ -93,7 +93,6 @@ mod new {
             _ => panic!("expected simple decision"),
         }
     }
-    use super::*;
 
     #[test]
     fn when_constructed_with_custom_status_should_use_it() {
@@ -113,6 +112,22 @@ mod new {
             CorsDecision::Preflight(result) => assert_eq!(result.status, 208),
             _ => panic!("expected preflight decision"),
         }
+    }
+
+    #[test]
+    fn try_new_should_reject_wildcard_origin_with_credentials() {
+        // Arrange
+        let options = CorsOptions {
+            origin: Origin::any(),
+            credentials: true,
+            ..CorsOptions::default()
+        };
+
+        // Act
+        let result = Cors::try_new(options);
+
+        // Assert
+        assert!(matches!(result, Err("credentials_require_specific_origin")));
     }
 }
 
@@ -219,6 +234,23 @@ mod process_preflight {
         };
         let cors = cors_with(options);
         let original = request("OPTIONS", "https://denied.test", "GET", "X-Test");
+
+        // Act
+        let result = preflight_result(&cors, &original);
+
+        // Assert
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn when_origin_returns_any_with_credentials_should_return_none() {
+        // Arrange
+        let cors = Cors::new(CorsOptions {
+            origin: Origin::custom(|_, _| OriginDecision::Any),
+            credentials: true,
+            ..CorsOptions::default()
+        });
+        let original = request("OPTIONS", "https://wild.test", "GET", "");
 
         // Act
         let result = preflight_result(&cors, &original);
@@ -465,13 +497,30 @@ mod process_simple {
     }
 
     #[test]
+    fn when_origin_returns_any_with_credentials_should_return_none() {
+        // Arrange
+        let cors = Cors::new(CorsOptions {
+            origin: Origin::custom(|_, _| OriginDecision::Any),
+            credentials: true,
+            ..CorsOptions::default()
+        });
+        let original = request("GET", "https://wild.test", "", "");
+
+        // Act
+        let result = simple_result(&cors, &original);
+
+        // Assert
+        assert!(result.is_none());
+    }
+
+    #[test]
     fn when_origin_allowed_should_emit_simple_headers() {
         // Arrange
-        let options = CorsOptions {
-            origin: Origin::any(),
+        let cors = Cors::new(CorsOptions {
+            origin: Origin::list(["https://allowed.test"]),
+            credentials: true,
             ..CorsOptions::default()
-        };
-        let cors = cors_with(options);
+        });
         let original = request("GET", "https://allowed.test", "", "");
 
         // Act
@@ -483,10 +532,13 @@ mod process_simple {
                 .headers
                 .contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN)
         );
-        assert!(
-            result
-                .headers
-                .contains_key(header::ACCESS_CONTROL_ALLOW_CREDENTIALS)
+        assert_eq!(
+            result.headers.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"https://allowed.test".to_string())
+        );
+        assert_eq!(
+            result.headers.get(header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
+            Some(&"true".to_string())
         );
     }
 

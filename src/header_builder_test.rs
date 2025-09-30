@@ -126,6 +126,41 @@ mod build_origin_headers {
     }
 
     #[test]
+    fn when_any_origin_with_credentials_should_skip_processing() {
+        // Arrange
+        let mut options = options_with_origin(Origin::any());
+        options.credentials = true;
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request("OPTIONS", "https://wild.test", "", "");
+
+        // Act
+        let (headers, skip) = builder.build_origin_headers(&ctx, &ctx);
+
+        // Assert
+        assert!(skip);
+        assert!(headers.into_headers().is_empty());
+    }
+
+    #[test]
+    fn when_custom_origin_returns_any_with_credentials_should_skip() {
+        // Arrange
+        let base = options_with_origin(Origin::custom(|_, _| OriginDecision::Any));
+        let options = CorsOptions {
+            credentials: true,
+            ..base
+        };
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request("OPTIONS", "https://wild.test", "", "");
+
+        // Act
+        let (headers, skip) = builder.build_origin_headers(&ctx, &ctx);
+
+        // Assert
+        assert!(skip);
+        assert!(headers.into_headers().is_empty());
+    }
+
+    #[test]
     fn when_origin_is_disallowed_should_only_emit_vary() {
         // Arrange
         let options = options_with_origin(Origin::list(["https://allowed.test"]));

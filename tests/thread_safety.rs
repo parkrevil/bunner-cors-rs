@@ -29,7 +29,7 @@ fn cors_can_be_shared_across_threads() {
             assert!(halt);
             assert_eq!(
                 header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-                Some("*"),
+                Some(origin.as_str()),
             );
             assert_eq!(
                 header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
@@ -40,7 +40,7 @@ fn cors_can_be_shared_across_threads() {
                 assert_simple(simple_request().origin(origin.as_str()).check(&cors));
             assert_eq!(
                 header_value(&simple_headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-                Some("*"),
+                Some(origin.as_str()),
             );
         }));
     }

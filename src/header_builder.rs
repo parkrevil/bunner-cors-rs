@@ -31,6 +31,9 @@ impl<'a> HeaderBuilder<'a> {
 
         match decision {
             OriginDecision::Any => {
+                if self.options.credentials {
+                    return (HeaderCollection::new(), true);
+                }
                 headers.push(
                     header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
                     "*".to_string(),

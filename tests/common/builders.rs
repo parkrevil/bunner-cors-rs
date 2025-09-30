@@ -95,12 +95,22 @@ impl CorsBuilder {
             timing_allow_origin: default_timing_allow_origin,
         } = CorsOptions::default();
 
+        let mut origin = self.origin.unwrap_or(default_origin);
+        let credentials = self.credentials.unwrap_or(default_credentials);
+
+        if credentials {
+            origin = match origin {
+                Origin::Any => Origin::predicate(|_, _| true),
+                other => other,
+            };
+        }
+
         Cors::new(CorsOptions {
-            origin: self.origin.unwrap_or(default_origin),
+            origin,
             methods: self.methods.unwrap_or(default_methods),
             allowed_headers: self.allowed_headers.unwrap_or(default_allowed_headers),
             exposed_headers: self.exposed_headers.or(default_exposed_headers),
-            credentials: self.credentials.unwrap_or(default_credentials),
+            credentials,
             max_age: self.max_age.or(default_max_age),
             preflight_continue: self
                 .preflight_continue
