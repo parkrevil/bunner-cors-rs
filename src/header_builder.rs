@@ -9,6 +9,12 @@ pub(crate) struct HeaderBuilder<'a> {
     options: &'a CorsOptions,
 }
 
+pub(crate) enum OriginOutcome {
+    Allow(HeaderCollection),
+    Disallow(HeaderCollection),
+    Skip,
+}
+
 impl<'a> HeaderBuilder<'a> {
     pub(crate) fn new(options: &'a CorsOptions) -> Self {
         Self { options }
@@ -18,7 +24,7 @@ impl<'a> HeaderBuilder<'a> {
         &self,
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
-    ) -> (HeaderCollection, bool) {
+    ) -> OriginOutcome {
         let mut headers = HeaderCollection::new();
         let decision = self.options.origin.resolve(
             if normalized.origin.is_empty() {
@@ -32,7 +38,7 @@ impl<'a> HeaderBuilder<'a> {
         match decision {
             OriginDecision::Any => {
                 if self.options.credentials {
-                    return (HeaderCollection::new(), true);
+                    return OriginOutcome::Skip;
                 }
                 headers.push(
                     header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
@@ -50,19 +56,22 @@ impl<'a> HeaderBuilder<'a> {
                         header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
                         original.origin.to_string(),
                     );
+                } else {
+                    return OriginOutcome::Disallow(headers);
                 }
             }
             OriginDecision::Disallow => {
                 if self.options.origin.vary_on_disallow() {
                     headers.add_vary(header::ORIGIN);
                 }
+                return OriginOutcome::Disallow(headers);
             }
             OriginDecision::Skip => {
-                return (HeaderCollection::new(), true);
+                return OriginOutcome::Skip;
             }
         }
 
-        (headers, false)
+        OriginOutcome::Allow(headers)
     }
 
     pub(crate) fn build_methods_header(&self) -> HeaderCollection {
@@ -84,7 +93,7 @@ impl<'a> HeaderBuilder<'a> {
         headers
     }
 
-    pub(crate) fn build_allowed_headers(&self, _request: &RequestContext<'_>) -> HeaderCollection {
+    pub(crate) fn build_allowed_headers(&self) -> HeaderCollection {
         let mut headers = HeaderCollection::new();
         match &self.options.allowed_headers {
             AllowedHeaders::List(values) => {

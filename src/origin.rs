@@ -92,13 +92,14 @@ impl OriginMatcher {
         let regex = RegexBuilder::new(pattern)
             .size_limit(1_000_000) // 1MB limit to prevent excessive memory usage
             .dfa_size_limit(1_000_000) // DFA size limit
+            .case_insensitive(true)
             .build()?;
         Ok(Self::Pattern(regex))
     }
 
     pub fn matches(&self, candidate: &str) -> bool {
         match self {
-            OriginMatcher::Exact(value) => value == candidate,
+            OriginMatcher::Exact(value) => value.eq_ignore_ascii_case(candidate),
             OriginMatcher::Pattern(regex) => regex.is_match(candidate),
             OriginMatcher::Bool(value) => *value,
         }
@@ -168,7 +169,12 @@ impl Origin {
     ) -> OriginDecision {
         match self {
             Origin::Any => OriginDecision::Any,
-            Origin::Exact(value) => OriginDecision::Exact(value.clone()),
+            Origin::Exact(value) => match request_origin {
+                Some(origin) if value.eq_ignore_ascii_case(origin) => {
+                    OriginDecision::Exact(value.clone())
+                }
+                _ => OriginDecision::Disallow,
+            },
             Origin::List(matchers) => {
                 if let Some(origin) = request_origin {
                     if matchers.iter().any(|matcher| matcher.matches(origin)) {

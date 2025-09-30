@@ -1,5 +1,5 @@
 use crate::context::RequestContext;
-use crate::header_builder::HeaderBuilder;
+use crate::header_builder::{HeaderBuilder, OriginOutcome};
 use crate::headers::HeaderCollection;
 use crate::normalized_request::NormalizedRequest;
 use crate::options::{CorsOptions, ValidationError};
@@ -43,10 +43,21 @@ impl Cors {
         }
         let builder = HeaderBuilder::new(&self.options);
         let mut headers = HeaderCollection::new();
-        let (origin_headers, skip) = builder.build_origin_headers(original, normalized);
-        if skip {
-            return None;
+        match builder.build_origin_headers(original, normalized) {
+            OriginOutcome::Skip => return None,
+            OriginOutcome::Disallow(origin_headers) => {
+                headers.extend(origin_headers);
+                return Some(PreflightResult {
+                    headers: headers.into_headers(),
+                    status: self.options.options_success_status,
+                    end_response: true,
+                });
+            }
+            OriginOutcome::Allow(origin_headers) => {
+                headers.extend(origin_headers);
+            }
         }
+
         if !self
             .options
             .methods
@@ -61,10 +72,9 @@ impl Cors {
         {
             return None;
         }
-        headers.extend(origin_headers);
         headers.extend(builder.build_credentials_header());
         headers.extend(builder.build_methods_header());
-        headers.extend(builder.build_allowed_headers(original));
+        headers.extend(builder.build_allowed_headers());
         headers.extend(builder.build_private_network_header(original));
         headers.extend(builder.build_max_age_header());
         headers.extend(builder.build_timing_allow_origin_header());
@@ -83,11 +93,18 @@ impl Cors {
     ) -> Option<SimpleResult> {
         let builder = HeaderBuilder::new(&self.options);
         let mut headers = HeaderCollection::new();
-        let (origin_headers, skip) = builder.build_origin_headers(original, normalized);
-        if skip {
-            return None;
+        match builder.build_origin_headers(original, normalized) {
+            OriginOutcome::Skip => return None,
+            OriginOutcome::Disallow(origin_headers) => {
+                headers.extend(origin_headers);
+                return Some(SimpleResult {
+                    headers: headers.into_headers(),
+                });
+            }
+            OriginOutcome::Allow(origin_headers) => {
+                headers.extend(origin_headers);
+            }
         }
-        headers.extend(origin_headers);
         headers.extend(builder.build_credentials_header());
         headers.extend(builder.build_private_network_header(original));
         headers.extend(builder.build_exposed_headers());

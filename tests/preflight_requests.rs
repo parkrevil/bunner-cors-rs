@@ -328,6 +328,32 @@ fn preflight_disallowed_origin_sets_vary_without_allow_origin() {
 }
 
 #[test]
+fn preflight_disallowed_origin_omits_sensitive_headers() {
+    let cors = cors()
+        .origin(Origin::list([OriginMatcher::exact("https://allow.dev")]))
+        .credentials(true)
+        .allowed_headers(AllowedHeaders::list(["X-Test"]))
+        .build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://deny.dev")
+            .request_method(method::GET)
+            .request_headers("X-Test")
+            .check(&cors),
+    );
+
+    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    assert!(!has_header(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_CREDENTIALS
+    ));
+    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
+    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_METHODS));
+    assert_vary_contains(&headers, header::ORIGIN);
+}
+
+#[test]
 fn preflight_accepts_mixed_case_options_and_request_method() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::list(["X-MiXeD", "Content-Type"]))

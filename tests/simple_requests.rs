@@ -68,3 +68,22 @@ fn simple_request_with_private_network_support_does_not_emit_header() {
         "private network header should remain absent on simple responses"
     );
 }
+
+#[test]
+fn simple_request_with_disallowed_origin_omits_sensitive_headers() {
+    let cors = cors()
+        .origin(Origin::list(["https://allowed.example"]))
+        .credentials(true)
+        .exposed_headers(["X-Trace"])
+        .build();
+
+    let headers = assert_simple(simple_request().origin("https://deny.example").check(&cors));
+
+    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    assert!(!has_header(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_CREDENTIALS
+    ));
+    assert!(!has_header(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS));
+    assert!(has_header(&headers, header::VARY));
+}

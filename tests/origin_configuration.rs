@@ -14,7 +14,7 @@ fn exact_origin_is_reflected_with_vary() {
     let headers = assert_simple(
         simple_request()
             .method(method::POST)
-            .origin("https://other.dev")
+            .origin("https://allowed.dev")
             .check(&cors),
     );
 
@@ -47,6 +47,72 @@ fn origin_list_supports_exact_and_patterns() {
     assert_vary_eq(&headers, [header::ORIGIN]);
 
     let headers = assert_simple(simple_request().origin("https://deny.dev").check(&cors));
+
+    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    assert_vary_eq(&headers, [header::ORIGIN]);
+}
+
+#[test]
+fn origin_list_matches_case_insensitively() {
+    let cors = cors()
+        .origin(Origin::list([OriginMatcher::exact("https://Case.Match")]))
+        .build();
+
+    let headers = assert_simple(simple_request().origin("https://case.match").check(&cors));
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+        Some("https://case.match"),
+    );
+    assert_vary_eq(&headers, [header::ORIGIN]);
+}
+
+#[test]
+fn exact_origin_matching_is_case_insensitive() {
+    let cors = cors()
+        .origin(Origin::exact("https://Allowed.Service"))
+        .build();
+
+    let headers = assert_simple(
+        simple_request()
+            .origin("https://allowed.service")
+            .check(&cors),
+    );
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+        Some("https://Allowed.Service"),
+    );
+    assert_vary_eq(&headers, [header::ORIGIN]);
+}
+
+#[test]
+fn origin_pattern_matching_is_case_insensitive() {
+    let cors = cors()
+        .origin(Origin::list([OriginMatcher::pattern_str(
+            r"^https://svc\.[a-z]+\.domain$",
+        )
+        .unwrap()]))
+        .build();
+
+    let headers = assert_simple(
+        simple_request()
+            .origin("https://SVC.metrics.domain")
+            .check(&cors),
+    );
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+        Some("https://SVC.metrics.domain"),
+    );
+    assert_vary_eq(&headers, [header::ORIGIN]);
+}
+
+#[test]
+fn exact_origin_mismatch_is_disallowed() {
+    let cors = cors().origin(Origin::exact("https://allowed.dev")).build();
+
+    let headers = assert_simple(simple_request().origin("https://denied.dev").check(&cors));
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_vary_eq(&headers, [header::ORIGIN]);

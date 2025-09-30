@@ -48,6 +48,30 @@ fn options_with_origin(origin: Origin) -> CorsOptions {
     }
 }
 
+fn expect_allow(outcome: OriginOutcome) -> HeaderCollection {
+    match outcome {
+        OriginOutcome::Allow(collection) => collection,
+        OriginOutcome::Disallow(_) => panic!("expected allow outcome, got disallow"),
+        OriginOutcome::Skip => panic!("expected allow outcome, got skip"),
+    }
+}
+
+fn expect_disallow(outcome: OriginOutcome) -> HeaderCollection {
+    match outcome {
+        OriginOutcome::Disallow(collection) => collection,
+        OriginOutcome::Allow(_) => panic!("expected disallow outcome, got allow"),
+        OriginOutcome::Skip => panic!("expected disallow outcome, got skip"),
+    }
+}
+
+fn expect_skip(outcome: OriginOutcome) {
+    match outcome {
+        OriginOutcome::Skip => {}
+        OriginOutcome::Allow(_) => panic!("expected skip outcome, got allow"),
+        OriginOutcome::Disallow(_) => panic!("expected skip outcome, got disallow"),
+    }
+}
+
 mod new {
     use super::*;
 
@@ -77,11 +101,9 @@ mod build_origin_headers {
         let ctx = request("GET", "https://api.test", "", "");
 
         // Act
-        let (headers, skip) = builder.build_origin_headers(&ctx, &ctx);
-        let map = headers.into_headers();
+        let map = expect_allow(builder.build_origin_headers(&ctx, &ctx)).into_headers();
 
         // Assert
-        assert!(!skip);
         assert_eq!(
             map.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some(&"*".to_string())
@@ -98,11 +120,9 @@ mod build_origin_headers {
         let normalized = request("get", "https://app.test", "", "");
 
         // Act
-        let (headers, skip) = builder.build_origin_headers(&original, &normalized);
-        let map = headers.into_headers();
+        let map = expect_allow(builder.build_origin_headers(&original, &normalized)).into_headers();
 
         // Assert
-        assert!(!skip);
         assert_eq!(
             map.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some(&"https://app.test".to_string())
@@ -118,11 +138,10 @@ mod build_origin_headers {
         let ctx = request("OPTIONS", "https://skip.test", "", "");
 
         // Act
-        let (headers, skip) = builder.build_origin_headers(&ctx, &ctx);
+        let outcome = builder.build_origin_headers(&ctx, &ctx);
 
         // Assert
-        assert!(skip);
-        assert!(headers.into_headers().is_empty());
+        expect_skip(outcome);
     }
 
     #[test]
@@ -134,11 +153,10 @@ mod build_origin_headers {
         let ctx = request("OPTIONS", "https://wild.test", "", "");
 
         // Act
-        let (headers, skip) = builder.build_origin_headers(&ctx, &ctx);
+        let outcome = builder.build_origin_headers(&ctx, &ctx);
 
         // Assert
-        assert!(skip);
-        assert!(headers.into_headers().is_empty());
+        expect_skip(outcome);
     }
 
     #[test]
@@ -153,11 +171,10 @@ mod build_origin_headers {
         let ctx = request("OPTIONS", "https://wild.test", "", "");
 
         // Act
-        let (headers, skip) = builder.build_origin_headers(&ctx, &ctx);
+        let outcome = builder.build_origin_headers(&ctx, &ctx);
 
         // Assert
-        assert!(skip);
-        assert!(headers.into_headers().is_empty());
+        expect_skip(outcome);
     }
 
     #[test]
@@ -168,11 +185,9 @@ mod build_origin_headers {
         let ctx = request("GET", "https://denied.test", "", "");
 
         // Act
-        let (headers, skip) = builder.build_origin_headers(&ctx, &ctx);
-        let map = headers.into_headers();
+        let map = expect_disallow(builder.build_origin_headers(&ctx, &ctx)).into_headers();
 
         // Assert
-        assert!(!skip);
         assert_eq!(map.get(header::VARY), Some(&"Origin".to_string()));
         assert!(!map.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
     }
@@ -186,11 +201,10 @@ mod build_origin_headers {
         let normalized = request("get", "https://app.test", "", "");
 
         // Act
-        let (headers, skip) = builder.build_origin_headers(&original, &normalized);
-        let map = headers.into_headers();
+        let map =
+            expect_disallow(builder.build_origin_headers(&original, &normalized)).into_headers();
 
         // Assert
-        assert!(!skip);
         assert_eq!(map.get(header::VARY), Some(&"Origin".to_string()));
         assert!(!map.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
     }
@@ -204,11 +218,9 @@ mod build_origin_headers {
         let normalized = request("get", "https://app.test", "", "");
 
         // Act
-        let (headers, skip) = builder.build_origin_headers(&original, &normalized);
-        let map = headers.into_headers();
+        let map = expect_allow(builder.build_origin_headers(&original, &normalized)).into_headers();
 
         // Assert
-        assert!(!skip);
         assert_eq!(
             map.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some(&"https://API.test".to_string())
@@ -302,10 +314,9 @@ mod build_allowed_headers {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-        let ctx = request("OPTIONS", "https://api.test", "", "");
 
         // Act
-        let map = builder.build_allowed_headers(&ctx).into_headers();
+        let map = builder.build_allowed_headers().into_headers();
 
         // Assert
         assert_eq!(
@@ -323,10 +334,9 @@ mod build_allowed_headers {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-        let ctx = request("OPTIONS", "https://api.test", "", "");
 
         // Act
-        let map = builder.build_allowed_headers(&ctx).into_headers();
+        let map = builder.build_allowed_headers().into_headers();
 
         // Assert
         assert!(map.is_empty());
@@ -340,10 +350,9 @@ mod build_allowed_headers {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-        let ctx = request("OPTIONS", "https://api.test", "", "X-Trace, X-Auth");
 
         // Act
-        let map = builder.build_allowed_headers(&ctx).into_headers();
+        let map = builder.build_allowed_headers().into_headers();
 
         // Assert
         assert_eq!(
@@ -361,10 +370,9 @@ mod build_allowed_headers {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-        let ctx = request("OPTIONS", "https://api.test", "", "");
 
         // Act
-        let map = builder.build_allowed_headers(&ctx).into_headers();
+        let map = builder.build_allowed_headers().into_headers();
 
         // Assert
         assert_eq!(
@@ -382,10 +390,9 @@ mod build_allowed_headers {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-        let ctx = request("OPTIONS", "https://api.test", "", "");
 
         // Act
-        let map = builder.build_allowed_headers(&ctx).into_headers();
+        let map = builder.build_allowed_headers().into_headers();
 
         // Assert
         assert_eq!(
