@@ -504,6 +504,23 @@ mod build_private_network_header {
         // Assert
         assert!(map.is_empty());
     }
+
+    #[test]
+    fn when_request_is_simple_should_not_emit_header() {
+        // Arrange
+        let options = CorsOptions {
+            allow_private_network: true,
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request("GET", "https://api.test", "GET", "");
+
+        // Act
+        let map = builder.build_private_network_header(&ctx).into_headers();
+
+        // Assert
+        assert!(map.is_empty());
+    }
 }
 
 mod build_timing_allow_origin_header {

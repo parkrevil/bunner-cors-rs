@@ -442,6 +442,23 @@ fn preflight_with_private_network_request_emits_allow_header() {
 }
 
 #[test]
+fn preflight_without_private_network_request_omits_allow_header() {
+    let cors = cors().private_network(true).build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://intranet.dev")
+            .request_method(method::GET)
+            .check(&cors),
+    );
+
+    assert!(
+        !has_header(&headers, header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
+        "header should be absent when request did not opt in"
+    );
+}
+
+#[test]
 fn preflight_with_multiple_allowed_headers_emits_configured_list() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::list(["X-Allowed", "X-Trace"]))

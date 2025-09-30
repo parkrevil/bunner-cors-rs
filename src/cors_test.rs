@@ -538,7 +538,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_private_network_allowed_should_emit_header() {
+    fn when_private_network_allowed_should_not_emit_header_on_simple_response() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             allow_private_network: true,
@@ -550,11 +550,10 @@ mod process_simple {
         let result = simple_result(&cors, &original).expect("expected simple result");
 
         // Assert
-        assert_eq!(
-            result
+        assert!(
+            !result
                 .headers
-                .get(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
-            Some(&"true".to_string())
+                .contains_key(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK)
         );
     }
 

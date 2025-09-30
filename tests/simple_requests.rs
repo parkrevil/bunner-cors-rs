@@ -53,13 +53,13 @@ fn simple_request_without_expose_headers_should_not_emit_expose_header() {
 }
 
 #[test]
-fn simple_request_with_private_network_support_emits_header() {
+fn simple_request_with_private_network_support_does_not_emit_header() {
     let cors = cors().private_network(true).build();
 
     let headers = assert_simple(simple_request().check(&cors));
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
-        Some("true")
+    assert!(
+        !has_header(&headers, header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
+        "private network header should remain absent on simple responses"
     );
 }
