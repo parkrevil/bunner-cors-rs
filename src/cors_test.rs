@@ -464,9 +464,9 @@ mod process_preflight {
         let result = preflight_result(&cors, &original).expect("expected preflight result");
 
         // Assert
-        assert!(
-            !result.headers.contains_key(header::TIMING_ALLOW_ORIGIN),
-            "Timing-Allow-Origin should not be present in preflight"
+        assert_eq!(
+            result.headers.get(header::TIMING_ALLOW_ORIGIN),
+            Some(&"https://metrics.test https://dash.test".to_string())
         );
     }
 }
