@@ -351,15 +351,14 @@ fn disabled_origin_short_circuits_cors_processing() {
 }
 
 #[test]
-fn missing_origin_header_with_restrictive_cors_only_sets_vary() {
+fn missing_origin_header_short_circuits_cors_processing() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://allow.dev")]))
         .build();
 
-    let headers = assert_simple(simple_request().check(&cors));
+    let decision = simple_request().check(&cors);
 
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
-    assert_vary_eq(&headers, [header::ORIGIN]);
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]

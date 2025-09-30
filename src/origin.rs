@@ -168,12 +168,16 @@ impl Origin {
         ctx: &RequestContext<'_>,
     ) -> OriginDecision {
         match self {
-            Origin::Any => OriginDecision::Any,
+            Origin::Any => match request_origin {
+                Some(_) => OriginDecision::Any,
+                None => OriginDecision::Skip,
+            },
             Origin::Exact(value) => match request_origin {
                 Some(origin) if value.eq_ignore_ascii_case(origin) => {
                     OriginDecision::Exact(value.clone())
                 }
-                _ => OriginDecision::Disallow,
+                Some(_) => OriginDecision::Disallow,
+                None => OriginDecision::Skip,
             },
             Origin::List(matchers) => {
                 if let Some(origin) = request_origin {
@@ -183,7 +187,7 @@ impl Origin {
                         OriginDecision::Disallow
                     }
                 } else {
-                    OriginDecision::Disallow
+                    OriginDecision::Skip
                 }
             }
             Origin::Predicate(predicate) => {
@@ -194,7 +198,7 @@ impl Origin {
                         OriginDecision::Disallow
                     }
                 } else {
-                    OriginDecision::Disallow
+                    OriginDecision::Skip
                 }
             }
             Origin::Custom(callback) => callback(request_origin, ctx),

@@ -462,7 +462,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_list_without_origin_header_should_disallow() {
+        fn when_list_without_origin_header_should_skip_processing() {
             // Arrange
             let origin = Origin::list(["https://api.test"]);
             let ctx = request_context("GET", "");
@@ -471,7 +471,7 @@ mod origin_type {
             let decision = origin.resolve(None, &ctx);
 
             // Assert
-            assert!(matches!(decision, OriginDecision::Disallow));
+            assert!(matches!(decision, OriginDecision::Skip));
         }
 
         #[test]
@@ -540,7 +540,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_predicate_without_origin_header_should_disallow_without_invoking_predicate() {
+        fn when_predicate_without_origin_header_should_skip_without_invoking_predicate() {
             use std::sync::Arc;
             use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -559,7 +559,7 @@ mod origin_type {
             let decision = origin.resolve(None, &ctx);
 
             // Assert
-            assert!(matches!(decision, OriginDecision::Disallow));
+            assert!(matches!(decision, OriginDecision::Skip));
             assert!(!invoked.load(Ordering::Relaxed));
         }
 

@@ -42,6 +42,19 @@ mod list {
         let AllowedMethods::List(values) = result;
         assert_eq!(values, vec![String::new(), "GET".to_string()]);
     }
+
+    #[test]
+    fn when_values_include_case_duplicates_should_keep_first_instance() {
+        // Arrange
+        let methods = ["GET", "get", "POST"];
+
+        // Act
+        let result = AllowedMethods::list(methods);
+
+        // Assert
+        let AllowedMethods::List(values) = result;
+        assert_eq!(values, vec!["GET".to_string(), "POST".to_string()]);
+    }
 }
 
 mod header_value {

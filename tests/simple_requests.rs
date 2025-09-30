@@ -1,7 +1,7 @@
 mod common;
 
-use bunner_cors_rs::Origin;
-use bunner_cors_rs::constants::header;
+use bunner_cors_rs::constants::{header, method};
+use bunner_cors_rs::{CorsDecision, Origin};
 use common::asserts::assert_simple;
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value};
@@ -19,14 +19,12 @@ fn default_simple_request_allows_any_origin() {
 }
 
 #[test]
-fn default_simple_request_without_origin_still_allows_any() {
+fn simple_request_without_origin_is_not_applicable() {
     let cors = cors().build();
-    let headers = assert_simple(simple_request().check(&cors));
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("*")
-    );
+    let decision = simple_request().check(&cors);
+
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]
@@ -86,4 +84,16 @@ fn simple_request_with_disallowed_origin_omits_sensitive_headers() {
     ));
     assert!(!has_header(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS));
     assert!(has_header(&headers, header::VARY));
+}
+
+#[test]
+fn simple_request_with_disallowed_method_is_rejected() {
+    let cors = cors().methods([method::POST]).build();
+
+    let decision = simple_request()
+        .method(method::DELETE)
+        .origin("https://methods.example")
+        .check(&cors);
+
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }

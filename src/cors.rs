@@ -43,19 +43,17 @@ impl Cors {
         }
         let builder = HeaderBuilder::new(&self.options);
         let mut headers = HeaderCollection::new();
-        match builder.build_origin_headers(original, normalized) {
-            OriginOutcome::Skip => return None,
-            OriginOutcome::Disallow(origin_headers) => {
-                headers.extend(origin_headers);
-                return Some(PreflightResult {
-                    headers: headers.into_headers(),
-                    status: self.options.options_success_status,
-                    end_response: true,
-                });
-            }
-            OriginOutcome::Allow(origin_headers) => {
-                headers.extend(origin_headers);
-            }
+        let (origin_headers, origin_allowed) =
+            Self::resolve_origin_headers(&builder, original, normalized)?;
+
+        headers.extend(origin_headers);
+
+        if !origin_allowed {
+            return Some(PreflightResult {
+                headers: headers.into_headers(),
+                status: self.options.options_success_status,
+                end_response: true,
+            });
         }
 
         if !self
@@ -93,17 +91,19 @@ impl Cors {
     ) -> Option<SimpleResult> {
         let builder = HeaderBuilder::new(&self.options);
         let mut headers = HeaderCollection::new();
-        match builder.build_origin_headers(original, normalized) {
-            OriginOutcome::Skip => return None,
-            OriginOutcome::Disallow(origin_headers) => {
-                headers.extend(origin_headers);
-                return Some(SimpleResult {
-                    headers: headers.into_headers(),
-                });
-            }
-            OriginOutcome::Allow(origin_headers) => {
-                headers.extend(origin_headers);
-            }
+        let (origin_headers, origin_allowed) =
+            Self::resolve_origin_headers(&builder, original, normalized)?;
+
+        headers.extend(origin_headers);
+
+        if !origin_allowed {
+            return Some(SimpleResult {
+                headers: headers.into_headers(),
+            });
+        }
+
+        if !self.options.methods.allows_method(normalized.method) {
+            return None;
         }
         headers.extend(builder.build_credentials_header());
         headers.extend(builder.build_private_network_header(original));
@@ -113,6 +113,18 @@ impl Cors {
         Some(SimpleResult {
             headers: headers.into_headers(),
         })
+    }
+
+    fn resolve_origin_headers(
+        builder: &HeaderBuilder<'_>,
+        original: &RequestContext<'_>,
+        normalized: &RequestContext<'_>,
+    ) -> Option<(HeaderCollection, bool)> {
+        match builder.build_origin_headers(original, normalized) {
+            OriginOutcome::Skip => None,
+            OriginOutcome::Disallow(headers) => Some((headers, false)),
+            OriginOutcome::Allow(headers) => Some((headers, true)),
+        }
     }
 }
 

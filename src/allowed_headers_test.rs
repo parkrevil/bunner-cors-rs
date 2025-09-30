@@ -49,6 +49,23 @@ mod list {
             _ => panic!("expected list variant"),
         }
     }
+
+    #[test]
+    fn when_values_include_case_duplicates_should_keep_first_instance() {
+        // Arrange
+        let input = ["X-Trace", "x-trace", "X-Other"];
+
+        // Act
+        let result = AllowedHeaders::list(input);
+
+        // Assert
+        match result {
+            AllowedHeaders::List(values) => {
+                assert_eq!(values, vec!["X-Trace".to_string(), "X-Other".to_string()])
+            }
+            _ => panic!("expected list variant"),
+        }
+    }
 }
 
 mod any {

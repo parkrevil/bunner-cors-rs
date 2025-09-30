@@ -18,12 +18,19 @@ impl AllowedHeaders {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        Self::List(
-            values
-                .into_iter()
-                .map(|value| value.into().trim().to_string())
-                .collect(),
-        )
+        let mut deduped: Vec<String> = Vec::new();
+        for value in values.into_iter() {
+            let trimmed = value.into().trim().to_string();
+            if deduped
+                .iter()
+                .any(|existing| existing.eq_ignore_ascii_case(trimmed.as_str()))
+            {
+                continue;
+            }
+            deduped.push(trimmed);
+        }
+
+        Self::List(deduped)
     }
 
     pub fn any() -> Self {
