@@ -73,3 +73,7 @@ impl HeaderCollection {
         self.headers
     }
 }
+
+#[cfg(test)]
+#[path = "headers_test.rs"]
+mod headers_test;
