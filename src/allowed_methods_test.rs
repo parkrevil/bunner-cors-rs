@@ -13,9 +13,7 @@ mod list {
         let result = AllowedMethods::list(methods);
 
         // Assert
-        let values = match result {
-            AllowedMethods::List(values) => values,
-        };
+        let AllowedMethods::List(values) = result;
         assert_eq!(values, vec!["GET", "POST"]);
     }
 
@@ -28,9 +26,7 @@ mod list {
         let result = AllowedMethods::list(methods);
 
         // Assert
-        let values = match result {
-            AllowedMethods::List(values) => values,
-        };
+        let AllowedMethods::List(values) = result;
         assert!(values.is_empty());
     }
 
@@ -43,9 +39,7 @@ mod list {
         let result = AllowedMethods::list(methods);
 
         // Assert
-        let values = match result {
-            AllowedMethods::List(values) => values,
-        };
+        let AllowedMethods::List(values) = result;
         assert_eq!(values, vec![String::new(), "GET".to_string()]);
     }
 }
@@ -109,7 +103,7 @@ mod allows_method {
 }
 
 mod default {
-    use super::{method, AllowedMethods};
+    use super::{AllowedMethods, method};
 
     #[test]
     fn when_called_should_return_standard_method_list() {
@@ -117,9 +111,7 @@ mod default {
         let methods = AllowedMethods::default();
 
         // Assert
-        let values = match methods {
-            AllowedMethods::List(values) => values,
-        };
+        let AllowedMethods::List(values) = methods;
 
         let expected = vec![
             method::GET.to_string(),
