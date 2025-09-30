@@ -51,3 +51,15 @@ fn simple_request_without_expose_headers_should_not_emit_expose_header() {
         "expose headers should be absent when not configured",
     );
 }
+
+#[test]
+fn simple_request_with_private_network_support_emits_header() {
+    let cors = cors().private_network(true).build();
+
+    let headers = assert_simple(simple_request().check(&cors));
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
+        Some("true")
+    );
+}

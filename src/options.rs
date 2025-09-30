@@ -12,6 +12,7 @@ pub struct CorsOptions {
     pub max_age: Option<String>,
     pub preflight_continue: bool,
     pub options_success_status: u16,
+    pub allow_private_network: bool,
 }
 
 impl Default for CorsOptions {
@@ -25,6 +26,7 @@ impl Default for CorsOptions {
             max_age: None,
             preflight_continue: false,
             options_success_status: 204,
+            allow_private_network: false,
         }
     }
 }

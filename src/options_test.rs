@@ -20,6 +20,7 @@ mod default {
         assert!(options.max_age.is_none());
         assert!(!options.preflight_continue);
         assert_eq!(options.options_success_status, 204);
+        assert!(!options.allow_private_network);
     }
 
     #[test]

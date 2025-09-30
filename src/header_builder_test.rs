@@ -456,7 +456,10 @@ mod build_private_network_header {
     #[test]
     fn when_request_includes_private_network_should_emit_allow_header() {
         // Arrange
-        let options = CorsOptions::default();
+        let options = CorsOptions {
+            allow_private_network: true,
+            ..CorsOptions::default()
+        };
         let builder = HeaderBuilder::new(&options);
         let ctx = request_with_private_network("OPTIONS", "https://api.test", "POST", "X-Test");
 
@@ -471,9 +474,26 @@ mod build_private_network_header {
     }
 
     #[test]
-    fn when_request_does_not_include_private_network_should_return_empty_collection() {
+    fn when_private_network_disabled_should_not_emit_header() {
         // Arrange
         let options = CorsOptions::default();
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request_with_private_network("OPTIONS", "https://api.test", "POST", "X-Test");
+
+        // Act
+        let map = builder.build_private_network_header(&ctx).into_headers();
+
+        // Assert
+        assert!(map.is_empty());
+    }
+
+    #[test]
+    fn when_request_does_not_include_private_network_should_return_empty_collection() {
+        // Arrange
+        let options = CorsOptions {
+            allow_private_network: true,
+            ..CorsOptions::default()
+        };
         let builder = HeaderBuilder::new(&options);
         let ctx = request("OPTIONS", "https://api.test", "POST", "X-Test");
 

@@ -371,7 +371,10 @@ mod process_preflight {
     #[test]
     fn when_private_network_requested_should_emit_private_network_header() {
         // Arrange
-        let cors = Cors::new(CorsOptions::default());
+        let cors = Cors::new(CorsOptions {
+            allow_private_network: true,
+            ..CorsOptions::default()
+        });
         let original = request_with_private_network("OPTIONS", "https://intranet.test", "GET", "");
 
         // Act
@@ -383,6 +386,23 @@ mod process_preflight {
                 .headers
                 .get(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
             Some(&"true".to_string())
+        );
+    }
+
+    #[test]
+    fn when_private_network_disabled_should_not_emit_header() {
+        // Arrange
+        let cors = Cors::new(CorsOptions::default());
+        let original = request_with_private_network("OPTIONS", "https://intranet.test", "GET", "");
+
+        // Act
+        let result = preflight_result(&cors, &original).expect("expected preflight result");
+
+        // Assert
+        assert!(
+            !result
+                .headers
+                .contains_key(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK)
         );
     }
 }
@@ -477,6 +497,27 @@ mod process_simple {
             result
                 .headers
                 .contains_key(header::ACCESS_CONTROL_ALLOW_CREDENTIALS)
+        );
+    }
+
+    #[test]
+    fn when_private_network_allowed_should_emit_header() {
+        // Arrange
+        let cors = Cors::new(CorsOptions {
+            allow_private_network: true,
+            ..CorsOptions::default()
+        });
+        let original = request("GET", "https://intranet.test", "", "");
+
+        // Act
+        let result = simple_result(&cors, &original).expect("expected simple result");
+
+        // Assert
+        assert_eq!(
+            result
+                .headers
+                .get(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
+            Some(&"true".to_string())
         );
     }
 }

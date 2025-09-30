@@ -11,6 +11,7 @@ pub struct CorsBuilder {
     exposed_headers: Option<Vec<String>>,
     credentials: Option<bool>,
     max_age: Option<String>,
+    private_network: Option<bool>,
     preflight_continue: Option<bool>,
 }
 
@@ -67,6 +68,11 @@ impl CorsBuilder {
         self
     }
 
+    pub fn private_network(mut self, enabled: bool) -> Self {
+        self.private_network = Some(enabled);
+        self
+    }
+
     pub fn build(self) -> Cors {
         let CorsOptions {
             origin: default_origin,
@@ -77,6 +83,7 @@ impl CorsBuilder {
             max_age: default_max_age,
             preflight_continue: default_preflight_continue,
             options_success_status: default_success_status,
+            allow_private_network: default_private_network,
         } = CorsOptions::default();
 
         Cors::new(CorsOptions {
@@ -90,6 +97,9 @@ impl CorsBuilder {
                 .preflight_continue
                 .unwrap_or(default_preflight_continue),
             options_success_status: default_success_status,
+            allow_private_network: self
+                .private_network
+                .unwrap_or(default_private_network),
         })
     }
 }
@@ -97,6 +107,7 @@ impl CorsBuilder {
 pub struct SimpleRequestBuilder {
     method: String,
     origin: Option<String>,
+    private_network: bool,
 }
 
 impl SimpleRequestBuilder {
@@ -104,6 +115,7 @@ impl SimpleRequestBuilder {
         Self {
             method: method::GET.into(),
             origin: None,
+            private_network: false,
         }
     }
 
@@ -117,14 +129,23 @@ impl SimpleRequestBuilder {
         self
     }
 
+    pub fn private_network(mut self, enabled: bool) -> Self {
+        self.private_network = enabled;
+        self
+    }
+
     pub fn check(self, cors: &Cors) -> bunner_cors_rs::CorsDecision {
-        let SimpleRequestBuilder { method, origin } = self;
+        let SimpleRequestBuilder {
+            method,
+            origin,
+            private_network,
+        } = self;
         let ctx = RequestContext {
             method: &method,
             origin: origin.as_deref().unwrap_or(""),
             access_control_request_method: "",
             access_control_request_headers: "",
-            access_control_request_private_network: false,
+            access_control_request_private_network: private_network,
         };
         cors.check(&ctx)
     }

@@ -71,6 +71,7 @@ impl Cors {
         }
         headers.extend(origin_headers);
         headers.extend(builder.build_credentials_header());
+        headers.extend(builder.build_private_network_header(original));
         headers.extend(builder.build_exposed_headers());
 
         Some(SimpleResult {

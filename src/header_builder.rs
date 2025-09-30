@@ -116,7 +116,10 @@ impl<'a> HeaderBuilder<'a> {
         request: &RequestContext<'_>,
     ) -> HeaderCollection {
         let mut headers = HeaderCollection::new();
-        if request.access_control_request_private_network {
+        let is_preflight = request.method.eq_ignore_ascii_case("OPTIONS");
+        if self.options.allow_private_network
+            && (!is_preflight || request.access_control_request_private_network)
+        {
             headers.push(
                 header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK.to_string(),
                 "true".to_string(),

@@ -428,7 +428,7 @@ fn preflight_allowed_headers_any_sets_wildcard_header() {
 
 #[test]
 fn preflight_with_private_network_request_emits_allow_header() {
-    let cors = cors().build();
+    let cors = cors().private_network(true).build();
 
     let (headers, status, halt) = assert_preflight(
         preflight_request()
