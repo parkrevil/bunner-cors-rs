@@ -82,3 +82,32 @@ mod default_variant {
         }
     }
 }
+
+mod allows_headers {
+    use super::*;
+
+    #[test]
+    fn when_any_should_allow_all_headers() {
+        let headers = AllowedHeaders::any();
+        assert!(headers.allows_headers("x-custom"));
+    }
+
+    #[test]
+    fn when_mirror_request_should_allow_all_headers() {
+        let headers = AllowedHeaders::MirrorRequest;
+        assert!(headers.allows_headers("x-custom"));
+    }
+
+    #[test]
+    fn when_list_should_validate_case_insensitively() {
+        let headers = AllowedHeaders::list(["X-Custom", "Content-Type"]);
+        assert!(headers.allows_headers("x-custom, content-type"));
+        assert!(!headers.allows_headers("x-custom, x-other"));
+    }
+
+    #[test]
+    fn when_request_headers_empty_should_allow() {
+        let headers = AllowedHeaders::list(["X-Custom"]);
+        assert!(headers.allows_headers("  "));
+    }
+}

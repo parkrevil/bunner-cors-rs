@@ -1,7 +1,7 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{Cors, CorsOptions, Origin};
+use bunner_cors_rs::{Cors, CorsDecision, CorsOptions, Origin};
 use common::asserts::{assert_preflight, assert_vary_contains, assert_vary_not_contains};
 use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
@@ -95,14 +95,12 @@ fn custom_success_status_is_reflected() {
 fn empty_methods_list_omits_allow_methods_header() {
     let cors = cors().methods(Vec::<String>::new()).build();
 
-    let (headers, _status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::PATCH)
-            .check(&cors),
-    );
+    let decision = preflight_request()
+        .origin("https://foo.bar")
+        .request_method(method::PATCH)
+        .check(&cors);
 
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_METHODS));
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]

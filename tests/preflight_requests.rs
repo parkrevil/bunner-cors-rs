@@ -103,41 +103,35 @@ fn preflight_custom_methods_preserve_case() {
     let (headers, _status, _halt) = assert_preflight(
         preflight_request()
             .origin("https://wild.dev")
-            .request_method(method::GET)
+            .request_method("FETCH")
             .check(&cors),
     );
 
     assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "post,FETCH");
 }
 #[test]
-fn preflight_with_disallowed_method_still_returns_configured_methods() {
-    let (headers, status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::DELETE)
-            .check(&cors().methods([method::GET, method::POST]).build()),
-    );
+fn preflight_with_disallowed_method_is_rejected() {
+    let decision = preflight_request()
+        .origin("https://foo.bar")
+        .request_method(method::DELETE)
+        .check(&cors().methods([method::GET, method::POST]).build());
 
-    assert_eq!(status, 204);
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "GET,POST");
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]
-fn preflight_with_disallowed_header_returns_configured_list() {
-    let (headers, status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .request_headers("X-Disallowed")
-            .check(
-                &cors()
-                    .allowed_headers(AllowedHeaders::list(["X-Allowed"]))
-                    .build(),
-            ),
-    );
+fn preflight_with_disallowed_header_is_rejected() {
+    let decision = preflight_request()
+        .origin("https://foo.bar")
+        .request_method(method::GET)
+        .request_headers("X-Disallowed")
+        .check(
+            &cors()
+                .allowed_headers(AllowedHeaders::list(["X-Allowed"]))
+                .build(),
+        );
 
-    assert_eq!(status, 204);
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "X-Allowed");
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]

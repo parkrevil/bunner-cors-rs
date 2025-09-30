@@ -43,6 +43,20 @@ impl Cors {
         if skip {
             return None;
         }
+        if !self
+            .options
+            .methods
+            .allows_method(normalized.access_control_request_method)
+        {
+            return None;
+        }
+        if !self
+            .options
+            .allowed_headers
+            .allows_headers(normalized.access_control_request_headers)
+        {
+            return None;
+        }
         headers.extend(origin_headers);
         headers.extend(builder.build_credentials_header());
         headers.extend(builder.build_methods_header());

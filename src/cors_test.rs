@@ -280,7 +280,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_request_headers_not_allowed_should_emit_configured_list() {
+    fn when_request_headers_not_allowed_should_return_none() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
@@ -290,13 +290,10 @@ mod process_preflight {
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Forbidden");
 
         // Act
-        let result = preflight_result(&cors, &original).expect("expected preflight result");
+        let result = preflight_result(&cors, &original);
 
         // Assert
-        assert_eq!(
-            result.headers.get(header::ACCESS_CONTROL_ALLOW_HEADERS),
-            Some(&"X-Allowed".to_string())
-        );
+        assert!(result.is_none());
     }
 
     #[test]
@@ -330,6 +327,23 @@ mod process_preflight {
             result.headers.get(header::ACCESS_CONTROL_ALLOW_METHODS),
             Some(&"*".to_string())
         );
+    }
+
+    #[test]
+    fn when_request_method_not_allowed_should_return_none() {
+        // Arrange
+        let cors = Cors::new(CorsOptions {
+            origin: Origin::any(),
+            methods: AllowedMethods::list(["GET", "POST"]),
+            ..CorsOptions::default()
+        });
+        let original = request("OPTIONS", "https://allowed.test", "DELETE", "");
+
+        // Act
+        let result = preflight_result(&cors, &original);
+
+        // Assert
+        assert!(result.is_none());
     }
 
     #[test]

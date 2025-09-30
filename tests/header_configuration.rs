@@ -1,7 +1,7 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{AllowedHeaders, Origin, TimingAllowOrigin};
+use bunner_cors_rs::{AllowedHeaders, CorsDecision, Origin, TimingAllowOrigin};
 use common::asserts::{
     assert_header_eq, assert_preflight, assert_simple, assert_vary_eq, assert_vary_is_empty,
 };
@@ -154,16 +154,13 @@ fn empty_allowed_headers_list_omits_allow_headers() {
         cors().allowed_headers(AllowedHeaders::list(empty)).build()
     };
 
-    let (headers, _status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .request_headers("X-Test")
-            .check(&cors),
-    );
+    let decision = preflight_request()
+        .origin("https://foo.bar")
+        .request_method(method::GET)
+        .request_headers("X-Test")
+        .check(&cors);
 
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
-    assert_vary_is_empty(&headers);
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]

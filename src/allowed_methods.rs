@@ -32,6 +32,21 @@ impl AllowedMethods {
             AllowedMethods::List(values) => Some(values.join(",")),
         }
     }
+
+    /// Determine whether the provided method is allowed for a preflight request.
+    pub fn allows_method(&self, method: &str) -> bool {
+        let method = method.trim();
+        if method.is_empty() {
+            return true;
+        }
+
+        match self {
+            AllowedMethods::Any => true,
+            AllowedMethods::List(values) => values
+                .iter()
+                .any(|allowed| allowed.eq_ignore_ascii_case(method)),
+        }
+    }
 }
 
 impl Default for AllowedMethods {

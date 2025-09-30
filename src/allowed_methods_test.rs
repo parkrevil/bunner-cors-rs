@@ -120,6 +120,30 @@ mod header_value {
     }
 }
 
+mod allows_method {
+    use super::*;
+
+    #[test]
+    fn when_any_should_allow_any_method() {
+        let methods = AllowedMethods::any();
+        assert!(methods.allows_method("DELETE"));
+    }
+
+    #[test]
+    fn when_list_should_compare_case_insensitively() {
+        let methods = AllowedMethods::list(["POST", "PATCH"]);
+        assert!(methods.allows_method("post"));
+        assert!(!methods.allows_method("DELETE"));
+    }
+
+    #[test]
+    fn when_method_missing_should_allow() {
+        let methods = AllowedMethods::list(["GET"]);
+        assert!(methods.allows_method(""));
+        assert!(methods.allows_method("  "));
+    }
+}
+
 mod default {
     use super::*;
 
