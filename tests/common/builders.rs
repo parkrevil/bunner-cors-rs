@@ -14,7 +14,7 @@ pub struct CorsBuilder {
     credentials: Option<bool>,
     max_age: Option<String>,
     private_network: Option<bool>,
-    preflight_continue: Option<bool>,
+    // preflight_continue removed
     timing_allow_origin: Option<TimingAllowOrigin>,
 }
 
@@ -61,11 +61,6 @@ impl CorsBuilder {
         self
     }
 
-    pub fn preflight_continue(mut self, enabled: bool) -> Self {
-        self.preflight_continue = Some(enabled);
-        self
-    }
-
     pub fn private_network(mut self, enabled: bool) -> Self {
         self.private_network = Some(enabled);
         self
@@ -84,7 +79,7 @@ impl CorsBuilder {
             exposed_headers: default_exposed_headers,
             credentials: default_credentials,
             max_age: default_max_age,
-            preflight_continue: default_preflight_continue,
+
             options_success_status: default_success_status,
             allow_private_network: default_private_network,
             timing_allow_origin: default_timing_allow_origin,
@@ -107,9 +102,6 @@ impl CorsBuilder {
             exposed_headers: self.exposed_headers.or(default_exposed_headers),
             credentials,
             max_age: self.max_age.or(default_max_age),
-            preflight_continue: self
-                .preflight_continue
-                .unwrap_or(default_preflight_continue),
             options_success_status: default_success_status,
             allow_private_network: self.private_network.unwrap_or(default_private_network),
             timing_allow_origin: self.timing_allow_origin.or(default_timing_allow_origin),

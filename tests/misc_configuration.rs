@@ -7,8 +7,8 @@ use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
 
 #[test]
-fn max_age_and_preflight_continue_affect_preflight_response() {
-    let cors = cors().max_age("600").preflight_continue(true).build();
+fn max_age_affects_preflight_response() {
+    let cors = cors().max_age("600").build();
 
     let (headers, status, halt) = assert_preflight(
         preflight_request()
@@ -18,10 +18,7 @@ fn max_age_and_preflight_continue_affect_preflight_response() {
     );
 
     assert_eq!(status, 204);
-    assert!(
-        !halt,
-        "halt flag should be false when preflight_continue is true"
-    );
+    assert!(halt, "preflight should halt by default");
     assert_eq!(
         header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
         Some("600")

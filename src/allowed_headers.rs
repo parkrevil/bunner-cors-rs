@@ -1,10 +1,15 @@
 /// Configuration for the `Access-Control-Allow-Headers` response value.
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum AllowedHeaders {
-    #[default]
-    MirrorRequest,
     List(Vec<String>),
+    /// Wildcard: always allowed and emits "*" on preflight
     Any,
+}
+
+impl Default for AllowedHeaders {
+    fn default() -> Self {
+        AllowedHeaders::List(Vec::new())
+    }
 }
 
 impl AllowedHeaders {
@@ -27,7 +32,7 @@ impl AllowedHeaders {
 
     pub fn allows_headers(&self, request_headers: &str) -> bool {
         match self {
-            Self::Any | Self::MirrorRequest => true,
+            Self::Any => true,
             Self::List(allowed) => {
                 let request_headers = request_headers.trim();
                 if request_headers.is_empty() {

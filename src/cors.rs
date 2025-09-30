@@ -71,7 +71,7 @@ impl Cors {
         Some(PreflightResult {
             headers: headers.into_headers(),
             status: self.options.options_success_status,
-            end_response: !self.options.preflight_continue,
+            end_response: true,
         })
     }
 

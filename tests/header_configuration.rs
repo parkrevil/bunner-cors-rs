@@ -64,7 +64,7 @@ fn credentials_disabled_omits_allow_credentials_header() {
 fn vary_headers_are_deduplicated_and_sorted() {
     let cors = cors()
         .origin(Origin::exact("https://allowed.dev"))
-        .allowed_headers(AllowedHeaders::MirrorRequest)
+        .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
     let (headers, _status, _halt) = assert_preflight(
@@ -74,17 +74,14 @@ fn vary_headers_are_deduplicated_and_sorted() {
             .request_headers("X-Test")
             .check(&cors),
     );
-    assert_vary_eq(
-        &headers,
-        [header::ACCESS_CONTROL_REQUEST_HEADERS, header::ORIGIN],
-    );
+    assert_vary_eq(&headers, [header::ORIGIN]);
 }
 
 #[test]
 fn vary_header_contains_unique_entries() {
     let cors = cors()
         .origin(Origin::exact("https://allowed.dev"))
-        .allowed_headers(AllowedHeaders::MirrorRequest)
+        .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
     let (headers, _status, _halt) = assert_preflight(
@@ -111,28 +108,25 @@ fn vary_header_contains_unique_entries() {
 }
 
 #[test]
-fn mirror_request_headers_preserves_formatting() {
+fn preflight_with_unlisted_request_header_is_rejected() {
     let cors = cors()
-        .allowed_headers(AllowedHeaders::MirrorRequest)
+        .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
     let requested = "X-Test , x-next";
 
-    let (headers, _status, _halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::PATCH)
-            .request_headers(requested)
-            .check(&cors),
-    );
+    let decision = preflight_request()
+        .origin("https://foo.bar")
+        .request_method(method::PATCH)
+        .request_headers(requested)
+        .check(&cors);
 
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, requested);
-    assert_vary_eq(&headers, [header::ACCESS_CONTROL_REQUEST_HEADERS]);
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]
-fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
+fn preflight_without_request_headers_emits_configured_list() {
     let cors = cors()
-        .allowed_headers(AllowedHeaders::MirrorRequest)
+        .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
     let (headers, _status, _halt) = assert_preflight(
@@ -143,8 +137,8 @@ fn mirror_request_headers_skip_allow_headers_when_request_value_empty() {
             .check(&cors),
     );
 
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
-    assert_vary_eq(&headers, [header::ACCESS_CONTROL_REQUEST_HEADERS]);
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "X-Test");
+    assert_vary_is_empty(&headers);
 }
 
 #[test]

@@ -77,8 +77,8 @@ mod default_variant {
 
         // Assert
         match value {
-            AllowedHeaders::MirrorRequest => {}
-            _ => panic!("expected mirror request variant"),
+            AllowedHeaders::List(values) if values.is_empty() => {}
+            _ => panic!("expected empty list variant by default"),
         }
     }
 }
@@ -94,8 +94,7 @@ mod allows_headers {
 
     #[test]
     fn when_mirror_request_should_allow_all_headers() {
-        let headers = AllowedHeaders::MirrorRequest;
-        assert!(headers.allows_headers("x-custom"));
+        // removed mirror behavior; list and any are covered elsewhere
     }
 
     #[test]

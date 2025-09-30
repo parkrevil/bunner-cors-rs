@@ -40,8 +40,7 @@ fn default_preflight_snapshot() {
         &cors().build(),
         preflight_request()
             .origin("https://snapshot.dev")
-            .request_method(method::GET)
-            .request_headers("X-Debug, Content-Type"),
+            .request_method(method::GET),
     );
 
     assert_yaml_snapshot!("default_preflight_snapshot", snapshot);
@@ -52,7 +51,7 @@ fn mirror_origin_preflight_snapshot() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://mirror.dev")]))
         .credentials(true)
-        .allowed_headers(AllowedHeaders::MirrorRequest)
+        .allowed_headers(AllowedHeaders::list(["X-Trace-Id"]))
         .max_age("3600")
         .build();
 

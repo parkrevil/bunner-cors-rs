@@ -1,7 +1,7 @@
 mod common;
 
-use bunner_cors_rs::Origin;
 use bunner_cors_rs::constants::{header, method};
+use bunner_cors_rs::{AllowedHeaders, Origin};
 use common::asserts::{assert_preflight, assert_simple};
 use common::builders::{cors, preflight_request, simple_request};
 use common::headers::header_value;
@@ -10,7 +10,13 @@ use std::thread;
 
 #[test]
 fn cors_can_be_shared_across_threads() {
-    let cors = Arc::new(cors().origin(Origin::any()).credentials(true).build());
+    let cors = Arc::new(
+        cors()
+            .origin(Origin::any())
+            .credentials(true)
+            .allowed_headers(AllowedHeaders::list(["X-Thread"]))
+            .build(),
+    );
 
     let mut handles = Vec::new();
     for i in 0..8 {

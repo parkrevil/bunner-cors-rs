@@ -84,7 +84,7 @@ impl<'a> HeaderBuilder<'a> {
         headers
     }
 
-    pub(crate) fn build_allowed_headers(&self, request: &RequestContext<'_>) -> HeaderCollection {
+    pub(crate) fn build_allowed_headers(&self, _request: &RequestContext<'_>) -> HeaderCollection {
         let mut headers = HeaderCollection::new();
         match &self.options.allowed_headers {
             AllowedHeaders::List(values) => {
@@ -95,15 +95,7 @@ impl<'a> HeaderBuilder<'a> {
                     );
                 }
             }
-            AllowedHeaders::MirrorRequest => {
-                headers.add_vary(header::ACCESS_CONTROL_REQUEST_HEADERS);
-                if !request.access_control_request_headers.is_empty() {
-                    headers.push(
-                        header::ACCESS_CONTROL_ALLOW_HEADERS.to_string(),
-                        request.access_control_request_headers.to_string(),
-                    );
-                }
-            }
+
             AllowedHeaders::Any => {
                 headers.push(
                     header::ACCESS_CONTROL_ALLOW_HEADERS.to_string(),

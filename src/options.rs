@@ -1,6 +1,5 @@
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
-use crate::constants::header;
 use crate::origin::Origin;
 use crate::timing_allow_origin::TimingAllowOrigin;
 use std::error::Error;
@@ -45,7 +44,6 @@ pub enum ValidationError {
     InvalidMaxAge(String),
     PrivateNetworkRequiresCredentials,
     PrivateNetworkRequiresSpecificOrigin,
-    PrivateNetworkRequestHeaderNotAllowed,
     AllowedMethodsCannotContainEmptyToken,
     AllowedMethodsCannotContainWildcard,
     AllowedMethodsListContainsInvalidToken,
@@ -91,9 +89,7 @@ impl Display for ValidationError {
             ValidationError::PrivateNetworkRequiresSpecificOrigin => f.write_str(
                 "Allowing private network access requires configuring a specific allowed origin instead of \"*\".",
             ),
-            ValidationError::PrivateNetworkRequestHeaderNotAllowed => f.write_str(
-                "Allowing private network access requires permitting the Access-Control-Request-Private-Network header.",
-            ),
+
             ValidationError::AllowedMethodsCannotContainEmptyToken => f.write_str(
                 "Allowed methods lists cannot contain empty or whitespace-only entries.",
             ),
@@ -130,7 +126,6 @@ pub struct CorsOptions {
     pub exposed_headers: Option<Vec<String>>,
     pub credentials: bool,
     pub max_age: Option<String>,
-    pub preflight_continue: bool,
     pub options_success_status: u16,
     pub allow_private_network: bool,
     pub timing_allow_origin: Option<TimingAllowOrigin>,
@@ -145,7 +140,6 @@ impl Default for CorsOptions {
             exposed_headers: None,
             credentials: false,
             max_age: None,
-            preflight_continue: false,
             options_success_status: 204,
             allow_private_network: false,
             timing_allow_origin: None,
@@ -241,14 +235,6 @@ impl CorsOptions {
             }
             if matches!(self.origin, Origin::Any) {
                 return Err(ValidationError::PrivateNetworkRequiresSpecificOrigin);
-            }
-            if let AllowedHeaders::List(values) = &self.allowed_headers {
-                let header_allowed = values.iter().any(|value| {
-                    value.eq_ignore_ascii_case(header::ACCESS_CONTROL_REQUEST_PRIVATE_NETWORK)
-                });
-                if !header_allowed {
-                    return Err(ValidationError::PrivateNetworkRequestHeaderNotAllowed);
-                }
             }
         }
 

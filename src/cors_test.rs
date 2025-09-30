@@ -69,11 +69,10 @@ mod new {
     use super::*;
 
     #[test]
-    fn when_preflight_continue_enabled_simple_request_should_return_simple_decision() {
+    fn simple_request_should_return_simple_decision() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
-            preflight_continue: true,
             ..CorsOptions::default()
         };
         let cors = cors_with(options);
@@ -99,6 +98,7 @@ mod new {
     fn when_constructed_with_custom_status_should_use_it() {
         // Arrange
         let options = CorsOptions {
+            allowed_headers: AllowedHeaders::any(),
             options_success_status: 208,
             ..CorsOptions::default()
         };
@@ -270,7 +270,6 @@ mod process_preflight {
         let options = CorsOptions {
             origin: Origin::any(),
             max_age: Some("600".into()),
-            preflight_continue: true,
             ..CorsOptions::default()
         };
         let cors = cors_with(options);
@@ -281,7 +280,7 @@ mod process_preflight {
 
         // Assert
         assert_eq!(result.status, 204);
-        assert!(!result.end_response);
+        assert!(result.end_response);
         assert!(
             result
                 .headers
@@ -332,9 +331,13 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_preflight_continue_disabled_should_end_response() {
+    fn preflight_should_end_response() {
         // Arrange
-        let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
+        let cors = Cors::new(CorsOptions {
+            allowed_headers: AllowedHeaders::any(),
+            ..CorsOptions::default()
+        })
+        .expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
         // Act
@@ -389,6 +392,7 @@ mod process_preflight {
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
             max_age: None,
+            allowed_headers: AllowedHeaders::any(),
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");
@@ -450,6 +454,7 @@ mod process_preflight {
                 "https://metrics.test",
                 "https://dash.test",
             ])),
+            allowed_headers: AllowedHeaders::any(),
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");

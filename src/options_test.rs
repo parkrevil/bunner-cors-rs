@@ -19,7 +19,7 @@ mod default {
         assert_eq!(options.exposed_headers, None);
         assert!(!options.credentials);
         assert!(options.max_age.is_none());
-        assert!(!options.preflight_continue);
+        // preflight_continue removed
         assert_eq!(options.options_success_status, 204);
         assert!(!options.allow_private_network);
         assert!(options.timing_allow_origin.is_none());

@@ -11,28 +11,15 @@ use common::builders::{cors, preflight_request};
 use common::headers::has_header;
 
 #[test]
-fn default_preflight_reflects_request_headers() {
+fn default_preflight_with_requested_headers_is_rejected() {
     let cors = cors().build();
-    let (headers, status, halt) = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .request_headers("X-Test, Content-Type")
-            .check(&cors),
-    );
+    let decision = preflight_request()
+        .origin("https://foo.bar")
+        .request_method(method::GET)
+        .request_headers("X-Test, Content-Type")
+        .check(&cors);
 
-    assert_eq!(status, 204);
-    assert!(
-        halt,
-        "preflight should halt when preflight_continue is false"
-    );
-    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-    assert_header_eq(
-        &headers,
-        header::ACCESS_CONTROL_ALLOW_HEADERS,
-        "X-Test, Content-Type",
-    );
-    assert_vary_eq(&headers, [header::ACCESS_CONTROL_REQUEST_HEADERS]);
+    assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
 #[test]
@@ -87,16 +74,25 @@ fn preflight_allowed_headers_any_with_credentials_retains_wildcard() {
 
 #[test]
 fn preflight_custom_methods_preserve_case() {
-    let cors = cors().methods(["post", "FETCH"]).build();
+    let cors = cors()
+        .methods(["post", "FETCH"])
+        .allowed_headers(AllowedHeaders::list(["X-MiXeD", "Content-Type"]))
+        .build();
 
     let (headers, _status, _halt) = assert_preflight(
         preflight_request()
             .origin("https://wild.dev")
             .request_method("FETCH")
+            .request_headers("X-MiXeD, Content-Type")
             .check(&cors),
     );
 
     assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_METHODS, "post,FETCH");
+    assert_header_eq(
+        &headers,
+        header::ACCESS_CONTROL_ALLOW_HEADERS,
+        "X-MiXeD,Content-Type",
+    );
 }
 #[test]
 fn preflight_with_disallowed_method_is_rejected() {
@@ -134,9 +130,9 @@ fn preflight_without_request_method_does_not_reflect_request_headers() {
 }
 
 #[test]
-fn preflight_mirror_headers_without_request_headers_omits_allow_headers() {
+fn preflight_without_request_headers_emits_configured_list() {
     let cors = cors()
-        .allowed_headers(AllowedHeaders::MirrorRequest)
+        .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
 
     let (headers, _status, _halt) = assert_preflight(
@@ -146,8 +142,8 @@ fn preflight_mirror_headers_without_request_headers_omits_allow_headers() {
             .check(&cors),
     );
 
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS));
-    assert_vary_eq(&headers, [header::ACCESS_CONTROL_REQUEST_HEADERS]);
+    assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS, "X-Test");
+    assert_vary_is_empty(&headers);
 }
 
 #[test]
@@ -219,6 +215,7 @@ fn preflight_custom_origin_checks_request_headers() {
                 OriginDecision::Skip
             }
         }))
+        .allowed_headers(AllowedHeaders::list(["X-Allow", "X-Trace"]))
         .build();
 
     let decision = preflight_request()
@@ -342,7 +339,9 @@ fn preflight_disallowed_origin_sets_vary_without_allow_origin() {
 
 #[test]
 fn preflight_accepts_mixed_case_options_and_request_method() {
-    let cors = cors().build();
+    let cors = cors()
+        .allowed_headers(AllowedHeaders::list(["X-MiXeD", "Content-Type"]))
+        .build();
     let method = String::from("oPtIoNs");
     let requested_method = String::from("pOsT");
     let requested_headers = String::from("X-MiXeD, Content-Type");
@@ -367,7 +366,7 @@ fn preflight_accepts_mixed_case_options_and_request_method() {
     assert_header_eq(
         &headers,
         header::ACCESS_CONTROL_ALLOW_HEADERS,
-        requested_headers.as_str(),
+        "X-MiXeD,Content-Type",
     );
 }
 

@@ -333,10 +333,10 @@ mod build_allowed_headers {
     }
 
     #[test]
-    fn when_mirroring_request_headers_should_reflect_original() {
+    fn when_request_has_headers_still_emit_configured_list() {
         // Arrange
         let options = CorsOptions {
-            allowed_headers: AllowedHeaders::MirrorRequest,
+            allowed_headers: AllowedHeaders::list(["X-Test", "X-Trace"]),
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
@@ -348,19 +348,16 @@ mod build_allowed_headers {
         // Assert
         assert_eq!(
             map.get(header::ACCESS_CONTROL_ALLOW_HEADERS),
-            Some(&"X-Trace, X-Auth".to_string())
+            Some(&"X-Test,X-Trace".to_string())
         );
-        assert_eq!(
-            map.get(header::VARY),
-            Some(&"Access-Control-Request-Headers".to_string())
-        );
+        assert!(!map.contains_key(header::VARY));
     }
 
     #[test]
-    fn when_request_headers_absent_should_only_set_vary() {
+    fn when_request_headers_absent_should_emit_configured_list() {
         // Arrange
         let options = CorsOptions {
-            allowed_headers: AllowedHeaders::MirrorRequest,
+            allowed_headers: AllowedHeaders::list(["X-Test"]),
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
@@ -370,11 +367,11 @@ mod build_allowed_headers {
         let map = builder.build_allowed_headers(&ctx).into_headers();
 
         // Assert
-        assert!(!map.contains_key(header::ACCESS_CONTROL_ALLOW_HEADERS));
         assert_eq!(
-            map.get(header::VARY),
-            Some(&"Access-Control-Request-Headers".to_string())
+            map.get(header::ACCESS_CONTROL_ALLOW_HEADERS),
+            Some(&"X-Test".to_string())
         );
+        assert!(!map.contains_key(header::VARY));
     }
 
     #[test]
