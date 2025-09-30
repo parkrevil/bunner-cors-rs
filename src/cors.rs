@@ -77,3 +77,7 @@ impl Cors {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "cors_test.rs"]
+mod cors_test;
