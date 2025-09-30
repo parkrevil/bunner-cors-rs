@@ -7,6 +7,7 @@ use crate::normalized_request::NormalizedRequest;
 use crate::options::CorsOptions;
 use crate::origin::{Origin, OriginDecision};
 use crate::result::{CorsDecision, PreflightResult, SimpleResult};
+use crate::timing_allow_origin::TimingAllowOrigin;
 
 fn build_request(
     method: &'static str,
@@ -405,6 +406,28 @@ mod process_preflight {
                 .contains_key(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK)
         );
     }
+
+    #[test]
+    fn when_timing_allow_origin_configured_should_emit_header() {
+        // Arrange
+        let cors = Cors::new(CorsOptions {
+            timing_allow_origin: Some(TimingAllowOrigin::list([
+                "https://metrics.test",
+                "https://dash.test",
+            ])),
+            ..CorsOptions::default()
+        });
+        let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
+
+        // Act
+        let result = preflight_result(&cors, &original).expect("expected preflight result");
+
+        // Assert
+        assert_eq!(
+            result.headers.get(header::TIMING_ALLOW_ORIGIN),
+            Some(&"https://metrics.test https://dash.test".to_string())
+        );
+    }
 }
 
 mod process_simple {
@@ -518,6 +541,25 @@ mod process_simple {
                 .headers
                 .get(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
             Some(&"true".to_string())
+        );
+    }
+
+    #[test]
+    fn when_timing_allow_origin_configured_should_emit_header() {
+        // Arrange
+        let cors = Cors::new(CorsOptions {
+            timing_allow_origin: Some(TimingAllowOrigin::any()),
+            ..CorsOptions::default()
+        });
+        let original = request("GET", "https://allowed.test", "", "");
+
+        // Act
+        let result = simple_result(&cors, &original).expect("expected simple result");
+
+        // Assert
+        assert_eq!(
+            result.headers.get(header::TIMING_ALLOW_ORIGIN),
+            Some(&"*".to_string())
         );
     }
 }

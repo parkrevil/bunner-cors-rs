@@ -1,6 +1,7 @@
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
 use crate::origin::Origin;
+use crate::timing_allow_origin::TimingAllowOrigin;
 
 #[derive(Clone)]
 pub struct CorsOptions {
@@ -13,6 +14,7 @@ pub struct CorsOptions {
     pub preflight_continue: bool,
     pub options_success_status: u16,
     pub allow_private_network: bool,
+    pub timing_allow_origin: Option<TimingAllowOrigin>,
 }
 
 impl Default for CorsOptions {
@@ -27,6 +29,7 @@ impl Default for CorsOptions {
             preflight_continue: false,
             options_success_status: 204,
             allow_private_network: false,
+            timing_allow_origin: None,
         }
     }
 }

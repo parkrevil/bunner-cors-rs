@@ -9,6 +9,7 @@ mod normalized_request;
 mod options;
 mod origin;
 mod result;
+mod timing_allow_origin;
 
 pub use allowed_headers::AllowedHeaders;
 pub use allowed_methods::AllowedMethods;
@@ -18,3 +19,4 @@ pub use headers::Headers;
 pub use options::CorsOptions;
 pub use origin::{Origin, OriginCallbackFn, OriginDecision, OriginMatcher, OriginPredicateFn};
 pub use result::{CorsDecision, PreflightResult, SimpleResult};
+pub use timing_allow_origin::TimingAllowOrigin;

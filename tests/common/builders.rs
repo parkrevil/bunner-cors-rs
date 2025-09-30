@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 
 use bunner_cors_rs::constants::method;
-use bunner_cors_rs::{AllowedHeaders, AllowedMethods, Cors, CorsOptions, Origin, RequestContext};
+use bunner_cors_rs::{
+    AllowedHeaders, AllowedMethods, Cors, CorsOptions, Origin, RequestContext, TimingAllowOrigin,
+};
 
 #[derive(Default)]
 pub struct CorsBuilder {
@@ -13,6 +15,7 @@ pub struct CorsBuilder {
     max_age: Option<String>,
     private_network: Option<bool>,
     preflight_continue: Option<bool>,
+    timing_allow_origin: Option<TimingAllowOrigin>,
 }
 
 impl CorsBuilder {
@@ -73,6 +76,11 @@ impl CorsBuilder {
         self
     }
 
+    pub fn timing_allow_origin(mut self, timing: TimingAllowOrigin) -> Self {
+        self.timing_allow_origin = Some(timing);
+        self
+    }
+
     pub fn build(self) -> Cors {
         let CorsOptions {
             origin: default_origin,
@@ -84,6 +92,7 @@ impl CorsBuilder {
             preflight_continue: default_preflight_continue,
             options_success_status: default_success_status,
             allow_private_network: default_private_network,
+            timing_allow_origin: default_timing_allow_origin,
         } = CorsOptions::default();
 
         Cors::new(CorsOptions {
@@ -97,9 +106,8 @@ impl CorsBuilder {
                 .preflight_continue
                 .unwrap_or(default_preflight_continue),
             options_success_status: default_success_status,
-            allow_private_network: self
-                .private_network
-                .unwrap_or(default_private_network),
+            allow_private_network: self.private_network.unwrap_or(default_private_network),
+            timing_allow_origin: self.timing_allow_origin.or(default_timing_allow_origin),
         })
     }
 }

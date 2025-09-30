@@ -11,6 +11,7 @@ pub mod header {
     pub const ACCESS_CONTROL_REQUEST_METHOD: &str = "Access-Control-Request-Method";
     pub const ACCESS_CONTROL_REQUEST_PRIVATE_NETWORK: &str =
         "Access-Control-Request-Private-Network";
+    pub const TIMING_ALLOW_ORIGIN: &str = "Timing-Allow-Origin";
     pub const ORIGIN: &str = "Origin";
     pub const VARY: &str = "Vary";
 }

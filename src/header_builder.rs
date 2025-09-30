@@ -150,6 +150,16 @@ impl<'a> HeaderBuilder<'a> {
         }
         headers
     }
+
+    pub(crate) fn build_timing_allow_origin_header(&self) -> HeaderCollection {
+        let mut headers = HeaderCollection::new();
+        if let Some(config) = &self.options.timing_allow_origin
+            && let Some(value) = config.header_value()
+        {
+            headers.push(header::TIMING_ALLOW_ORIGIN.to_string(), value);
+        }
+        headers
+    }
 }
 
 #[cfg(test)]

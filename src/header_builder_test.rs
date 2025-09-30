@@ -5,6 +5,7 @@ use crate::constants::header;
 use crate::context::RequestContext;
 use crate::options::CorsOptions;
 use crate::origin::{Origin, OriginDecision};
+use crate::timing_allow_origin::TimingAllowOrigin;
 
 fn build_request(
     method: &'static str,
@@ -502,5 +503,60 @@ mod build_private_network_header {
 
         // Assert
         assert!(map.is_empty());
+    }
+}
+
+mod build_timing_allow_origin_header {
+    use super::*;
+
+    #[test]
+    fn when_configuration_absent_should_emit_empty_collection() {
+        // Arrange
+        let options = CorsOptions::default();
+        let builder = HeaderBuilder::new(&options);
+
+        // Act
+        let map = builder.build_timing_allow_origin_header().into_headers();
+
+        // Assert
+        assert!(map.is_empty());
+    }
+
+    #[test]
+    fn when_any_should_emit_wildcard_value() {
+        // Arrange
+        let options = CorsOptions {
+            timing_allow_origin: Some(TimingAllowOrigin::any()),
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+
+        // Act
+        let map = builder.build_timing_allow_origin_header().into_headers();
+
+        // Assert
+        assert_eq!(map.get(header::TIMING_ALLOW_ORIGIN), Some(&"*".to_string()));
+    }
+
+    #[test]
+    fn when_list_should_emit_space_separated_value() {
+        // Arrange
+        let options = CorsOptions {
+            timing_allow_origin: Some(TimingAllowOrigin::list([
+                "https://metrics.test",
+                "https://dash.test",
+            ])),
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+
+        // Act
+        let map = builder.build_timing_allow_origin_header().into_headers();
+
+        // Assert
+        assert_eq!(
+            map.get(header::TIMING_ALLOW_ORIGIN),
+            Some(&"https://metrics.test https://dash.test".to_string())
+        );
     }
 }

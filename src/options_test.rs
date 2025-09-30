@@ -2,6 +2,7 @@ use super::*;
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
 use crate::origin::Origin;
+use crate::timing_allow_origin::TimingAllowOrigin;
 
 mod default {
     use super::*;
@@ -21,6 +22,7 @@ mod default {
         assert!(!options.preflight_continue);
         assert_eq!(options.options_success_status, 204);
         assert!(!options.allow_private_network);
+        assert!(options.timing_allow_origin.is_none());
     }
 
     #[test]
@@ -94,6 +96,7 @@ mod validate {
             allowed_headers: AllowedHeaders::list(["X-Test"]),
             exposed_headers: Some(vec!["X-Expose".to_string()]),
             credentials: true,
+            timing_allow_origin: Some(TimingAllowOrigin::any()),
             ..CorsOptions::default()
         };
 

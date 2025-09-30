@@ -1,7 +1,7 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{AllowedHeaders, Origin};
+use bunner_cors_rs::{AllowedHeaders, Origin, TimingAllowOrigin};
 use common::asserts::{
     assert_header_eq, assert_preflight, assert_simple, assert_vary_eq, assert_vary_is_empty,
 };
@@ -198,4 +198,36 @@ fn many_exposed_headers_work_correctly() {
     let exposed = header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS).unwrap();
     assert!(exposed.contains("X-Header-1"));
     assert!(exposed.contains("X-Header-20"));
+}
+
+#[test]
+fn timing_allow_origin_wildcard_emits_on_simple_response() {
+    let cors = cors().timing_allow_origin(TimingAllowOrigin::any()).build();
+
+    let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
+
+    assert_header_eq(&headers, header::TIMING_ALLOW_ORIGIN, "*");
+}
+
+#[test]
+fn timing_allow_origin_list_emits_on_preflight() {
+    let cors = cors()
+        .timing_allow_origin(TimingAllowOrigin::list([
+            "https://metrics.foo",
+            "https://dash.foo",
+        ]))
+        .build();
+
+    let (headers, _status, _halt) = assert_preflight(
+        preflight_request()
+            .origin("https://foo.bar")
+            .request_method(method::GET)
+            .check(&cors),
+    );
+
+    assert_header_eq(
+        &headers,
+        header::TIMING_ALLOW_ORIGIN,
+        "https://metrics.foo https://dash.foo",
+    );
 }
