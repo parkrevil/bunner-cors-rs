@@ -40,8 +40,6 @@ fn should_be_not_applicable_given_preflight_without_request_method() {
     assert!(matches!(decision, CorsDecision::NotApplicable));
 }
 
-// removed: wildcard methods support
-
 #[test]
 fn should_set_wildcard_given_allowed_headers_any_without_request_headers() {
     let cors = cors().allowed_headers(AllowedHeaders::any()).build();

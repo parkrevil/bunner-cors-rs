@@ -9,10 +9,8 @@ mod default {
 
     #[test]
     fn should_use_expected_defaults_when_constructed() {
-        // Arrange & Act
         let options = CorsOptions::default();
 
-        // Assert
         assert!(matches!(options.origin, Origin::Any));
         assert_eq!(options.methods, AllowedMethods::default());
         assert!(options.allowed_headers == AllowedHeaders::default());
@@ -25,14 +23,11 @@ mod default {
 
     #[test]
     fn should_not_affect_other_defaults_given_mutated_instance() {
-        // Arrange
         let mut first = CorsOptions::default();
         let second = CorsOptions::default();
 
-        // Act
         first.credentials = true;
 
-        // Assert
         assert_ne!(first.credentials, second.credentials);
     }
 }
@@ -124,17 +119,14 @@ mod validate {
 
     #[test]
     fn should_return_error_given_credentials_allow_any_origin() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
             credentials: true,
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::CredentialsRequireSpecificOrigin)
@@ -143,7 +135,6 @@ mod validate {
 
     #[test]
     fn should_return_error_given_credentials_and_allowed_headers_any() {
-        // Arrange
         let options = CorsOptions {
             credentials: true,
             origin: Origin::list(["https://api.test"]),
@@ -151,10 +142,8 @@ mod validate {
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::AllowedHeadersAnyNotAllowedWithCredentials)
@@ -163,16 +152,13 @@ mod validate {
 
     #[test]
     fn should_return_error_given_allowed_headers_list_contains_wildcard() {
-        // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(["*", "X-Test"]),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::AllowedHeadersListCannotContainWildcard)
@@ -181,16 +167,13 @@ mod validate {
 
     #[test]
     fn should_return_error_given_allowed_methods_list_contains_wildcard() {
-        // Arrange
         let options = CorsOptions {
             methods: AllowedMethods::list(["GET", "*"]),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::AllowedMethodsCannotContainWildcard)
@@ -212,16 +195,13 @@ mod validate {
 
     #[test]
     fn should_return_error_given_allowed_methods_list_contains_invalid_token() {
-        // Arrange
         let options = CorsOptions {
             methods: AllowedMethods::list(["GET", "PO ST"]),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::AllowedMethodsListContainsInvalidToken)
@@ -230,16 +210,13 @@ mod validate {
 
     #[test]
     fn should_return_error_given_allowed_headers_list_contains_invalid_token() {
-        // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(["X-Trace", "X Header"]),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::AllowedHeadersListContainsInvalidToken)
@@ -261,7 +238,6 @@ mod validate {
 
     #[test]
     fn should_return_error_given_expose_headers_wildcard_with_credentials() {
-        // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["*".to_string()]),
             credentials: true,
@@ -269,10 +245,8 @@ mod validate {
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled)
@@ -281,16 +255,13 @@ mod validate {
 
     #[test]
     fn should_return_error_given_expose_headers_contains_invalid_token() {
-        // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["X-Trace".to_string(), "X Header".to_string()]),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::ExposeHeadersListContainsInvalidToken)
@@ -299,31 +270,25 @@ mod validate {
 
     #[test]
     fn should_return_ok_given_expose_headers_wildcard_without_credentials() {
-        // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["*".to_string()]),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(result.is_ok());
     }
 
     #[test]
     fn should_return_error_given_expose_headers_wildcard_combined_with_headers() {
-        // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["*".to_string(), "X-Test".to_string()]),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::ExposeHeadersWildcardCannotBeCombined)
@@ -331,17 +296,26 @@ mod validate {
     }
 
     #[test]
+    fn should_return_error_given_max_age_negative() {
+        let options = CorsOptions {
+            max_age: Some("-1".to_string()),
+            ..CorsOptions::default()
+        };
+
+        let result = options.validate();
+
+        assert!(matches!(result, Err(ValidationError::InvalidMaxAge(_))));
+    }
+
+    #[test]
     fn should_return_error_given_expose_headers_contains_empty_value() {
-        // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["  ".to_string(), "X-Trace".to_string()]),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::ExposeHeadersCannotContainEmptyValue)
@@ -390,7 +364,6 @@ mod validate {
 
     #[test]
     fn should_return_ok_given_configuration_is_specific() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::list(["https://api.test"]),
             allowed_headers: AllowedHeaders::list(["X-Test"]),
@@ -400,16 +373,13 @@ mod validate {
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(result.is_ok());
     }
 
     #[test]
     fn should_return_error_given_timing_allow_origin_any_with_credentials() {
-        // Arrange
         let options = CorsOptions {
             credentials: true,
             timing_allow_origin: Some(TimingAllowOrigin::any()),
@@ -417,10 +387,8 @@ mod validate {
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::TimingAllowOriginWildcardNotAllowedWithCredentials)
@@ -429,16 +397,13 @@ mod validate {
 
     #[test]
     fn should_return_error_given_timing_allow_origin_contains_empty_entry() {
-        // Arrange
         let options = CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::list([" ", "https://metrics.test"])),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::TimingAllowOriginCannotContainEmptyValue)
@@ -447,16 +412,13 @@ mod validate {
 
     #[test]
     fn should_return_error_given_max_age_not_numeric() {
-        // Arrange
         let options = CorsOptions {
             max_age: Some("ten minutes".into()),
             ..CorsOptions::default()
         };
 
-        // Act
         let result = options.validate();
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::InvalidMaxAge(value)) if value == "ten minutes"

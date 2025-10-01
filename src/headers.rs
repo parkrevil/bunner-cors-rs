@@ -1,7 +1,6 @@
 use crate::constants::header;
 use std::collections::HashMap;
 
-/// Simple response header representation used by the CORS engine.
 pub type Headers = std::collections::HashMap<String, String>;
 
 #[derive(Debug, Default, Clone)]

@@ -1,7 +1,6 @@
 use crate::headers::Headers;
 use thiserror::Error;
 
-/// Reasons why a preflight request was rejected.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreflightRejectionReason {
     OriginNotAllowed,
@@ -10,14 +9,12 @@ pub enum PreflightRejectionReason {
     MissingAccessControlRequestMethod,
 }
 
-/// Detailed outcome when a preflight request is rejected.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PreflightRejection {
     pub headers: Headers,
     pub reason: PreflightRejectionReason,
 }
 
-/// Overall decision returned by the policy engine.
 #[derive(Debug, Clone)]
 pub enum CorsDecision {
     PreflightAccepted { headers: Headers },
@@ -26,7 +23,6 @@ pub enum CorsDecision {
     NotApplicable,
 }
 
-/// Errors that can be produced during CORS evaluation.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum CorsError {
     #[error(

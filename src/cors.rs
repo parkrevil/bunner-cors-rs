@@ -5,7 +5,6 @@ use crate::options::{CorsOptions, ValidationError};
 use crate::origin::OriginDecision;
 use crate::result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
 
-/// Core CORS policy engine that evaluates requests using [`CorsOptions`].
 pub struct Cors {
     options: CorsOptions,
 }

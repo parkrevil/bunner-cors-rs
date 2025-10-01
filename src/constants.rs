@@ -1,4 +1,3 @@
-/// Common HTTP header names used by the CORS policy engine.
 pub mod header {
     pub const ACCESS_CONTROL_ALLOW_ORIGIN: &str = "Access-Control-Allow-Origin";
     pub const ACCESS_CONTROL_ALLOW_METHODS: &str = "Access-Control-Allow-Methods";
@@ -16,7 +15,6 @@ pub mod header {
     pub const VARY: &str = "Vary";
 }
 
-/// Common HTTP methods referenced by the CORS policy engine.
 pub mod method {
     pub const DELETE: &str = "DELETE";
     pub const GET: &str = "GET";

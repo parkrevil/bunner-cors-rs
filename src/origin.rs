@@ -8,7 +8,6 @@ pub type OriginPredicateFn = dyn for<'a> Fn(&str, &RequestContext<'a>) -> bool +
 pub type OriginCallbackFn =
     dyn for<'a> Fn(Option<&'a str>, &RequestContext<'a>) -> OriginDecision + Send + Sync;
 
-/// Strategy used to decide whether a request origin is accepted.
 #[derive(Clone, Default)]
 pub enum Origin {
     #[default]
@@ -19,7 +18,6 @@ pub enum Origin {
     Custom(Arc<OriginCallbackFn>),
 }
 
-/// Decision outcome when resolving an origin.
 #[derive(Debug, Clone)]
 pub enum OriginDecision {
     Any,
@@ -73,7 +71,6 @@ where
     }
 }
 
-/// Matcher that determines if an origin is allowed.
 #[derive(Debug)]
 pub enum PatternError {
     Build(Box<BuildError>),

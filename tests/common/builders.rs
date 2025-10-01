@@ -14,7 +14,6 @@ pub struct CorsBuilder {
     credentials: Option<bool>,
     max_age: Option<String>,
     private_network: Option<bool>,
-    // preflight_continue removed
     timing_allow_origin: Option<TimingAllowOrigin>,
 }
 

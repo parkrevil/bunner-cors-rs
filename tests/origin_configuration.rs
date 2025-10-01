@@ -379,7 +379,6 @@ fn should_behave_like_regex_automata_in_regex_pattern_compilation() {
     assert!(matcher.matches("https://sub.test.com"));
     assert!(!matcher.matches("https://sub.other.com"));
 
-    // Large patterns now hit the safety guard instead of compiling indefinitely.
     let large_pattern = format!(r"^https://{}\.example\.com$", "a".repeat(100_000));
     match OriginMatcher::pattern_str(&large_pattern) {
         Err(PatternError::TooLong { length, max }) => {
@@ -392,7 +391,6 @@ fn should_behave_like_regex_automata_in_regex_pattern_compilation() {
         Ok(_) => panic!("expected length guard to trigger"),
     }
 
-    // Invalid syntax should still surface an error from regex-automata.
     assert!(OriginMatcher::pattern_str("(").is_err());
 }
 

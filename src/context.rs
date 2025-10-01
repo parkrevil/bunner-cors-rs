@@ -1,4 +1,3 @@
-/// Minimal request context passed to the policy engine.
 #[derive(Debug, Clone)]
 pub struct RequestContext<'a> {
     pub method: &'a str,

@@ -105,7 +105,6 @@ mod new {
 
     #[test]
     fn simple_request_should_return_simple_decision() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
             ..CorsOptions::default()
@@ -113,10 +112,8 @@ mod new {
         let cors = cors_with(options);
         let request = request("GET", "https://allowed.test", "", "");
 
-        // Act
         let decision = cors.check(&request).expect("cors evaluation succeeded");
 
-        // Assert
         match decision {
             CorsDecision::SimpleAccepted { headers } => {
                 assert!(headers.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
@@ -127,17 +124,14 @@ mod new {
 
     #[test]
     fn new_should_reject_wildcard_origin_with_credentials() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
             credentials: true,
             ..CorsOptions::default()
         };
 
-        // Act
         let result = Cors::new(options);
 
-        // Assert
         assert!(matches!(
             result,
             Err(ValidationError::CredentialsRequireSpecificOrigin)
@@ -150,7 +144,6 @@ mod check {
 
     #[test]
     fn given_any_origin_when_preflight_request_then_return_preflight_decision() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
             ..CorsOptions::default()
@@ -158,13 +151,11 @@ mod check {
         let cors = cors_with(options);
         let request = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
-        // Act
         match cors
             .check(&request)
             .expect("cors evaluation should succeed")
         {
             CorsDecision::PreflightAccepted { headers } => {
-                // Assert
                 assert!(headers.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
             }
             other => panic!("expected preflight acceptance, got {:?}", other),
@@ -173,7 +164,6 @@ mod check {
 
     #[test]
     fn given_any_origin_when_simple_request_then_return_simple_decision() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
             ..CorsOptions::default()
@@ -181,13 +171,11 @@ mod check {
         let cors = cors_with(options);
         let request = request("GET", "https://allowed.test", "", "");
 
-        // Act
         match cors
             .check(&request)
             .expect("cors evaluation should succeed")
         {
             CorsDecision::SimpleAccepted { headers } => {
-                // Assert
                 assert!(headers.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
             }
             other => panic!("expected simple acceptance, got {:?}", other),
@@ -196,7 +184,6 @@ mod check {
 
     #[test]
     fn should_return_not_applicable_given_origin_skips_processing_when_check() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Skip),
             ..CorsOptions::default()
@@ -204,18 +191,15 @@ mod check {
         let cors = cors_with(options);
         let request = request("OPTIONS", "https://denied.test", "GET", "X-Test");
 
-        // Act
         let decision = cors
             .check(&request)
             .expect("cors evaluation should succeed");
 
-        // Assert
         assert!(matches!(decision, CorsDecision::NotApplicable));
     }
 
     #[test]
     fn should_return_not_applicable_given_origin_disabled_when_check() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::disabled(),
             ..CorsOptions::default()
@@ -223,12 +207,10 @@ mod check {
         let cors = cors_with(options);
         let request = request("OPTIONS", "https://denied.test", "GET", "X-Test");
 
-        // Act
         let decision = cors
             .check(&request)
             .expect("cors evaluation should succeed");
 
-        // Assert
         assert!(matches!(decision, CorsDecision::NotApplicable));
     }
 }
@@ -238,7 +220,6 @@ mod process_preflight {
 
     #[test]
     fn should_return_not_applicable_given_origin_skip_when_preflight_request() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Skip),
             ..CorsOptions::default()
@@ -246,13 +227,11 @@ mod process_preflight {
         let cors = cors_with(options);
         let original = request("OPTIONS", "https://denied.test", "GET", "X-Test");
 
-        // Act
         expect_not_applicable(preflight_decision(&cors, &original));
     }
 
     #[test]
     fn should_report_rejection_reason_given_disallowed_origin_when_preflight_request() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::list(["https://allowed.test"]),
             ..CorsOptions::default()
@@ -260,16 +239,13 @@ mod process_preflight {
         let cors = cors_with(options);
         let original = request("OPTIONS", "https://denied.test", "GET", "X-Test");
 
-        // Act
         let rejection = expect_preflight_rejected(preflight_decision(&cors, &original));
-        // Assert
         assert_eq!(rejection.reason, PreflightRejectionReason::OriginNotAllowed);
         assert!(rejection.headers.contains_key(header::VARY));
     }
 
     #[test]
     fn should_fail_given_origin_returns_any_with_credentials_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Any),
             credentials: true,
@@ -278,17 +254,14 @@ mod process_preflight {
         .expect("valid CORS configuration");
         let original = request("OPTIONS", "https://wild.test", "GET", "");
 
-        // Act
         let error = preflight_decision(&cors, &original)
             .expect_err("preflight should reject any origin when credentials required");
 
-        // Assert
         assert!(matches!(error, CorsError::InvalidOriginAnyWithCredentials));
     }
 
     #[test]
     fn should_aggregate_expected_headers_given_allowed_origin_when_preflight_request() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
             max_age: Some("600".into()),
@@ -297,7 +270,6 @@ mod process_preflight {
         let cors = cors_with(options);
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
-        // Act
         let headers = expect_preflight_accepted(preflight_decision(&cors, &original));
         assert!(headers.contains_key(header::ACCESS_CONTROL_ALLOW_METHODS));
         assert!(headers.contains_key(header::ACCESS_CONTROL_ALLOW_HEADERS));
@@ -307,17 +279,14 @@ mod process_preflight {
 
     #[test]
     fn should_return_not_applicable_given_missing_request_method_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "", "X-Test");
 
-        // Act
         expect_not_applicable(preflight_decision(&cors, &original));
     }
 
     #[test]
     fn should_reject_given_not_allowed_request_headers_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
             allowed_headers: AllowedHeaders::list(["X-Allowed"]),
@@ -326,10 +295,8 @@ mod process_preflight {
         .expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Forbidden");
 
-        // Act
         let rejection = expect_preflight_rejected(preflight_decision(&cors, &original));
 
-        // Assert
         assert_eq!(
             rejection.reason,
             PreflightRejectionReason::HeadersNotAllowed {
@@ -340,7 +307,6 @@ mod process_preflight {
 
     #[test]
     fn should_reject_given_not_allowed_request_method_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
             methods: AllowedMethods::list(["GET", "POST"]),
@@ -349,10 +315,8 @@ mod process_preflight {
         .expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "DELETE", "");
 
-        // Act
         let rejection = expect_preflight_rejected(preflight_decision(&cors, &original));
 
-        // Assert
         assert_eq!(
             rejection.reason,
             PreflightRejectionReason::MethodNotAllowed {
@@ -363,7 +327,6 @@ mod process_preflight {
 
     #[test]
     fn should_emit_wildcard_header_given_allowed_headers_any_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
             allowed_headers: AllowedHeaders::any(),
@@ -372,9 +335,7 @@ mod process_preflight {
         .expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Anything");
 
-        // Act
         let headers = expect_preflight_accepted(preflight_decision(&cors, &original));
-        // Assert
         assert_eq!(
             headers.get(header::ACCESS_CONTROL_ALLOW_HEADERS),
             Some(&"*".to_string())
@@ -383,7 +344,6 @@ mod process_preflight {
 
     #[test]
     fn should_omit_header_given_max_age_not_configured_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
             max_age: None,
@@ -393,15 +353,12 @@ mod process_preflight {
         .expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
-        // Act
         let headers = expect_preflight_accepted(preflight_decision(&cors, &original));
-        // Assert
         assert!(!headers.contains_key(header::ACCESS_CONTROL_MAX_AGE));
     }
 
     #[test]
     fn should_emit_private_network_header_given_private_network_requested_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             allow_private_network: true,
             credentials: true,
@@ -411,9 +368,7 @@ mod process_preflight {
         .expect("valid CORS configuration");
         let original = request_with_private_network("OPTIONS", "https://intranet.test", "GET", "");
 
-        // Act
         let headers = expect_preflight_accepted(preflight_decision(&cors, &original));
-        // Assert
         assert_eq!(
             headers.get(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
             Some(&"true".to_string())
@@ -422,19 +377,15 @@ mod process_preflight {
 
     #[test]
     fn should_not_emit_header_given_private_network_disabled_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
         let original = request_with_private_network("OPTIONS", "https://intranet.test", "GET", "");
 
-        // Act
         let headers = expect_preflight_accepted(preflight_decision(&cors, &original));
-        // Assert
         assert!(!headers.contains_key(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK));
     }
 
     #[test]
     fn should_not_emit_header_given_timing_allow_origin_configured_when_preflight_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::list([
                 "https://metrics.test",
@@ -446,9 +397,7 @@ mod process_preflight {
         .expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
-        // Act
         let headers = expect_preflight_accepted(preflight_decision(&cors, &original));
-        // Assert
         assert!(
             !headers.contains_key(header::TIMING_ALLOW_ORIGIN),
             "expected Timing-Allow-Origin to be omitted on preflight responses"
@@ -461,7 +410,6 @@ mod process_simple {
 
     #[test]
     fn should_return_not_applicable_given_origin_skip_when_simple_request() {
-        // Arrange
         let options = CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Skip),
             ..CorsOptions::default()
@@ -469,13 +417,11 @@ mod process_simple {
         let cors = cors_with(options);
         let original = request("GET", "https://denied.test", "", "");
 
-        // Act
         expect_not_applicable(simple_decision(&cors, &original));
     }
 
     #[test]
     fn should_return_not_applicable_given_method_not_allowed_when_simple_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             methods: AllowedMethods::list(["POST"]),
             ..CorsOptions::default()
@@ -483,13 +429,11 @@ mod process_simple {
         .expect("valid CORS configuration");
         let original = request("GET", "https://allowed.test", "", "");
 
-        // Act
         expect_not_applicable(simple_decision(&cors, &original));
     }
 
     #[test]
     fn should_fail_given_origin_returns_any_with_credentials_when_simple_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Any),
             credentials: true,
@@ -498,11 +442,9 @@ mod process_simple {
         .expect("valid CORS configuration");
         let original = request("GET", "https://wild.test", "", "");
 
-        // Act
         let error = simple_decision(&cors, &original)
             .expect_err("simple request should reject any origin when credentials required");
 
-        // Assert
         assert!(matches!(error, CorsError::InvalidOriginAnyWithCredentials));
     }
 
@@ -523,7 +465,6 @@ mod process_simple {
 
     #[test]
     fn should_emit_simple_headers_given_allowed_origin_when_simple_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::list(["https://allowed.test"]),
             credentials: true,
@@ -532,9 +473,7 @@ mod process_simple {
         .expect("valid CORS configuration");
         let original = request("GET", "https://allowed.test", "", "");
 
-        // Act
         let headers = expect_simple_accepted(simple_decision(&cors, &original));
-        // Assert
         assert!(headers.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_eq!(
             headers.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
@@ -548,20 +487,16 @@ mod process_simple {
 
     #[test]
     fn should_not_emit_credentials_header_given_credentials_disabled_when_simple_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
         let original = request("GET", "https://allowed.test", "", "");
 
-        // Act
         let headers = expect_simple_accepted(simple_decision(&cors, &original));
-        // Assert
         assert!(headers.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert!(!headers.contains_key(header::ACCESS_CONTROL_ALLOW_CREDENTIALS));
     }
 
     #[test]
     fn should_mirror_request_origin_given_origin_list_used_when_simple_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::list(["https://allowed.test"]),
             credentials: true,
@@ -570,9 +505,7 @@ mod process_simple {
         .expect("valid CORS configuration");
         let original = request("GET", "https://allowed.test", "", "");
 
-        // Act
         let headers = expect_simple_accepted(simple_decision(&cors, &original));
-        // Assert
         assert_eq!(
             headers.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
             Some(&"https://allowed.test".to_string())
@@ -583,7 +516,6 @@ mod process_simple {
     #[test]
     fn should_not_emit_header_on_simple_response_given_private_network_allowed_when_simple_request()
     {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             allow_private_network: true,
             credentials: true,
@@ -593,15 +525,12 @@ mod process_simple {
         .expect("valid CORS configuration");
         let original = request("GET", "https://intranet.test", "", "");
 
-        // Act
         let headers = expect_simple_accepted(simple_decision(&cors, &original));
-        // Assert
         assert!(!headers.contains_key(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK));
     }
 
     #[test]
     fn should_emit_header_given_timing_allow_origin_configured_when_simple_request() {
-        // Arrange
         let cors = Cors::new(CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::any()),
             ..CorsOptions::default()
@@ -609,9 +538,7 @@ mod process_simple {
         .expect("valid CORS configuration");
         let original = request("GET", "https://allowed.test", "", "");
 
-        // Act
         let headers = expect_simple_accepted(simple_decision(&cors, &original));
-        // Assert
         assert_eq!(
             headers.get(header::TIMING_ALLOW_ORIGIN),
             Some(&"*".to_string())

@@ -1,10 +1,8 @@
 use std::collections::HashSet;
 
-/// Configuration for the `Access-Control-Allow-Headers` response value.
 #[derive(Clone, PartialEq, Eq)]
 pub enum AllowedHeaders {
     List(Vec<String>),
-    /// Wildcard: always allowed and emits "*" on preflight
     Any,
 }
 
