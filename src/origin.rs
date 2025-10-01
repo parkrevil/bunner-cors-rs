@@ -1,5 +1,5 @@
 use crate::context::RequestContext;
-use regex::{Regex, RegexBuilder};
+use regex_automata::meta::{BuildError, Regex};
 use std::sync::Arc;
 
 pub type OriginPredicateFn = dyn for<'a> Fn(&str, &RequestContext<'a>) -> bool + Send + Sync;
@@ -88,17 +88,15 @@ impl OriginMatcher {
         Self::Pattern(regex)
     }
 
-    pub fn pattern_str(pattern: &str) -> Result<Self, regex::Error> {
-        let regex = RegexBuilder::new(pattern)
-            .case_insensitive(true)
-            .build()?;
+    pub fn pattern_str(pattern: &str) -> Result<Self, Box<BuildError>> {
+        let regex = Regex::new(&format!("(?i:{pattern})")).map_err(Box::new)?;
         Ok(Self::Pattern(regex))
     }
 
     pub fn matches(&self, candidate: &str) -> bool {
         match self {
             OriginMatcher::Exact(value) => value.eq_ignore_ascii_case(candidate),
-            OriginMatcher::Pattern(regex) => regex.is_match(candidate),
+            OriginMatcher::Pattern(regex) => regex.is_match(candidate.as_bytes()),
             OriginMatcher::Bool(value) => *value,
         }
     }

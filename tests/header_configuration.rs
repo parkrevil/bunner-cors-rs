@@ -1,7 +1,9 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{AllowedHeaders, CorsDecision, Origin, TimingAllowOrigin};
+use bunner_cors_rs::{
+    AllowedHeaders, CorsDecision, Origin, PreflightRejectionReason, TimingAllowOrigin,
+};
 use common::asserts::{
     assert_header_eq, assert_preflight, assert_simple, assert_vary_eq, assert_vary_is_empty,
 };
@@ -120,7 +122,15 @@ fn preflight_with_unlisted_request_header_is_rejected() {
         .request_headers(requested)
         .check(&cors);
 
-    assert!(matches!(decision, CorsDecision::NotApplicable));
+    match decision {
+        CorsDecision::PreflightRejected(rejection) => assert_eq!(
+            rejection.reason,
+            PreflightRejectionReason::HeadersNotAllowed {
+                requested_headers: "x-test , x-next".to_string(),
+            }
+        ),
+        other => panic!("expected preflight rejection, got {:?}", other),
+    }
 }
 
 #[test]
@@ -154,7 +164,15 @@ fn empty_allowed_headers_list_omits_allow_headers() {
         .request_headers("X-Test")
         .check(&cors);
 
-    assert!(matches!(decision, CorsDecision::NotApplicable));
+    match decision {
+        CorsDecision::PreflightRejected(rejection) => assert_eq!(
+            rejection.reason,
+            PreflightRejectionReason::HeadersNotAllowed {
+                requested_headers: "x-test".to_string(),
+            }
+        ),
+        other => panic!("expected preflight rejection, got {:?}", other),
+    }
 }
 
 #[test]

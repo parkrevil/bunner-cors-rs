@@ -1,6 +1,5 @@
 use super::*;
 use crate::context::RequestContext;
-use regex::Regex;
 
 fn request_context(method: &'static str, origin: &'static str) -> RequestContext<'static> {
     RequestContext {
@@ -133,6 +132,7 @@ mod origin_decision {
 
 mod origin_matcher {
     use super::*;
+    use regex_automata::meta::Regex;
 
     mod exact {
         use super::*;
@@ -163,7 +163,9 @@ mod origin_matcher {
 
             // Assert
             match matcher {
-                OriginMatcher::Pattern(pattern) => assert!(pattern.is_match("https://api.test")),
+                OriginMatcher::Pattern(pattern) => {
+                    assert!(pattern.is_match("https://api.test".as_bytes()))
+                }
                 _ => panic!("expected pattern matcher"),
             }
         }

@@ -327,7 +327,15 @@ mod process_preflight {
         let original = request("OPTIONS", "https://allowed.test", "GET", "X-Forbidden");
 
         // Act
-        expect_not_applicable(preflight_decision(&cors, &original));
+        let rejection = expect_preflight_rejected(preflight_decision(&cors, &original));
+
+        // Assert
+        assert_eq!(
+            rejection.reason,
+            PreflightRejectionReason::HeadersNotAllowed {
+                requested_headers: "x-forbidden".to_string(),
+            }
+        );
     }
 
     #[test]
@@ -342,7 +350,15 @@ mod process_preflight {
         let original = request("OPTIONS", "https://allowed.test", "DELETE", "");
 
         // Act
-        expect_not_applicable(preflight_decision(&cors, &original));
+        let rejection = expect_preflight_rejected(preflight_decision(&cors, &original));
+
+        // Assert
+        assert_eq!(
+            rejection.reason,
+            PreflightRejectionReason::MethodNotAllowed {
+                requested_method: "delete".to_string(),
+            }
+        );
     }
 
     #[test]

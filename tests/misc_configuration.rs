@@ -1,7 +1,7 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{Cors, CorsDecision, CorsOptions, Origin};
+use bunner_cors_rs::{Cors, CorsDecision, CorsOptions, Origin, PreflightRejectionReason};
 use common::asserts::{assert_preflight, assert_vary_contains, assert_vary_not_contains};
 use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
@@ -80,7 +80,15 @@ fn empty_methods_list_omits_allow_methods_header() {
         .request_method(method::PATCH)
         .check(&cors);
 
-    assert!(matches!(decision, CorsDecision::NotApplicable));
+    match decision {
+        CorsDecision::PreflightRejected(rejection) => assert_eq!(
+            rejection.reason,
+            PreflightRejectionReason::MethodNotAllowed {
+                requested_method: "patch".to_string(),
+            }
+        ),
+        other => panic!("expected preflight rejection, got {:?}", other),
+    }
 }
 
 #[test]

@@ -5,7 +5,7 @@ use bunner_cors_rs::{CorsDecision, Origin, OriginDecision, OriginMatcher};
 use common::asserts::{assert_simple, assert_vary_eq};
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value};
-use regex::Regex;
+use regex_automata::meta::Regex;
 
 #[test]
 fn exact_origin_is_reflected_with_vary() {
@@ -374,15 +374,17 @@ fn custom_origin_mirror_with_missing_origin_omits_allow_origin() {
 }
 
 #[test]
-fn regex_pattern_compilation_limits_work() {
-    // Test that regex compilation with limits works
+fn regex_pattern_compilation_behaves_like_regex_automata() {
     let matcher = OriginMatcher::pattern_str(r"^https://.*\.test\.com$").unwrap();
     assert!(matcher.matches("https://sub.test.com"));
     assert!(!matcher.matches("https://sub.other.com"));
 
-    // Test that excessive regex compilation fails
-    let excessive_pattern = "a".repeat(100000); // Very long pattern that exceeds size limit
-    assert!(OriginMatcher::pattern_str(&excessive_pattern).is_err());
+    // Large but valid pattern should compile successfully now that limits are removed.
+    let large_pattern = format!(r"^https://{}\.example\.com$", "a".repeat(100_000));
+    assert!(OriginMatcher::pattern_str(&large_pattern).is_ok());
+
+    // Invalid syntax should still surface an error from regex-automata.
+    assert!(OriginMatcher::pattern_str("(").is_err());
 }
 
 #[test]
