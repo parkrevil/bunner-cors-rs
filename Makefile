@@ -46,7 +46,7 @@ audit:
 .PHONY: coverage
 coverage:
 	@if command -v cargo-llvm-cov >/dev/null 2>&1; then \
-		cargo llvm-cov; \
+		cargo llvm-cov --ignore-filename-regex '($(CURDIR)/tests/.*|$(CURDIR)/src/.*_test\.rs$$)'; \
 	else \
 		echo "cargo-llvm-cov not installed. Install with: cargo install cargo-llvm-cov" >&2; \
 	fi
