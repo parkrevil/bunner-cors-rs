@@ -126,6 +126,10 @@ impl OriginMatcher {
     }
 
     pub fn pattern_str(pattern: &str) -> Result<Self, PatternError> {
+        Self::compile_pattern(pattern, PATTERN_COMPILE_BUDGET).map(Self::Pattern)
+    }
+
+    fn compile_pattern(pattern: &str, budget: Duration) -> Result<Regex, PatternError> {
         if pattern.len() > MAX_PATTERN_LENGTH {
             return Err(PatternError::TooLong {
                 length: pattern.len(),
@@ -137,14 +141,19 @@ impl OriginMatcher {
         let regex = Regex::new(&format!("(?i:{pattern})"))
             .map_err(|err| PatternError::Build(Box::new(err)))?;
         let elapsed = started.elapsed();
-        if elapsed > PATTERN_COMPILE_BUDGET {
-            return Err(PatternError::Timeout {
-                elapsed,
-                budget: PATTERN_COMPILE_BUDGET,
-            });
+        if elapsed > budget {
+            return Err(PatternError::Timeout { elapsed, budget });
         }
 
-        Ok(Self::Pattern(regex))
+        Ok(regex)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn pattern_str_with_budget(
+        pattern: &str,
+        budget: Duration,
+    ) -> Result<Self, PatternError> {
+        Self::compile_pattern(pattern, budget).map(Self::Pattern)
     }
 
     pub fn matches(&self, candidate: &str) -> bool {

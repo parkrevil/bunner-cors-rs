@@ -68,6 +68,33 @@ mod add_vary {
             Some(&"Origin, Access-Control-Request-Headers".to_string())
         );
     }
+
+    #[test]
+    fn when_value_is_whitespace_should_remove_vary_header() {
+        // Arrange
+        let mut collection = HeaderCollection::new();
+
+        // Act
+        collection.add_vary("   ");
+
+        // Assert
+        let headers = collection.into_headers();
+        assert!(!headers.contains_key(header::VARY));
+    }
+
+    #[test]
+    fn when_value_is_whitespace_and_existing_entries_present_should_preserve_them() {
+        // Arrange
+        let mut collection = HeaderCollection::new();
+        collection.add_vary("Origin");
+
+        // Act
+        collection.add_vary("   ");
+
+        // Assert
+        let headers = collection.into_headers();
+        assert_eq!(headers.get(header::VARY), Some(&"Origin".to_string()));
+    }
 }
 
 mod extend {
@@ -97,6 +124,37 @@ mod extend {
             headers.get("Access-Control-Expose-Headers"),
             Some(&"X-Trace".to_string())
         );
+    }
+
+    #[test]
+    fn when_extending_with_whitespace_vary_should_remove_header() {
+        // Arrange
+        let mut base = HeaderCollection::new();
+        let mut other = HeaderCollection::new();
+        other.push(header::VARY.to_string(), "   ".into());
+
+        // Act
+        base.extend(other);
+
+        // Assert
+        let headers = base.into_headers();
+        assert!(!headers.contains_key(header::VARY));
+    }
+
+    #[test]
+    fn when_extending_existing_vary_with_whitespace_should_preserve_value() {
+        // Arrange
+        let mut base = HeaderCollection::new();
+        base.add_vary("Origin");
+        let mut other = HeaderCollection::new();
+        other.push(header::VARY.to_string(), "   ".into());
+
+        // Act
+        base.extend(other);
+
+        // Assert
+        let headers = base.into_headers();
+        assert_eq!(headers.get(header::VARY), Some(&"Origin".to_string()));
     }
 }
 

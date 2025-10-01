@@ -147,6 +147,9 @@ impl Default for CorsOptions {
 impl CorsOptions {
     pub fn validate(&self) -> Result<(), ValidationError> {
         if self.credentials && matches!(self.origin, Origin::Any) {
+            if self.allow_private_network {
+                return Err(ValidationError::PrivateNetworkRequiresSpecificOrigin);
+            }
             return Err(ValidationError::CredentialsRequireSpecificOrigin);
         }
 
@@ -224,13 +227,8 @@ impl CorsOptions {
             }
         }
 
-        if self.allow_private_network {
-            if !self.credentials {
-                return Err(ValidationError::PrivateNetworkRequiresCredentials);
-            }
-            if matches!(self.origin, Origin::Any) {
-                return Err(ValidationError::PrivateNetworkRequiresSpecificOrigin);
-            }
+        if self.allow_private_network && !self.credentials {
+            return Err(ValidationError::PrivateNetworkRequiresCredentials);
         }
 
         if self.credentials && matches!(self.timing_allow_origin, Some(TimingAllowOrigin::Any)) {

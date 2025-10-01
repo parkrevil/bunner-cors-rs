@@ -43,7 +43,14 @@ impl HeaderCollection {
             .unwrap_or_default();
 
         let incoming = value.into().trim().to_string();
-        entries.push(incoming);
+        if !incoming.is_empty() {
+            entries.push(incoming);
+        }
+
+        if entries.is_empty() {
+            self.headers.remove(header::VARY);
+            return;
+        }
 
         let mut deduped: Vec<String> = Vec::with_capacity(entries.len());
         for entry in entries {
@@ -56,12 +63,8 @@ impl HeaderCollection {
             deduped.push(entry);
         }
 
-        if deduped.is_empty() {
-            self.headers.remove(header::VARY);
-        } else {
-            let value = deduped.join(", ");
-            self.headers.insert(header::VARY.to_string(), value);
-        }
+        let value = deduped.join(", ");
+        self.headers.insert(header::VARY.to_string(), value);
     }
 
     pub(crate) fn extend(&mut self, other: HeaderCollection) {

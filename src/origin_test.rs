@@ -173,6 +173,7 @@ mod origin_matcher {
 
     mod pattern_str {
         use super::*;
+        use std::time::Duration;
 
         #[test]
         fn when_pattern_valid_should_return_matcher() {
@@ -207,6 +208,13 @@ mod origin_matcher {
             } else {
                 panic!("expected too long error");
             }
+        }
+
+        #[test]
+        fn when_budget_too_small_should_return_timeout_error() {
+            let result = OriginMatcher::pattern_str_with_budget(".*", Duration::ZERO);
+
+            assert!(matches!(result, Err(PatternError::Timeout { .. })));
         }
     }
 
@@ -287,6 +295,52 @@ mod origin_matcher {
             // Assert
             assert!(matches!(matcher, OriginMatcher::Bool(true)));
         }
+    }
+}
+
+mod pattern_error_behavior {
+    use super::*;
+    use std::error::Error as _;
+    use std::time::Duration;
+
+    #[test]
+    fn display_messages_should_include_key_phrases() {
+        let build_error = match OriginMatcher::pattern_str("(") {
+            Err(err) => err,
+            Ok(_) => panic!("expected build error"),
+        };
+        assert!(build_error.to_string().contains("failed to compile"));
+
+        let too_long = PatternError::TooLong {
+            length: MAX_PATTERN_LENGTH + 10,
+            max: MAX_PATTERN_LENGTH,
+        };
+        assert!(too_long.to_string().contains("exceeds"));
+
+        let timeout = PatternError::Timeout {
+            elapsed: Duration::from_millis(150),
+            budget: Duration::from_millis(100),
+        };
+        assert!(
+            timeout
+                .to_string()
+                .contains("exceeded the configured budget")
+        );
+    }
+
+    #[test]
+    fn error_sources_should_be_exposed_where_available() {
+        let build_error = match OriginMatcher::pattern_str("(") {
+            Err(err) => err,
+            Ok(_) => panic!("expected build error"),
+        };
+        assert!(build_error.source().is_some());
+
+        let timeout = PatternError::Timeout {
+            elapsed: Duration::from_millis(150),
+            budget: Duration::from_millis(100),
+        };
+        assert!(timeout.source().is_none());
     }
 }
 
@@ -413,6 +467,16 @@ mod origin_type {
                 OriginDecision::Exact(value) => assert_eq!(value, "https://api.test"),
                 _ => panic!("expected exact decision"),
             }
+        }
+
+        #[test]
+        fn when_origin_exact_has_no_request_origin_should_skip() {
+            let origin = Origin::exact("https://app.test");
+            let ctx = request_context("GET", "https://app.test");
+
+            let decision = origin.resolve(None, &ctx);
+
+            assert!(matches!(decision, OriginDecision::Skip));
         }
 
         #[test]

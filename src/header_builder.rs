@@ -63,11 +63,8 @@ impl<'a> HeaderBuilder<'a> {
                 }
             }
             OriginDecision::Disallow => {
-                let vary = self.options.origin.vary_on_disallow();
-                let mut headers = HeaderCollection::with_estimate(if vary { 1 } else { 0 });
-                if vary {
-                    headers.add_vary(header::ORIGIN);
-                }
+                let mut headers = HeaderCollection::with_estimate(1);
+                headers.add_vary(header::ORIGIN);
                 Ok((headers, OriginDecision::Disallow))
             }
             OriginDecision::Skip => Ok((HeaderCollection::new(), OriginDecision::Skip)),
@@ -143,13 +140,14 @@ impl<'a> HeaderBuilder<'a> {
         if let Some(values) = &self.options.exposed_headers
             && !values.is_empty()
         {
-            let value = values
+            let entries = values
                 .iter()
                 .map(|entry| entry.trim())
-                .collect::<Vec<_>>()
-                .join(",");
+                .filter(|entry| !entry.is_empty())
+                .collect::<Vec<_>>();
 
-            if !value.is_empty() {
+            if !entries.is_empty() {
+                let value = entries.join(",");
                 let mut headers = HeaderCollection::with_estimate(1);
                 headers.push(header::ACCESS_CONTROL_EXPOSE_HEADERS.to_string(), value);
                 return headers;

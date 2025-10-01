@@ -474,6 +474,20 @@ mod process_simple {
     }
 
     #[test]
+    fn when_method_not_allowed_should_return_not_applicable() {
+        // Arrange
+        let cors = Cors::new(CorsOptions {
+            methods: AllowedMethods::list(["POST"]),
+            ..CorsOptions::default()
+        })
+        .expect("valid CORS configuration");
+        let original = request("GET", "https://allowed.test", "", "");
+
+        // Act
+        expect_not_applicable(simple_decision(&cors, &original));
+    }
+
+    #[test]
     fn when_origin_returns_any_with_credentials_should_fail() {
         // Arrange
         let cors = Cors::new(CorsOptions {
@@ -490,6 +504,21 @@ mod process_simple {
 
         // Assert
         assert!(matches!(error, CorsError::InvalidOriginAnyWithCredentials));
+    }
+
+    #[test]
+    fn when_origin_disallowed_should_emit_vary_without_allow_origin() {
+        let cors = Cors::new(CorsOptions {
+            origin: Origin::list(["https://allowed.test"]),
+            ..CorsOptions::default()
+        })
+        .expect("valid CORS configuration");
+        let original = request("GET", "https://denied.test", "", "");
+
+        let headers = expect_simple_accepted(simple_decision(&cors, &original));
+
+        assert_eq!(headers.get(header::VARY), Some(&"Origin".to_string()));
+        assert!(!headers.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     #[test]

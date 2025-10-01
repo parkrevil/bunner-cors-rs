@@ -41,6 +41,88 @@ mod validate {
     use super::*;
 
     #[test]
+    fn validation_error_display_messages_are_informative() {
+        let cases: Vec<(ValidationError, &str)> = vec![
+            (
+                ValidationError::CredentialsRequireSpecificOrigin,
+                "specific allowed origin",
+            ),
+            (
+                ValidationError::AllowedHeadersAnyNotAllowedWithCredentials,
+                "AllowedHeaders::any()",
+            ),
+            (
+                ValidationError::AllowedHeadersListCannotContainWildcard,
+                "cannot include \"*\"",
+            ),
+            (
+                ValidationError::AllowedHeadersListContainsInvalidToken,
+                "valid HTTP header",
+            ),
+            (
+                ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled,
+                "credentials are disabled",
+            ),
+            (
+                ValidationError::ExposeHeadersWildcardCannotBeCombined,
+                "cannot be combined",
+            ),
+            (
+                ValidationError::ExposeHeadersListContainsInvalidToken,
+                "valid HTTP header",
+            ),
+            (
+                ValidationError::InvalidMaxAge("twenty".into()),
+                "must be a non-negative integer",
+            ),
+            (
+                ValidationError::PrivateNetworkRequiresCredentials,
+                "requires enabling credentials",
+            ),
+            (
+                ValidationError::PrivateNetworkRequiresSpecificOrigin,
+                "specific allowed origin",
+            ),
+            (
+                ValidationError::AllowedMethodsCannotContainEmptyToken,
+                "cannot contain empty",
+            ),
+            (
+                ValidationError::AllowedMethodsCannotContainWildcard,
+                "cannot include the wildcard",
+            ),
+            (
+                ValidationError::AllowedMethodsListContainsInvalidToken,
+                "valid HTTP method",
+            ),
+            (
+                ValidationError::AllowedHeadersCannotContainEmptyToken,
+                "cannot contain empty",
+            ),
+            (
+                ValidationError::ExposeHeadersCannotContainEmptyValue,
+                "cannot contain empty",
+            ),
+            (
+                ValidationError::TimingAllowOriginWildcardNotAllowedWithCredentials,
+                "cannot be a wildcard",
+            ),
+            (
+                ValidationError::TimingAllowOriginCannotContainEmptyValue,
+                "cannot contain empty",
+            ),
+        ];
+
+        for (error, expected) in cases {
+            let message = error.to_string();
+            assert!(
+                message.contains(expected),
+                "expected '{message}' to contain '{expected}'"
+            );
+        }
+    }
+
+    #[test]
     fn when_credentials_allow_any_origin_should_return_error() {
         // Arrange
         let options = CorsOptions {
@@ -116,6 +198,19 @@ mod validate {
     }
 
     #[test]
+    fn when_allowed_methods_list_contains_empty_token_should_return_error() {
+        let options = CorsOptions {
+            methods: AllowedMethods::list(["GET", "  ", "POST"]),
+            ..CorsOptions::default()
+        };
+
+        assert!(matches!(
+            options.validate(),
+            Err(ValidationError::AllowedMethodsCannotContainEmptyToken)
+        ));
+    }
+
+    #[test]
     fn when_allowed_methods_list_contains_invalid_token_should_return_error() {
         // Arrange
         let options = CorsOptions {
@@ -148,6 +243,19 @@ mod validate {
         assert!(matches!(
             result,
             Err(ValidationError::AllowedHeadersListContainsInvalidToken)
+        ));
+    }
+
+    #[test]
+    fn when_allowed_headers_list_contains_empty_token_should_return_error() {
+        let options = CorsOptions {
+            allowed_headers: AllowedHeaders::list(["X-Test", "  "]),
+            ..CorsOptions::default()
+        };
+
+        assert!(matches!(
+            options.validate(),
+            Err(ValidationError::AllowedHeadersCannotContainEmptyToken)
         ));
     }
 
@@ -241,6 +349,46 @@ mod validate {
     }
 
     #[test]
+    fn when_private_network_enabled_without_credentials_should_return_error() {
+        let options = CorsOptions {
+            allow_private_network: true,
+            ..CorsOptions::default()
+        };
+
+        assert!(matches!(
+            options.validate(),
+            Err(ValidationError::PrivateNetworkRequiresCredentials)
+        ));
+    }
+
+    #[test]
+    fn when_private_network_enabled_with_wildcard_origin_should_return_error() {
+        let options = CorsOptions {
+            allow_private_network: true,
+            credentials: true,
+            origin: Origin::any(),
+            ..CorsOptions::default()
+        };
+
+        assert!(matches!(
+            options.validate(),
+            Err(ValidationError::PrivateNetworkRequiresSpecificOrigin)
+        ));
+    }
+
+    #[test]
+    fn when_private_network_enabled_with_specific_origin_should_return_ok() {
+        let options = CorsOptions {
+            allow_private_network: true,
+            credentials: true,
+            origin: Origin::list(["https://intranet.test"]),
+            ..CorsOptions::default()
+        };
+
+        assert!(options.validate().is_ok());
+    }
+
+    #[test]
     fn when_configuration_is_specific_should_return_ok() {
         // Arrange
         let options = CorsOptions {
@@ -312,6 +460,19 @@ mod validate {
         assert!(matches!(
             result,
             Err(ValidationError::InvalidMaxAge(value)) if value == "ten minutes"
+        ));
+    }
+
+    #[test]
+    fn when_max_age_is_blank_should_return_error() {
+        let options = CorsOptions {
+            max_age: Some("  ".into()),
+            ..CorsOptions::default()
+        };
+
+        assert!(matches!(
+            options.validate(),
+            Err(ValidationError::InvalidMaxAge(value)) if value.trim().is_empty()
         ));
     }
 }

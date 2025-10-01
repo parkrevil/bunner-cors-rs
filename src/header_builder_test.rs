@@ -453,6 +453,19 @@ mod build_exposed_headers {
     }
 
     #[test]
+    fn when_configured_list_is_empty_should_return_empty_collection() {
+        let options = CorsOptions {
+            exposed_headers: Some(Vec::new()),
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+
+        let map = builder.build_exposed_headers().into_headers();
+
+        assert!(map.is_empty());
+    }
+
+    #[test]
     fn when_values_have_whitespace_and_wildcard_should_emit_trimmed_value() {
         // Arrange
         let options = CorsOptions {
@@ -469,6 +482,19 @@ mod build_exposed_headers {
             map.get(header::ACCESS_CONTROL_EXPOSE_HEADERS),
             Some(&"*".to_string())
         );
+    }
+
+    #[test]
+    fn when_values_trim_to_empty_should_return_empty_collection() {
+        let options = CorsOptions {
+            exposed_headers: Some(vec!["   ".into(), "\t".into()]),
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+
+        let map = builder.build_exposed_headers().into_headers();
+
+        assert!(map.is_empty());
     }
 }
 
