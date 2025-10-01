@@ -3,7 +3,6 @@
 ## 🔴 Critical Priority (1주일 내 완료 필요)
 
 ### 1. Cargo.toml 메타데이터 수정
-- [ ] `edition = "2024"` → `edition = "2021"` 수정 (2024 edition 존재하지 않음!)
 - [ ] 패키지명 `bunner_cors_rs` → `bunner-cors-rs` 변경 검토 (crates.io 컨벤션)
 - [ ] 필수 메타데이터 추가:
   ```toml
