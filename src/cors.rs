@@ -56,14 +56,24 @@ impl Cors {
             .methods
             .allows_method(normalized.access_control_request_method)
         {
-            return Ok(CorsDecision::NotApplicable);
+            return Ok(CorsDecision::PreflightRejected(PreflightRejection {
+                headers: headers.into_headers(),
+                reason: PreflightRejectionReason::MethodNotAllowed {
+                    requested_method: normalized.access_control_request_method.to_string(),
+                },
+            }));
         }
         if !self
             .options
             .allowed_headers
             .allows_headers(normalized.access_control_request_headers)
         {
-            return Ok(CorsDecision::NotApplicable);
+            return Ok(CorsDecision::PreflightRejected(PreflightRejection {
+                headers: headers.into_headers(),
+                reason: PreflightRejectionReason::HeadersNotAllowed {
+                    requested_headers: normalized.access_control_request_headers.to_string(),
+                },
+            }));
         }
         headers.extend(builder.build_credentials_header());
         headers.extend(builder.build_methods_header());

@@ -3,7 +3,7 @@ mod common;
 use bunner_cors_rs::constants::{header, method};
 use bunner_cors_rs::{
     AllowedHeaders, Cors, CorsDecision, CorsOptions, Origin, OriginDecision, OriginMatcher,
-    RequestContext, ValidationError,
+    PreflightRejectionReason, RequestContext, ValidationError,
 };
 use common::asserts::{
     assert_header_eq, assert_preflight, assert_vary_contains, assert_vary_is_empty,
@@ -20,7 +20,17 @@ fn default_preflight_with_requested_headers_is_rejected() {
         .request_headers("X-Test, Content-Type")
         .check(&cors);
 
-    assert!(matches!(decision, CorsDecision::NotApplicable));
+    match decision {
+        CorsDecision::PreflightRejected(rejection) => {
+            assert_eq!(
+                rejection.reason,
+                PreflightRejectionReason::HeadersNotAllowed {
+                    requested_headers: "x-test, content-type".to_string(),
+                }
+            );
+        }
+        other => panic!("expected preflight rejection, got {:?}", other),
+    }
 }
 
 #[test]
@@ -91,7 +101,17 @@ fn preflight_with_disallowed_method_is_rejected() {
         .request_method(method::DELETE)
         .check(&cors().methods([method::GET, method::POST]).build());
 
-    assert!(matches!(decision, CorsDecision::NotApplicable));
+    match decision {
+        CorsDecision::PreflightRejected(rejection) => {
+            assert_eq!(
+                rejection.reason,
+                PreflightRejectionReason::MethodNotAllowed {
+                    requested_method: "delete".to_string(),
+                }
+            );
+        }
+        other => panic!("expected preflight rejection, got {:?}", other),
+    }
 }
 
 #[test]
@@ -106,7 +126,17 @@ fn preflight_with_disallowed_header_is_rejected() {
                 .build(),
         );
 
-    assert!(matches!(decision, CorsDecision::NotApplicable));
+    match decision {
+        CorsDecision::PreflightRejected(rejection) => {
+            assert_eq!(
+                rejection.reason,
+                PreflightRejectionReason::HeadersNotAllowed {
+                    requested_headers: "x-disallowed".to_string(),
+                }
+            );
+        }
+        other => panic!("expected preflight rejection, got {:?}", other),
+    }
 }
 
 #[test]
