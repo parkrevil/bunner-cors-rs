@@ -433,7 +433,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_timing_allow_origin_configured_should_emit_header() {
+    fn when_timing_allow_origin_configured_should_not_emit_header() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::list([
@@ -449,9 +449,9 @@ mod process_preflight {
         // Act
         let headers = expect_preflight_accepted(preflight_decision(&cors, &original));
         // Assert
-        assert_eq!(
-            headers.get(header::TIMING_ALLOW_ORIGIN),
-            Some(&"https://metrics.test https://dash.test".to_string())
+        assert!(
+            !headers.contains_key(header::TIMING_ALLOW_ORIGIN),
+            "expected Timing-Allow-Origin to be omitted on preflight responses"
         );
     }
 }

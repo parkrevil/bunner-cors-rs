@@ -49,27 +49,37 @@ fn options_with_origin(origin: Origin) -> CorsOptions {
     }
 }
 
-fn expect_allow(outcome: Result<OriginOutcome, CorsError>) -> HeaderCollection {
+fn expect_allow(
+    outcome: Result<(HeaderCollection, OriginDecision), CorsError>,
+) -> HeaderCollection {
     match outcome.expect("expected allow outcome") {
-        OriginOutcome::Allow(collection) => collection,
-        OriginOutcome::Disallow(_) => panic!("expected allow outcome, got disallow"),
-        OriginOutcome::Skip => panic!("expected allow outcome, got skip"),
+        (collection, OriginDecision::Any)
+        | (collection, OriginDecision::Mirror)
+        | (collection, OriginDecision::Exact(_)) => collection,
+        (_, OriginDecision::Disallow) => panic!("expected allow outcome, got disallow"),
+        (_, OriginDecision::Skip) => panic!("expected allow outcome, got skip"),
     }
 }
 
-fn expect_disallow(outcome: Result<OriginOutcome, CorsError>) -> HeaderCollection {
+fn expect_disallow(
+    outcome: Result<(HeaderCollection, OriginDecision), CorsError>,
+) -> HeaderCollection {
     match outcome.expect("expected disallow outcome") {
-        OriginOutcome::Disallow(collection) => collection,
-        OriginOutcome::Allow(_) => panic!("expected disallow outcome, got allow"),
-        OriginOutcome::Skip => panic!("expected disallow outcome, got skip"),
+        (collection, OriginDecision::Disallow) => collection,
+        (_, OriginDecision::Any) | (_, OriginDecision::Mirror) | (_, OriginDecision::Exact(_)) => {
+            panic!("expected disallow outcome, got allow")
+        }
+        (_, OriginDecision::Skip) => panic!("expected disallow outcome, got skip"),
     }
 }
 
-fn expect_skip(outcome: Result<OriginOutcome, CorsError>) {
+fn expect_skip(outcome: Result<(HeaderCollection, OriginDecision), CorsError>) {
     match outcome.expect("expected skip outcome") {
-        OriginOutcome::Skip => {}
-        OriginOutcome::Allow(_) => panic!("expected skip outcome, got allow"),
-        OriginOutcome::Disallow(_) => panic!("expected skip outcome, got disallow"),
+        (_, OriginDecision::Skip) => {}
+        (_, OriginDecision::Any) | (_, OriginDecision::Mirror) | (_, OriginDecision::Exact(_)) => {
+            panic!("expected skip outcome, got allow")
+        }
+        (_, OriginDecision::Disallow) => panic!("expected skip outcome, got disallow"),
     }
 }
 

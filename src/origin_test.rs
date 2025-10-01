@@ -189,7 +189,24 @@ mod origin_matcher {
             let result = OriginMatcher::pattern_str("(");
 
             // Assert
-            assert!(result.is_err());
+            assert!(matches!(result, Err(PatternError::Build(_))));
+        }
+
+        #[test]
+        fn when_pattern_exceeds_length_should_fail_fast() {
+            // Arrange
+            let pattern = "a".repeat(super::MAX_PATTERN_LENGTH + 1);
+
+            // Act
+            let result = OriginMatcher::pattern_str(&pattern);
+
+            // Assert
+            if let Err(PatternError::TooLong { length, max }) = result {
+                assert_eq!(length, super::MAX_PATTERN_LENGTH + 1);
+                assert_eq!(max, super::MAX_PATTERN_LENGTH);
+            } else {
+                panic!("expected too long error");
+            }
         }
     }
 

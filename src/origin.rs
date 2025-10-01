@@ -1,6 +1,8 @@
 use crate::context::RequestContext;
 use regex_automata::meta::{BuildError, Regex};
+use std::fmt;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 pub type OriginPredicateFn = dyn for<'a> Fn(&str, &RequestContext<'a>) -> bool + Send + Sync;
 pub type OriginCallbackFn =
@@ -72,6 +74,41 @@ where
 }
 
 /// Matcher that determines if an origin is allowed.
+#[derive(Debug)]
+pub enum PatternError {
+    Build(Box<BuildError>),
+    Timeout { elapsed: Duration, budget: Duration },
+    TooLong { length: usize, max: usize },
+}
+
+impl fmt::Display for PatternError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PatternError::Build(_) => write!(f, "failed to compile origin pattern"),
+            PatternError::Timeout { .. } => {
+                write!(f, "compiling origin pattern exceeded the configured budget")
+            }
+            PatternError::TooLong { length, max } => write!(
+                f,
+                "origin pattern length {} exceeds maximum allowed {}",
+                length, max
+            ),
+        }
+    }
+}
+
+impl std::error::Error for PatternError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            PatternError::Build(err) => Some(err.as_ref()),
+            _ => None,
+        }
+    }
+}
+
+const PATTERN_COMPILE_BUDGET: Duration = Duration::from_millis(100);
+const MAX_PATTERN_LENGTH: usize = 50_000;
+
 #[derive(Clone)]
 pub enum OriginMatcher {
     Exact(String),
@@ -88,8 +125,25 @@ impl OriginMatcher {
         Self::Pattern(regex)
     }
 
-    pub fn pattern_str(pattern: &str) -> Result<Self, Box<BuildError>> {
-        let regex = Regex::new(&format!("(?i:{pattern})")).map_err(Box::new)?;
+    pub fn pattern_str(pattern: &str) -> Result<Self, PatternError> {
+        if pattern.len() > MAX_PATTERN_LENGTH {
+            return Err(PatternError::TooLong {
+                length: pattern.len(),
+                max: MAX_PATTERN_LENGTH,
+            });
+        }
+
+        let started = Instant::now();
+        let regex = Regex::new(&format!("(?i:{pattern})"))
+            .map_err(|err| PatternError::Build(Box::new(err)))?;
+        let elapsed = started.elapsed();
+        if elapsed > PATTERN_COMPILE_BUDGET {
+            return Err(PatternError::Timeout {
+                elapsed,
+                budget: PATTERN_COMPILE_BUDGET,
+            });
+        }
+
         Ok(Self::Pattern(regex))
     }
 

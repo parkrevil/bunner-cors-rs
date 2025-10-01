@@ -11,8 +11,13 @@ pub(crate) struct HeaderCollection {
 
 impl HeaderCollection {
     pub(crate) fn new() -> Self {
+        Self::with_estimate(16)
+    }
+
+    pub(crate) fn with_estimate(estimate: usize) -> Self {
+        let capacity = estimate.max(16);
         Self {
-            headers: HashMap::with_capacity(16),
+            headers: HashMap::with_capacity(capacity),
         }
     }
 

@@ -1,7 +1,7 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{CorsDecision, Origin, OriginDecision, OriginMatcher};
+use bunner_cors_rs::{CorsDecision, Origin, OriginDecision, OriginMatcher, PatternError};
 use common::asserts::{assert_simple, assert_vary_eq};
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value};
@@ -379,9 +379,18 @@ fn regex_pattern_compilation_behaves_like_regex_automata() {
     assert!(matcher.matches("https://sub.test.com"));
     assert!(!matcher.matches("https://sub.other.com"));
 
-    // Large but valid pattern should compile successfully now that limits are removed.
+    // Large patterns now hit the safety guard instead of compiling indefinitely.
     let large_pattern = format!(r"^https://{}\.example\.com$", "a".repeat(100_000));
-    assert!(OriginMatcher::pattern_str(&large_pattern).is_ok());
+    match OriginMatcher::pattern_str(&large_pattern) {
+        Err(PatternError::TooLong { length, max }) => {
+            assert!(
+                length > max,
+                "length guard should trigger for oversized patterns"
+            );
+        }
+        Err(other) => panic!("unexpected pattern error: {other:?}"),
+        Ok(_) => panic!("expected length guard to trigger"),
+    }
 
     // Invalid syntax should still surface an error from regex-automata.
     assert!(OriginMatcher::pattern_str("(").is_err());

@@ -1,8 +1,8 @@
 use crate::context::RequestContext;
-use crate::header_builder::{HeaderBuilder, OriginOutcome};
-use crate::headers::HeaderCollection;
+use crate::header_builder::HeaderBuilder;
 use crate::normalized_request::NormalizedRequest;
 use crate::options::{CorsOptions, ValidationError};
+use crate::origin::OriginDecision;
 use crate::result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
 
 /// Core CORS policy engine that evaluates requests using [`CorsOptions`].
@@ -36,19 +36,17 @@ impl Cors {
             return Ok(CorsDecision::NotApplicable);
         }
         let builder = HeaderBuilder::new(&self.options);
-        let origin = Self::resolve_origin_headers(&builder, original, normalized)?;
+        let (mut headers, decision) = builder.build_origin_headers(original, normalized)?;
 
-        let Some((origin_headers, origin_allowed)) = origin else {
-            return Ok(CorsDecision::NotApplicable);
-        };
-
-        let mut headers = origin_headers;
-
-        if !origin_allowed {
-            return Ok(CorsDecision::PreflightRejected(PreflightRejection {
-                headers: headers.into_headers(),
-                reason: PreflightRejectionReason::OriginNotAllowed,
-            }));
+        match decision {
+            OriginDecision::Skip => return Ok(CorsDecision::NotApplicable),
+            OriginDecision::Disallow => {
+                return Ok(CorsDecision::PreflightRejected(PreflightRejection {
+                    headers: headers.into_headers(),
+                    reason: PreflightRejectionReason::OriginNotAllowed,
+                }));
+            }
+            OriginDecision::Any | OriginDecision::Mirror | OriginDecision::Exact(_) => {}
         }
 
         if !self
@@ -80,7 +78,6 @@ impl Cors {
         headers.extend(builder.build_allowed_headers());
         headers.extend(builder.build_private_network_header(original));
         headers.extend(builder.build_max_age_header());
-        headers.extend(builder.build_timing_allow_origin_header());
 
         Ok(CorsDecision::PreflightAccepted {
             headers: headers.into_headers(),
@@ -93,18 +90,16 @@ impl Cors {
         normalized: &RequestContext<'_>,
     ) -> Result<CorsDecision, CorsError> {
         let builder = HeaderBuilder::new(&self.options);
-        let origin = Self::resolve_origin_headers(&builder, original, normalized)?;
+        let (mut headers, decision) = builder.build_origin_headers(original, normalized)?;
 
-        let Some((origin_headers, origin_allowed)) = origin else {
-            return Ok(CorsDecision::NotApplicable);
-        };
-
-        let mut headers = origin_headers;
-
-        if !origin_allowed {
-            return Ok(CorsDecision::SimpleAccepted {
-                headers: headers.into_headers(),
-            });
+        match decision {
+            OriginDecision::Skip => return Ok(CorsDecision::NotApplicable),
+            OriginDecision::Disallow => {
+                return Ok(CorsDecision::SimpleAccepted {
+                    headers: headers.into_headers(),
+                });
+            }
+            OriginDecision::Any | OriginDecision::Mirror | OriginDecision::Exact(_) => {}
         }
 
         if !self.options.methods.allows_method(normalized.method) {
@@ -118,18 +113,6 @@ impl Cors {
         Ok(CorsDecision::SimpleAccepted {
             headers: headers.into_headers(),
         })
-    }
-
-    fn resolve_origin_headers(
-        builder: &HeaderBuilder<'_>,
-        original: &RequestContext<'_>,
-        normalized: &RequestContext<'_>,
-    ) -> Result<Option<(HeaderCollection, bool)>, CorsError> {
-        match builder.build_origin_headers(original, normalized)? {
-            OriginOutcome::Skip => Ok(None),
-            OriginOutcome::Disallow(headers) => Ok(Some((headers, false))),
-            OriginOutcome::Allow(headers) => Ok(Some((headers, true))),
-        }
     }
 }
 
