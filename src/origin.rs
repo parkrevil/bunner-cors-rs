@@ -90,8 +90,6 @@ impl OriginMatcher {
 
     pub fn pattern_str(pattern: &str) -> Result<Self, regex::Error> {
         let regex = RegexBuilder::new(pattern)
-            .size_limit(1_000_000) // 1MB limit to prevent excessive memory usage
-            .dfa_size_limit(1_000_000) // DFA size limit
             .case_insensitive(true)
             .build()?;
         Ok(Self::Pattern(regex))
