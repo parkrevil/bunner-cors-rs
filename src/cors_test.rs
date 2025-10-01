@@ -581,7 +581,8 @@ mod process_simple {
     }
 
     #[test]
-    fn should_not_emit_header_on_simple_response_given_private_network_allowed_when_simple_request() {
+    fn should_not_emit_header_on_simple_response_given_private_network_allowed_when_simple_request()
+    {
         // Arrange
         let cors = Cors::new(CorsOptions {
             allow_private_network: true,
