@@ -5,7 +5,7 @@ mod list {
     use super::AllowedMethods;
 
     #[test]
-    fn when_values_provided_should_collect_into_list_variant() {
+    fn should_collect_into_list_variant_given_values_provided() {
         // Arrange
         let methods = ["GET", "POST"];
 
@@ -18,7 +18,7 @@ mod list {
     }
 
     #[test]
-    fn when_iterator_is_empty_should_create_empty_list_variant() {
+    fn should_create_empty_list_variant_given_iterator_is_empty() {
         // Arrange
         let methods: [&str; 0] = [];
 
@@ -31,7 +31,7 @@ mod list {
     }
 
     #[test]
-    fn when_values_include_empty_entries_should_preserve_order() {
+    fn should_preserve_order_given_values_include_empty_entries() {
         // Arrange
         let methods = ["", "GET"];
 
@@ -44,7 +44,7 @@ mod list {
     }
 
     #[test]
-    fn when_values_include_case_duplicates_should_keep_first_instance() {
+    fn should_keep_first_instance_given_values_include_case_duplicates() {
         // Arrange
         let methods = ["GET", "get", "POST"];
 
@@ -61,7 +61,7 @@ mod header_value {
     use super::AllowedMethods;
 
     #[test]
-    fn when_list_is_empty_should_return_none() {
+    fn should_return_none_given_list_is_empty() {
         // Arrange
         let methods = AllowedMethods::list(Vec::<String>::new());
 
@@ -73,7 +73,7 @@ mod header_value {
     }
 
     #[test]
-    fn when_list_has_values_should_join_with_commas() {
+    fn should_join_with_commas_given_list_has_values() {
         // Arrange
         let methods = AllowedMethods::list(["GET", "PATCH"]);
 
@@ -85,7 +85,7 @@ mod header_value {
     }
 
     #[test]
-    fn when_list_contains_empty_and_value_should_include_separator() {
+    fn should_include_separator_given_list_contains_empty_and_value() {
         // Arrange
         let methods = AllowedMethods::list(["", "GET"]);
 
@@ -101,14 +101,14 @@ mod allows_method {
     use super::AllowedMethods;
 
     #[test]
-    fn when_list_should_compare_case_insensitively() {
+    fn should_compare_case_insensitively_given_list() {
         let methods = AllowedMethods::list(["POST", "PATCH"]);
         assert!(methods.allows_method("post"));
         assert!(!methods.allows_method("DELETE"));
     }
 
     #[test]
-    fn when_method_missing_should_reject() {
+    fn should_reject_given_method_missing() {
         let methods = AllowedMethods::list(["GET"]);
         assert!(!methods.allows_method(""));
         assert!(!methods.allows_method("  "));
@@ -119,7 +119,7 @@ mod default {
     use super::{AllowedMethods, method};
 
     #[test]
-    fn when_called_should_return_standard_method_list() {
+    fn should_return_standard_method_list_when_called() {
         // Arrange & Act
         let methods = AllowedMethods::default();
 

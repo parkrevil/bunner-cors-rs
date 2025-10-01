@@ -18,7 +18,7 @@ mod origin_decision {
         use super::*;
 
         #[test]
-        fn when_called_should_return_any_variant() {
+        fn should_return_any_variant_when_called() {
             // Arrange & Act
             let decision = OriginDecision::any();
 
@@ -31,7 +31,7 @@ mod origin_decision {
         use super::*;
 
         #[test]
-        fn when_value_provided_should_wrap_string() {
+        fn should_wrap_string_given_value_provided() {
             // Arrange & Act
             let decision = OriginDecision::exact("https://api.test");
 
@@ -47,7 +47,7 @@ mod origin_decision {
         use super::*;
 
         #[test]
-        fn when_called_should_return_mirror_variant() {
+        fn should_return_mirror_variant_when_called() {
             // Arrange & Act
             let decision = OriginDecision::mirror();
 
@@ -60,7 +60,7 @@ mod origin_decision {
         use super::*;
 
         #[test]
-        fn when_called_should_return_disallow_variant() {
+        fn should_return_disallow_variant_when_called() {
             // Arrange & Act
             let decision = OriginDecision::disallow();
 
@@ -73,7 +73,7 @@ mod origin_decision {
         use super::*;
 
         #[test]
-        fn when_called_should_return_skip_variant() {
+        fn should_return_skip_variant_when_called() {
             // Arrange & Act
             let decision = OriginDecision::skip();
 
@@ -86,7 +86,7 @@ mod origin_decision {
         use super::*;
 
         #[test]
-        fn when_true_should_convert_to_mirror() {
+        fn should_convert_to_mirror_given_true() {
             // Arrange & Act
             let decision = OriginDecision::from(true);
 
@@ -95,7 +95,7 @@ mod origin_decision {
         }
 
         #[test]
-        fn when_false_should_convert_to_skip() {
+        fn should_convert_to_skip_given_false() {
             // Arrange & Act
             let decision = OriginDecision::from(false);
 
@@ -108,7 +108,7 @@ mod origin_decision {
         use super::*;
 
         #[test]
-        fn when_option_has_value_should_convert_to_exact() {
+        fn should_convert_to_exact_given_option_has_value() {
             // Arrange & Act
             let decision = OriginDecision::from(Some("https://api.test"));
 
@@ -120,7 +120,7 @@ mod origin_decision {
         }
 
         #[test]
-        fn when_option_is_none_should_convert_to_skip() {
+        fn should_convert_to_skip_given_option_is_none() {
             // Arrange & Act
             let decision: OriginDecision = OriginDecision::from(None::<String>);
 
@@ -138,7 +138,7 @@ mod origin_matcher {
         use super::*;
 
         #[test]
-        fn when_called_should_store_string_value() {
+        fn should_store_string_value_when_called() {
             // Arrange & Act
             let matcher = OriginMatcher::exact("https://api.test");
 
@@ -154,7 +154,7 @@ mod origin_matcher {
         use super::*;
 
         #[test]
-        fn when_regex_provided_should_store_pattern() {
+        fn should_store_pattern_given_regex_provided() {
             // Arrange
             let regex = Regex::new(r"^https://.*\.test$").unwrap();
 
@@ -176,7 +176,7 @@ mod origin_matcher {
         use std::time::Duration;
 
         #[test]
-        fn when_pattern_valid_should_return_matcher() {
+        fn should_return_matcher_given_pattern_valid() {
             // Arrange & Act
             let matcher = OriginMatcher::pattern_str(r"^https://.*\.test$").unwrap();
 
@@ -185,7 +185,7 @@ mod origin_matcher {
         }
 
         #[test]
-        fn when_pattern_invalid_should_return_error() {
+        fn should_return_error_given_pattern_invalid() {
             // Arrange & Act
             let result = OriginMatcher::pattern_str("(");
 
@@ -194,7 +194,7 @@ mod origin_matcher {
         }
 
         #[test]
-        fn when_pattern_exceeds_length_should_fail_fast() {
+        fn should_fail_fast_given_pattern_exceeds_length() {
             // Arrange
             let pattern = "a".repeat(super::MAX_PATTERN_LENGTH + 1);
 
@@ -211,7 +211,7 @@ mod origin_matcher {
         }
 
         #[test]
-        fn when_budget_too_small_should_return_timeout_error() {
+        fn should_return_timeout_error_given_budget_too_small() {
             let result = OriginMatcher::pattern_str_with_budget(".*", Duration::ZERO);
 
             assert!(matches!(result, Err(PatternError::Timeout { .. })));
@@ -222,7 +222,7 @@ mod origin_matcher {
         use super::*;
 
         #[test]
-        fn when_exact_should_compare_strings() {
+        fn should_compare_strings_given_exact() {
             // Arrange
             let matcher = OriginMatcher::exact("https://api.test");
 
@@ -234,7 +234,7 @@ mod origin_matcher {
         }
 
         #[test]
-        fn when_pattern_should_use_regex() {
+        fn should_use_regex_given_pattern() {
             // Arrange
             let matcher = OriginMatcher::pattern(Regex::new(r"^https://.*$").unwrap());
 
@@ -246,7 +246,7 @@ mod origin_matcher {
         }
 
         #[test]
-        fn when_bool_should_return_value() {
+        fn should_return_value_given_bool() {
             // Arrange
             let matcher = OriginMatcher::Bool(false);
 
@@ -262,7 +262,7 @@ mod origin_matcher {
         use super::*;
 
         #[test]
-        fn when_string_provided_should_create_exact_matcher() {
+        fn should_create_exact_matcher_given_string_provided() {
             // Arrange & Act
             let matcher = OriginMatcher::from("https://api.test".to_string());
 
@@ -275,7 +275,7 @@ mod origin_matcher {
         use super::*;
 
         #[test]
-        fn when_str_provided_should_create_exact_matcher() {
+        fn should_create_exact_matcher_given_str_provided() {
             // Arrange & Act
             let matcher = OriginMatcher::from("https://api.test");
 
@@ -288,7 +288,7 @@ mod origin_matcher {
         use super::*;
 
         #[test]
-        fn when_bool_provided_should_create_bool_matcher() {
+        fn should_create_bool_matcher_given_bool_provided() {
             // Arrange & Act
             let matcher = OriginMatcher::from(true);
 
@@ -304,7 +304,7 @@ mod pattern_error_behavior {
     use std::time::Duration;
 
     #[test]
-    fn display_messages_should_include_key_phrases() {
+    fn should_include_key_phrases_in_display_messages() {
         let build_error = match OriginMatcher::pattern_str("(") {
             Err(err) => err,
             Ok(_) => panic!("expected build error"),
@@ -329,7 +329,7 @@ mod pattern_error_behavior {
     }
 
     #[test]
-    fn error_sources_should_be_exposed_where_available() {
+    fn should_expose_error_sources_where_available() {
         let build_error = match OriginMatcher::pattern_str("(") {
             Err(err) => err,
             Ok(_) => panic!("expected build error"),
@@ -351,7 +351,7 @@ mod origin_type {
         use super::*;
 
         #[test]
-        fn when_called_should_return_any_variant() {
+        fn should_return_any_variant_when_called() {
             // Arrange & Act
             let origin = Origin::any();
 
@@ -364,7 +364,7 @@ mod origin_type {
         use super::*;
 
         #[test]
-        fn when_value_provided_should_store_exact_string() {
+        fn should_store_exact_string_given_value_provided() {
             // Arrange & Act
             let origin = Origin::exact("https://api.test");
 
@@ -380,7 +380,7 @@ mod origin_type {
         use super::*;
 
         #[test]
-        fn when_iterable_provided_should_collect_matchers() {
+        fn should_collect_matchers_given_iterable_provided() {
             // Arrange & Act
             let origin = Origin::list(["https://api.test", "https://other.test"]);
 
@@ -398,7 +398,7 @@ mod origin_type {
         use super::*;
 
         #[test]
-        fn when_callable_provided_should_store_predicate() {
+        fn should_store_predicate_given_callable_provided() {
             // Arrange & Act
             let origin = Origin::predicate(|origin, _| origin.ends_with(".test"));
 
@@ -411,7 +411,7 @@ mod origin_type {
         use super::*;
 
         #[test]
-        fn when_callback_provided_should_store_custom_logic() {
+        fn should_store_custom_logic_given_callback_provided() {
             // Arrange & Act
             let origin = Origin::custom(|_, _| OriginDecision::Mirror);
 
@@ -424,7 +424,7 @@ mod origin_type {
         use super::*;
 
         #[test]
-        fn when_called_should_return_skip_decision_on_resolve() {
+        fn should_return_skip_decision_on_resolve_when_called() {
             // Arrange
             let origin = Origin::disabled();
             let ctx = request_context("GET", "https://api.test");
@@ -441,7 +441,7 @@ mod origin_type {
         use super::*;
 
         #[test]
-        fn when_origin_any_should_allow_all() {
+        fn should_allow_all_given_origin_any() {
             // Arrange
             let origin = Origin::any();
             let ctx = request_context("GET", "https://api.test");
@@ -454,7 +454,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_exact_should_return_exact_clone() {
+        fn should_return_exact_clone_given_origin_exact() {
             // Arrange
             let origin = Origin::exact("https://api.test");
             let ctx = request_context("GET", "https://api.test");
@@ -470,7 +470,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_exact_has_no_request_origin_should_skip() {
+        fn should_skip_given_origin_exact_has_no_request_origin() {
             let origin = Origin::exact("https://app.test");
             let ctx = request_context("GET", "https://app.test");
 
@@ -480,7 +480,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_list_matches_request_should_mirror() {
+        fn should_mirror_given_origin_list_matches_request() {
             // Arrange
             let origin = Origin::list(["https://api.test"]);
             let ctx = request_context("GET", "https://api.test");
@@ -493,7 +493,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_list_misses_should_disallow() {
+        fn should_disallow_given_origin_list_misses() {
             // Arrange
             let origin = Origin::list(["https://other.test"]);
             let ctx = request_context("GET", "https://api.test");
@@ -506,7 +506,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_list_has_different_scheme_should_disallow() {
+        fn should_disallow_given_origin_list_has_different_scheme() {
             // Arrange
             let origin = Origin::list(["https://api.test"]);
             let ctx = request_context("GET", "http://api.test");
@@ -519,7 +519,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_list_contains_false_matcher_should_disallow() {
+        fn should_disallow_given_origin_list_contains_false_matcher() {
             // Arrange
             let origin = Origin::list([OriginMatcher::Bool(false)]);
             let ctx = request_context("GET", "https://api.test");
@@ -532,7 +532,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_list_has_different_port_should_disallow() {
+        fn should_disallow_given_origin_list_has_different_port() {
             // Arrange
             let origin = Origin::list(["https://api.test:8443"]);
             let ctx = request_context("GET", "https://api.test");
@@ -545,7 +545,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_list_without_origin_header_should_skip_processing() {
+        fn should_skip_processing_given_list_without_origin_header() {
             // Arrange
             let origin = Origin::list(["https://api.test"]);
             let ctx = request_context("GET", "");
@@ -558,7 +558,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_list_contains_null_string_should_allow_null_origin() {
+        fn should_allow_null_origin_given_origin_list_contains_null_string() {
             // Arrange
             let origin = Origin::list(["null"]);
             let ctx = request_context("GET", "null");
@@ -571,7 +571,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_any_receives_null_string_should_allow_all() {
+        fn should_allow_all_given_origin_any_receives_null_string() {
             // Arrange
             let origin = Origin::any();
             let ctx = request_context("GET", "null");
@@ -584,7 +584,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_predicate_true_should_mirror() {
+        fn should_mirror_given_predicate_true() {
             // Arrange
             let origin = Origin::predicate(|value, _| value.ends_with(".test"));
             let ctx = request_context("GET", "https://api.test");
@@ -597,7 +597,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_predicate_false_should_disallow() {
+        fn should_disallow_given_predicate_false() {
             // Arrange
             let origin = Origin::predicate(|value, _| value == "https://allowed.test");
             let ctx = request_context("GET", "https://api.test");
@@ -610,7 +610,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_predicate_returns_false_should_not_mirror_origin() {
+        fn should_not_mirror_origin_given_predicate_returns_false() {
             // Arrange
             let origin = Origin::predicate(|value, _| value == "https://allowed.test");
             let ctx = request_context("GET", "https://blocked.test");
@@ -623,7 +623,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_predicate_without_origin_header_should_skip_without_invoking_predicate() {
+        fn should_skip_without_invoking_predicate_given_predicate_without_origin_header() {
             use std::sync::Arc;
             use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -647,7 +647,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_custom_callback_returns_decision_should_forward() {
+        fn should_forward_given_custom_callback_returns_decision() {
             // Arrange
             let origin = Origin::custom(|_, _| OriginDecision::Exact("https://custom.test".into()));
             let ctx = request_context("GET", "https://api.test");
@@ -663,7 +663,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_custom_receives_no_origin_header_should_allow_custom_logic() {
+        fn should_allow_custom_logic_given_custom_receives_no_origin_header() {
             // Arrange
             let origin = Origin::custom(|origin, _| {
                 assert!(origin.is_none());
@@ -683,7 +683,7 @@ mod origin_type {
         use super::*;
 
         #[test]
-        fn when_origin_any_should_not_vary() {
+        fn should_not_vary_given_origin_any() {
             // Arrange
             let origin = Origin::any();
 
@@ -695,7 +695,7 @@ mod origin_type {
         }
 
         #[test]
-        fn when_origin_exact_should_vary() {
+        fn should_vary_given_origin_exact() {
             // Arrange
             let origin = Origin::exact("https://api.test");
 

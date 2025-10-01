@@ -7,7 +7,7 @@ use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value};
 
 #[test]
-fn default_simple_request_allows_any_origin() {
+fn should_allow_any_origin_in_default_simple_request() {
     let cors = cors().build();
     let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
 
@@ -19,7 +19,7 @@ fn default_simple_request_allows_any_origin() {
 }
 
 #[test]
-fn simple_request_without_origin_is_not_applicable() {
+fn should_be_not_applicable_given_simple_request_without_origin() {
     let cors = cors().build();
 
     let decision = simple_request().check(&cors);
@@ -28,7 +28,7 @@ fn simple_request_without_origin_is_not_applicable() {
 }
 
 #[test]
-fn simple_request_with_expose_headers_should_emit_expose_header() {
+fn should_emit_expose_header_given_simple_request_with_expose_headers() {
     let cors = cors().exposed_headers(["X-Trace", "X-Auth"]).build();
 
     let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
@@ -40,7 +40,7 @@ fn simple_request_with_expose_headers_should_emit_expose_header() {
 }
 
 #[test]
-fn simple_request_without_expose_headers_should_not_emit_expose_header() {
+fn should_not_emit_expose_header_given_simple_request_without_expose_headers() {
     let cors = cors().build();
 
     let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));

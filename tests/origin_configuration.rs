@@ -8,7 +8,7 @@ use common::headers::{has_header, header_value};
 use regex_automata::meta::Regex;
 
 #[test]
-fn exact_origin_is_reflected_with_vary() {
+fn should_reflect_exact_origin_with_vary() {
     let cors = cors().origin(Origin::exact("https://allowed.dev")).build();
 
     let headers = assert_simple(
@@ -26,7 +26,7 @@ fn exact_origin_is_reflected_with_vary() {
 }
 
 #[test]
-fn origin_list_supports_exact_and_patterns() {
+fn should_support_exact_and_patterns_in_origin_list() {
     let cors = cors()
         .origin(Origin::list([
             OriginMatcher::exact("https://exact.example"),
@@ -53,7 +53,7 @@ fn origin_list_supports_exact_and_patterns() {
 }
 
 #[test]
-fn origin_list_matches_case_insensitively() {
+fn should_match_case_insensitively_in_origin_list() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://Case.Match")]))
         .build();
@@ -68,7 +68,7 @@ fn origin_list_matches_case_insensitively() {
 }
 
 #[test]
-fn exact_origin_matching_is_case_insensitive() {
+fn should_be_case_insensitive_in_exact_origin_matching() {
     let cors = cors()
         .origin(Origin::exact("https://Allowed.Service"))
         .build();
@@ -87,7 +87,7 @@ fn exact_origin_matching_is_case_insensitive() {
 }
 
 #[test]
-fn origin_pattern_matching_is_case_insensitive() {
+fn should_be_case_insensitive_in_origin_pattern_matching() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::pattern_str(
             r"^https://svc\.[a-z]+\.domain$",
@@ -109,7 +109,7 @@ fn origin_pattern_matching_is_case_insensitive() {
 }
 
 #[test]
-fn exact_origin_mismatch_is_disallowed() {
+fn should_disallow_exact_origin_mismatch() {
     let cors = cors().origin(Origin::exact("https://allowed.dev")).build();
 
     let headers = assert_simple(simple_request().origin("https://denied.dev").check(&cors));
@@ -119,7 +119,7 @@ fn exact_origin_mismatch_is_disallowed() {
 }
 
 #[test]
-fn origin_list_combines_bool_regex_and_exact_matchers() {
+fn should_combine_bool_regex_and_exact_matchers_in_origin_list() {
     let cors = cors()
         .origin(Origin::list([
             OriginMatcher::from(false),
@@ -158,7 +158,7 @@ fn origin_list_combines_bool_regex_and_exact_matchers() {
 }
 
 #[test]
-fn origin_list_supports_boolean_entries() {
+fn should_support_boolean_entries_in_origin_list() {
     let cors = cors().origin(Origin::list([false, true])).build();
 
     let headers = assert_simple(simple_request().origin("https://boolean.dev").check(&cors));
@@ -170,7 +170,7 @@ fn origin_list_supports_boolean_entries() {
 }
 
 #[test]
-fn origin_list_all_false_entries_disallow() {
+fn should_disallow_given_origin_list_all_false_entries() {
     let cors = cors().origin(Origin::list([false])).build();
 
     let headers = assert_simple(simple_request().origin("https://deny.boole").check(&cors));
@@ -180,7 +180,7 @@ fn origin_list_all_false_entries_disallow() {
 }
 
 #[test]
-fn predicate_origin_allows_custom_logic() {
+fn should_allow_custom_logic_in_predicate_origin() {
     let cors = cors()
         .origin(Origin::predicate(|origin, _ctx| {
             origin.ends_with(".trusted")
@@ -209,7 +209,7 @@ fn predicate_origin_allows_custom_logic() {
 }
 
 #[test]
-fn predicate_origin_can_inspect_request_method() {
+fn should_inspect_request_method_in_predicate_origin() {
     let cors = cors()
         .origin(Origin::predicate(|origin, ctx| {
             origin == "https://method.dev" && ctx.method.eq_ignore_ascii_case(method::POST)
@@ -239,7 +239,7 @@ fn predicate_origin_can_inspect_request_method() {
 }
 
 #[test]
-fn custom_origin_can_skip_processing() {
+fn should_skip_processing_in_custom_origin() {
     let cors = cors()
         .origin(Origin::custom(|origin, _ctx| match origin {
             Some("https://allow.me") => OriginDecision::Mirror,
@@ -260,7 +260,7 @@ fn custom_origin_can_skip_processing() {
 }
 
 #[test]
-fn custom_origin_can_return_exact_value() {
+fn should_return_exact_value_in_custom_origin() {
     let cors = cors()
         .origin(Origin::custom(|_, _| {
             OriginDecision::Exact("https://override.dev".into())
@@ -281,7 +281,7 @@ fn custom_origin_can_return_exact_value() {
 }
 
 #[test]
-fn custom_origin_returning_disallow_adds_vary() {
+fn should_add_vary_given_custom_origin_returning_disallow() {
     let cors = cors()
         .origin(Origin::custom(|origin, _| match origin {
             Some("https://allow.me") => OriginDecision::Mirror,
@@ -296,7 +296,7 @@ fn custom_origin_returning_disallow_adds_vary() {
 }
 
 #[test]
-fn custom_origin_handles_requests_without_origin_header() {
+fn should_handle_requests_without_origin_header_in_custom_origin() {
     let cors = cors()
         .origin(Origin::custom(|origin, _| {
             assert!(origin.is_none());
@@ -314,7 +314,7 @@ fn custom_origin_handles_requests_without_origin_header() {
 }
 
 #[test]
-fn custom_origin_returning_any_does_not_emit_vary() {
+fn should_not_emit_vary_given_custom_origin_returning_any() {
     let cors = cors()
         .origin(Origin::custom(|_, _| OriginDecision::Any))
         .build();
@@ -329,7 +329,7 @@ fn custom_origin_returning_any_does_not_emit_vary() {
 }
 
 #[test]
-fn disallowed_origin_returns_headers_without_allow_origin() {
+fn should_return_headers_without_allow_origin_given_disallowed_origin() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://allow.one")]))
         .build();
@@ -341,7 +341,7 @@ fn disallowed_origin_returns_headers_without_allow_origin() {
 }
 
 #[test]
-fn disabled_origin_short_circuits_cors_processing() {
+fn should_short_circuit_cors_processing_given_disabled_origin() {
     let cors = cors().origin(Origin::disabled()).build();
 
     assert!(matches!(
@@ -351,7 +351,7 @@ fn disabled_origin_short_circuits_cors_processing() {
 }
 
 #[test]
-fn missing_origin_header_short_circuits_cors_processing() {
+fn should_short_circuit_cors_processing_given_missing_origin_header() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://allow.dev")]))
         .build();
@@ -362,7 +362,7 @@ fn missing_origin_header_short_circuits_cors_processing() {
 }
 
 #[test]
-fn custom_origin_mirror_with_missing_origin_omits_allow_origin() {
+fn should_omit_allow_origin_given_custom_origin_mirror_with_missing_origin() {
     let cors = cors()
         .origin(Origin::custom(|_, _| OriginDecision::Mirror))
         .build();
@@ -374,7 +374,7 @@ fn custom_origin_mirror_with_missing_origin_omits_allow_origin() {
 }
 
 #[test]
-fn regex_pattern_compilation_behaves_like_regex_automata() {
+fn should_behave_like_regex_automata_in_regex_pattern_compilation() {
     let matcher = OriginMatcher::pattern_str(r"^https://.*\.test\.com$").unwrap();
     assert!(matcher.matches("https://sub.test.com"));
     assert!(!matcher.matches("https://sub.other.com"));
@@ -397,7 +397,7 @@ fn regex_pattern_compilation_behaves_like_regex_automata() {
 }
 
 #[test]
-fn origin_list_supports_precompiled_regex_matcher() {
+fn should_support_precompiled_regex_matcher_in_origin_list() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::pattern(
             Regex::new(r"^https://precompiled\..*\.dev$").unwrap(),

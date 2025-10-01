@@ -4,7 +4,7 @@ mod list {
     use super::*;
 
     #[test]
-    fn when_values_provided_should_collect_into_list_variant() {
+    fn should_collect_into_list_variant_given_values_provided() {
         // Arrange
         let input = ["Content-Type", "X-Custom"];
 
@@ -19,7 +19,7 @@ mod list {
     }
 
     #[test]
-    fn when_iterator_is_empty_should_create_empty_list_variant() {
+    fn should_create_empty_list_variant_given_iterator_is_empty() {
         // Arrange
         let input: [&str; 0] = [];
 
@@ -34,7 +34,7 @@ mod list {
     }
 
     #[test]
-    fn when_values_include_empty_entries_should_preserve_order() {
+    fn should_preserve_order_given_values_include_empty_entries() {
         // Arrange
         let input = ["", "X-Custom"];
 
@@ -51,7 +51,7 @@ mod list {
     }
 
     #[test]
-    fn when_values_include_case_duplicates_should_keep_first_instance() {
+    fn should_keep_first_instance_given_values_include_case_duplicates() {
         // Arrange
         let input = ["X-Trace", "x-trace", "X-Other"];
 
@@ -72,7 +72,7 @@ mod any {
     use super::*;
 
     #[test]
-    fn when_called_should_return_any_variant() {
+    fn should_return_any_variant_when_called() {
         // Arrange & Act
         let result = AllowedHeaders::any();
 
@@ -88,7 +88,7 @@ mod default_variant {
     use super::*;
 
     #[test]
-    fn when_default_should_return_mirror_request() {
+    fn should_return_mirror_request_when_default() {
         // Arrange & Act
         let value = AllowedHeaders::default();
 
@@ -104,7 +104,7 @@ mod allows_headers {
     use super::*;
 
     #[test]
-    fn when_any_should_allow_all_headers() {
+    fn should_allow_all_headers_given_any() {
         let headers = AllowedHeaders::any();
         assert!(headers.allows_headers("x-custom"));
     }
@@ -115,14 +115,14 @@ mod allows_headers {
     }
 
     #[test]
-    fn when_list_should_validate_case_insensitively() {
+    fn should_validate_case_insensitively_given_list() {
         let headers = AllowedHeaders::list(["X-Custom", "Content-Type"]);
         assert!(headers.allows_headers("x-custom, content-type"));
         assert!(!headers.allows_headers("x-custom, x-other"));
     }
 
     #[test]
-    fn when_request_headers_empty_should_allow() {
+    fn should_allow_given_request_headers_empty() {
         let headers = AllowedHeaders::list(["X-Custom"]);
         assert!(headers.allows_headers("  "));
     }

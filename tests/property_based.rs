@@ -31,7 +31,7 @@ fn header_name_strategy() -> impl Strategy<Value = String> {
 
 proptest! {
     #[test]
-    fn exact_origin_reflects_arbitrary_https_subdomain(subdomain in subdomain_strategy()) {
+    fn should_reflect_arbitrary_https_subdomain_given_exact_origin(subdomain in subdomain_strategy()) {
         let origin = format!("https://{}.example.com", subdomain);
 
         let headers = assert_simple(
@@ -51,7 +51,7 @@ proptest! {
     }
 
     #[test]
-    fn allowed_headers_matching_is_case_insensitive(header in header_name_strategy()) {
+    fn should_be_case_insensitive_in_allowed_headers_matching(header in header_name_strategy()) {
         let allowed = header.to_uppercase();
         let request_variant = staggered_case(&header);
 
@@ -73,7 +73,7 @@ proptest! {
     }
 
     #[test]
-    fn origin_regex_list_accepts_hybrid_subdomains(subdomain in subdomain_strategy()) {
+    fn should_accept_hybrid_subdomains_given_origin_regex_list(subdomain in subdomain_strategy()) {
         let origin = format!("https://{}.hybrid.dev", subdomain);
         let cors = cors()
             .origin(Origin::list([

@@ -12,7 +12,7 @@ use common::headers::{has_header, header_value};
 use std::collections::HashSet;
 
 #[test]
-fn preflight_with_explicit_headers_does_not_reflect_request() {
+fn should_not_reflect_request_given_preflight_with_explicit_headers() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::list(["Content-Type", "X-Custom"]))
         .build();
@@ -34,7 +34,7 @@ fn preflight_with_explicit_headers_does_not_reflect_request() {
 }
 
 #[test]
-fn credentials_and_exposed_headers_are_honored() {
+fn should_honor_credentials_and_exposed_headers() {
     let cors = cors()
         .credentials(true)
         .exposed_headers(["X-Response-Time", "X-Trace"])
@@ -51,7 +51,7 @@ fn credentials_and_exposed_headers_are_honored() {
 }
 
 #[test]
-fn credentials_disabled_omits_allow_credentials_header() {
+fn should_omit_allow_credentials_header_given_credentials_disabled() {
     let cors = cors().build();
 
     let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
@@ -63,7 +63,7 @@ fn credentials_disabled_omits_allow_credentials_header() {
 }
 
 #[test]
-fn vary_headers_are_deduplicated_and_sorted() {
+fn should_deduplicate_and_sort_vary_headers() {
     let cors = cors()
         .origin(Origin::exact("https://allowed.dev"))
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
@@ -80,7 +80,7 @@ fn vary_headers_are_deduplicated_and_sorted() {
 }
 
 #[test]
-fn vary_header_contains_unique_entries() {
+fn should_contain_unique_entries_in_vary_header() {
     let cors = cors()
         .origin(Origin::exact("https://allowed.dev"))
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
@@ -110,7 +110,7 @@ fn vary_header_contains_unique_entries() {
 }
 
 #[test]
-fn preflight_with_unlisted_request_header_is_rejected() {
+fn should_reject_given_preflight_with_unlisted_request_header() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
@@ -134,7 +134,7 @@ fn preflight_with_unlisted_request_header_is_rejected() {
 }
 
 #[test]
-fn preflight_without_request_headers_emits_configured_list() {
+fn should_emit_configured_list_given_preflight_without_request_headers() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
@@ -152,7 +152,7 @@ fn preflight_without_request_headers_emits_configured_list() {
 }
 
 #[test]
-fn empty_allowed_headers_list_omits_allow_headers() {
+fn should_omit_allow_headers_given_empty_allowed_headers_list() {
     let cors = {
         let empty: Vec<&str> = Vec::new();
         cors().allowed_headers(AllowedHeaders::list(empty)).build()
@@ -176,7 +176,7 @@ fn empty_allowed_headers_list_omits_allow_headers() {
 }
 
 #[test]
-fn many_exposed_headers_work_correctly() {
+fn should_work_correctly_given_many_exposed_headers() {
     let cors = cors()
         .exposed_headers([
             "X-Header-1",
@@ -210,7 +210,7 @@ fn many_exposed_headers_work_correctly() {
 }
 
 #[test]
-fn timing_allow_origin_wildcard_emits_on_simple_response() {
+fn should_emit_on_simple_response_given_timing_allow_origin_wildcard() {
     let cors = cors().timing_allow_origin(TimingAllowOrigin::any()).build();
 
     let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
@@ -219,7 +219,7 @@ fn timing_allow_origin_wildcard_emits_on_simple_response() {
 }
 
 #[test]
-fn timing_allow_origin_is_omitted_on_preflight() {
+fn should_omit_on_preflight_given_timing_allow_origin() {
     let cors = cors()
         .timing_allow_origin(TimingAllowOrigin::list([
             "https://metrics.foo",

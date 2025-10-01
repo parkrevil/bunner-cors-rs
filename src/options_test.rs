@@ -8,7 +8,7 @@ mod default {
     use super::*;
 
     #[test]
-    fn when_constructed_should_use_expected_defaults() {
+    fn should_use_expected_defaults_when_constructed() {
         // Arrange & Act
         let options = CorsOptions::default();
 
@@ -24,7 +24,7 @@ mod default {
     }
 
     #[test]
-    fn when_mutated_instance_should_not_affect_other_defaults() {
+    fn should_not_affect_other_defaults_given_mutated_instance() {
         // Arrange
         let mut first = CorsOptions::default();
         let second = CorsOptions::default();
@@ -41,7 +41,7 @@ mod validate {
     use super::*;
 
     #[test]
-    fn validation_error_display_messages_are_informative() {
+    fn should_be_informative_given_validation_error_display_messages() {
         let cases: Vec<(ValidationError, &str)> = vec![
             (
                 ValidationError::CredentialsRequireSpecificOrigin,
@@ -123,7 +123,7 @@ mod validate {
     }
 
     #[test]
-    fn when_credentials_allow_any_origin_should_return_error() {
+    fn should_return_error_given_credentials_allow_any_origin() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
@@ -142,7 +142,7 @@ mod validate {
     }
 
     #[test]
-    fn when_credentials_and_allowed_headers_any_should_return_error() {
+    fn should_return_error_given_credentials_and_allowed_headers_any() {
         // Arrange
         let options = CorsOptions {
             credentials: true,
@@ -162,7 +162,7 @@ mod validate {
     }
 
     #[test]
-    fn when_allowed_headers_list_contains_wildcard_should_return_error() {
+    fn should_return_error_given_allowed_headers_list_contains_wildcard() {
         // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(["*", "X-Test"]),
@@ -180,7 +180,7 @@ mod validate {
     }
 
     #[test]
-    fn when_allowed_methods_list_contains_wildcard_should_return_error() {
+    fn should_return_error_given_allowed_methods_list_contains_wildcard() {
         // Arrange
         let options = CorsOptions {
             methods: AllowedMethods::list(["GET", "*"]),
@@ -198,7 +198,7 @@ mod validate {
     }
 
     #[test]
-    fn when_allowed_methods_list_contains_empty_token_should_return_error() {
+    fn should_return_error_given_allowed_methods_list_contains_empty_token() {
         let options = CorsOptions {
             methods: AllowedMethods::list(["GET", "  ", "POST"]),
             ..CorsOptions::default()
@@ -211,7 +211,7 @@ mod validate {
     }
 
     #[test]
-    fn when_allowed_methods_list_contains_invalid_token_should_return_error() {
+    fn should_return_error_given_allowed_methods_list_contains_invalid_token() {
         // Arrange
         let options = CorsOptions {
             methods: AllowedMethods::list(["GET", "PO ST"]),
@@ -229,7 +229,7 @@ mod validate {
     }
 
     #[test]
-    fn when_allowed_headers_list_contains_invalid_token_should_return_error() {
+    fn should_return_error_given_allowed_headers_list_contains_invalid_token() {
         // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(["X-Trace", "X Header"]),
@@ -247,7 +247,7 @@ mod validate {
     }
 
     #[test]
-    fn when_allowed_headers_list_contains_empty_token_should_return_error() {
+    fn should_return_error_given_allowed_headers_list_contains_empty_token() {
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(["X-Test", "  "]),
             ..CorsOptions::default()
@@ -260,7 +260,7 @@ mod validate {
     }
 
     #[test]
-    fn when_expose_headers_wildcard_with_credentials_should_return_error() {
+    fn should_return_error_given_expose_headers_wildcard_with_credentials() {
         // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["*".to_string()]),
@@ -280,7 +280,7 @@ mod validate {
     }
 
     #[test]
-    fn when_expose_headers_contains_invalid_token_should_return_error() {
+    fn should_return_error_given_expose_headers_contains_invalid_token() {
         // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["X-Trace".to_string(), "X Header".to_string()]),
@@ -298,7 +298,7 @@ mod validate {
     }
 
     #[test]
-    fn when_expose_headers_wildcard_without_credentials_should_return_ok() {
+    fn should_return_ok_given_expose_headers_wildcard_without_credentials() {
         // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["*".to_string()]),
@@ -313,7 +313,7 @@ mod validate {
     }
 
     #[test]
-    fn when_expose_headers_wildcard_combined_with_headers_should_return_error() {
+    fn should_return_error_given_expose_headers_wildcard_combined_with_headers() {
         // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["*".to_string(), "X-Test".to_string()]),
@@ -331,7 +331,7 @@ mod validate {
     }
 
     #[test]
-    fn when_expose_headers_contains_empty_value_should_return_error() {
+    fn should_return_error_given_expose_headers_contains_empty_value() {
         // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["  ".to_string(), "X-Trace".to_string()]),
@@ -349,7 +349,7 @@ mod validate {
     }
 
     #[test]
-    fn when_private_network_enabled_without_credentials_should_return_error() {
+    fn should_return_error_given_private_network_enabled_without_credentials() {
         let options = CorsOptions {
             allow_private_network: true,
             ..CorsOptions::default()
@@ -362,7 +362,7 @@ mod validate {
     }
 
     #[test]
-    fn when_private_network_enabled_with_wildcard_origin_should_return_error() {
+    fn should_return_error_given_private_network_enabled_with_wildcard_origin() {
         let options = CorsOptions {
             allow_private_network: true,
             credentials: true,
@@ -377,7 +377,7 @@ mod validate {
     }
 
     #[test]
-    fn when_private_network_enabled_with_specific_origin_should_return_ok() {
+    fn should_return_ok_given_private_network_enabled_with_specific_origin() {
         let options = CorsOptions {
             allow_private_network: true,
             credentials: true,
@@ -389,7 +389,7 @@ mod validate {
     }
 
     #[test]
-    fn when_configuration_is_specific_should_return_ok() {
+    fn should_return_ok_given_configuration_is_specific() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::list(["https://api.test"]),
@@ -408,7 +408,7 @@ mod validate {
     }
 
     #[test]
-    fn when_timing_allow_origin_any_with_credentials_should_return_error() {
+    fn should_return_error_given_timing_allow_origin_any_with_credentials() {
         // Arrange
         let options = CorsOptions {
             credentials: true,
@@ -428,7 +428,7 @@ mod validate {
     }
 
     #[test]
-    fn when_timing_allow_origin_contains_empty_entry_should_return_error() {
+    fn should_return_error_given_timing_allow_origin_contains_empty_entry() {
         // Arrange
         let options = CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::list([" ", "https://metrics.test"])),
@@ -446,7 +446,7 @@ mod validate {
     }
 
     #[test]
-    fn when_max_age_not_numeric_should_return_error() {
+    fn should_return_error_given_max_age_not_numeric() {
         // Arrange
         let options = CorsOptions {
             max_age: Some("ten minutes".into()),
@@ -464,7 +464,7 @@ mod validate {
     }
 
     #[test]
-    fn when_max_age_is_blank_should_return_error() {
+    fn should_return_error_given_max_age_is_blank() {
         let options = CorsOptions {
             max_age: Some("  ".into()),
             ..CorsOptions::default()

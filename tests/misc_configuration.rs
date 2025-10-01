@@ -7,7 +7,7 @@ use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
 
 #[test]
-fn max_age_affects_preflight_response() {
+fn should_affect_preflight_response_given_max_age() {
     let cors = cors().max_age("600").build();
 
     let headers = assert_preflight(
@@ -24,7 +24,7 @@ fn max_age_affects_preflight_response() {
 }
 
 #[test]
-fn empty_max_age_is_rejected() {
+fn should_reject_given_empty_max_age() {
     let result = Cors::new(CorsOptions {
         max_age: Some(String::new()),
         ..CorsOptions::default()
@@ -41,7 +41,7 @@ fn empty_max_age_is_rejected() {
 }
 
 #[test]
-fn default_max_age_is_absent() {
+fn should_be_absent_given_default_max_age() {
     let cors = cors().build();
 
     let headers = assert_preflight(
@@ -55,7 +55,7 @@ fn default_max_age_is_absent() {
 }
 
 #[test]
-fn zero_max_age_is_emitted() {
+fn should_emit_given_zero_max_age() {
     let cors = cors().max_age("0").build();
 
     let headers = assert_preflight(
@@ -72,7 +72,7 @@ fn zero_max_age_is_emitted() {
 }
 
 #[test]
-fn empty_methods_list_omits_allow_methods_header() {
+fn should_omit_allow_methods_header_given_empty_methods_list() {
     let cors = cors().methods(Vec::<String>::new()).build();
 
     let decision = preflight_request()
@@ -92,7 +92,7 @@ fn empty_methods_list_omits_allow_methods_header() {
 }
 
 #[test]
-fn when_origin_list_is_configured_should_emit_vary_origin_header() {
+fn should_emit_vary_origin_header_given_origin_list_configured() {
     let cors = cors()
         .origin(Origin::list(["https://foo.bar", "https://bar.baz"]))
         .build();
@@ -108,7 +108,7 @@ fn when_origin_list_is_configured_should_emit_vary_origin_header() {
 }
 
 #[test]
-fn when_origin_allows_any_should_not_emit_vary_header() {
+fn should_not_emit_vary_header_given_origin_allows_any() {
     let cors = cors().origin(Origin::any()).build();
 
     let headers = assert_preflight(

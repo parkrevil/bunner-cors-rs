@@ -1,13 +1,13 @@
 use super::TimingAllowOrigin;
 
 #[test]
-fn when_any_should_return_wildcard() {
+fn should_return_wildcard_given_any() {
     let timing = TimingAllowOrigin::any();
     assert_eq!(timing.header_value(), Some("*".to_string()));
 }
 
 #[test]
-fn when_list_has_values_should_join_with_spaces() {
+fn should_join_with_spaces_given_list_has_values() {
     let timing = TimingAllowOrigin::list(["https://a.test", "https://b.test"]);
     assert_eq!(
         timing.header_value(),
@@ -16,13 +16,13 @@ fn when_list_has_values_should_join_with_spaces() {
 }
 
 #[test]
-fn when_list_is_empty_should_return_none() {
+fn should_return_none_given_list_is_empty() {
     let timing = TimingAllowOrigin::list(Vec::<String>::new());
     assert_eq!(timing.header_value(), None);
 }
 
 #[test]
-fn when_list_has_duplicates_should_deduplicate_case_insensitively() {
+fn should_deduplicate_case_insensitively_given_list_has_duplicates() {
     let timing = TimingAllowOrigin::list([
         " https://metrics.test ",
         "HTTPS://METRICS.TEST",
@@ -39,7 +39,7 @@ fn when_list_has_duplicates_should_deduplicate_case_insensitively() {
 }
 
 #[test]
-fn when_list_contains_whitespace_entries_should_retain_single_empty_value() {
+fn should_retain_single_empty_value_given_list_contains_whitespace_entries() {
     let timing = TimingAllowOrigin::list(["   ", "https://metrics.test"]);
 
     assert_eq!(

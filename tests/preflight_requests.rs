@@ -12,7 +12,7 @@ use common::builders::{cors, preflight_request};
 use common::headers::has_header;
 
 #[test]
-fn default_preflight_with_requested_headers_is_rejected() {
+fn should_reject_default_preflight_with_requested_headers() {
     let cors = cors().build();
     let decision = preflight_request()
         .origin("https://foo.bar")
@@ -34,7 +34,7 @@ fn default_preflight_with_requested_headers_is_rejected() {
 }
 
 #[test]
-fn preflight_without_request_method_is_not_applicable() {
+fn should_be_not_applicable_given_preflight_without_request_method() {
     let cors = cors().build();
     let decision = preflight_request().origin("https://foo.bar").check(&cors);
     assert!(matches!(decision, CorsDecision::NotApplicable));
@@ -43,7 +43,7 @@ fn preflight_without_request_method_is_not_applicable() {
 // removed: wildcard methods support
 
 #[test]
-fn preflight_allowed_headers_any_without_request_headers_still_sets_wildcard() {
+fn should_set_wildcard_given_allowed_headers_any_without_request_headers() {
     let cors = cors().allowed_headers(AllowedHeaders::any()).build();
 
     let headers = assert_preflight(
@@ -58,7 +58,7 @@ fn preflight_allowed_headers_any_without_request_headers_still_sets_wildcard() {
 }
 
 #[test]
-fn preflight_allowed_headers_any_with_credentials_is_rejected() {
+fn should_reject_given_allowed_headers_any_with_credentials() {
     let result = Cors::new(CorsOptions {
         origin: Origin::exact("https://wild.dev"),
         credentials: true,
@@ -73,7 +73,7 @@ fn preflight_allowed_headers_any_with_credentials_is_rejected() {
 }
 
 #[test]
-fn preflight_custom_methods_preserve_case() {
+fn should_preserve_case_given_custom_methods() {
     let cors = cors()
         .methods(["post", "FETCH"])
         .allowed_headers(AllowedHeaders::list(["X-MiXeD", "Content-Type"]))
@@ -95,7 +95,7 @@ fn preflight_custom_methods_preserve_case() {
     );
 }
 #[test]
-fn preflight_with_disallowed_method_is_rejected() {
+fn should_reject_given_disallowed_method() {
     let decision = preflight_request()
         .origin("https://foo.bar")
         .request_method(method::DELETE)
@@ -115,7 +115,7 @@ fn preflight_with_disallowed_method_is_rejected() {
 }
 
 #[test]
-fn preflight_with_disallowed_header_is_rejected() {
+fn should_reject_given_disallowed_header() {
     let decision = preflight_request()
         .origin("https://foo.bar")
         .request_method(method::GET)
@@ -140,7 +140,7 @@ fn preflight_with_disallowed_header_is_rejected() {
 }
 
 #[test]
-fn preflight_without_request_method_does_not_reflect_request_headers() {
+fn should_not_reflect_request_headers_given_no_request_method() {
     let decision = preflight_request()
         .origin("https://foo.bar")
         .request_headers("X-Reflect")
@@ -150,7 +150,7 @@ fn preflight_without_request_method_does_not_reflect_request_headers() {
 }
 
 #[test]
-fn preflight_without_request_headers_emits_configured_list() {
+fn should_emit_configured_list_given_no_request_headers() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::list(["X-Test"]))
         .build();
@@ -167,7 +167,7 @@ fn preflight_without_request_headers_emits_configured_list() {
 }
 
 #[test]
-fn preflight_with_disabled_origin_returns_not_applicable() {
+fn should_return_not_applicable_given_disabled_origin() {
     let cors = cors().origin(Origin::disabled()).build();
 
     let decision = preflight_request()
@@ -179,7 +179,7 @@ fn preflight_with_disabled_origin_returns_not_applicable() {
 }
 
 #[test]
-fn preflight_with_custom_origin_skip_returns_not_applicable() {
+fn should_return_not_applicable_given_custom_origin_skip() {
     let cors = cors()
         .origin(Origin::custom(|origin, _ctx| match origin {
             Some("https://skip.dev") => OriginDecision::Skip,
@@ -196,7 +196,7 @@ fn preflight_with_custom_origin_skip_returns_not_applicable() {
 }
 
 #[test]
-fn preflight_custom_origin_requires_request_method() {
+fn should_require_request_method_given_custom_origin() {
     let cors = cors()
         .origin(Origin::custom(|_, ctx| {
             if !ctx.access_control_request_method.is_empty() {
@@ -222,7 +222,7 @@ fn preflight_custom_origin_requires_request_method() {
 }
 
 #[test]
-fn preflight_custom_origin_checks_request_headers() {
+fn should_check_request_headers_given_custom_origin() {
     let cors = cors()
         .origin(Origin::custom(|_, ctx| {
             if ctx
@@ -261,7 +261,7 @@ fn preflight_custom_origin_checks_request_headers() {
 }
 
 #[test]
-fn preflight_with_credentials_sets_allow_credentials_header() {
+fn should_set_allow_credentials_header_given_credentials() {
     let cors = cors()
         .origin(Origin::exact("https://cred.dev"))
         .credentials(true)
@@ -284,7 +284,7 @@ fn preflight_with_credentials_sets_allow_credentials_header() {
 }
 
 #[test]
-fn preflight_origin_list_matches_request_origin() {
+fn should_match_request_origin_given_origin_list() {
     let cors = cors()
         .origin(Origin::list([
             OriginMatcher::exact("https://allowed.one"),
@@ -308,7 +308,7 @@ fn preflight_origin_list_matches_request_origin() {
 }
 
 #[test]
-fn preflight_origin_predicate_observes_normalized_request() {
+fn should_observe_normalized_request_given_origin_predicate() {
     let cors = cors()
         .origin(Origin::predicate(|origin, ctx| {
             origin == "https://predicate.dev"
@@ -333,7 +333,7 @@ fn preflight_origin_predicate_observes_normalized_request() {
 }
 
 #[test]
-fn preflight_disallowed_origin_sets_vary_without_allow_origin() {
+fn should_set_vary_without_allow_origin_given_disallowed_origin() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://allow.dev")]))
         .build();
@@ -353,7 +353,7 @@ fn preflight_disallowed_origin_sets_vary_without_allow_origin() {
 }
 
 #[test]
-fn preflight_disallowed_origin_omits_sensitive_headers() {
+fn should_omit_sensitive_headers_given_disallowed_origin() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://allow.dev")]))
         .credentials(true)
@@ -379,7 +379,7 @@ fn preflight_disallowed_origin_omits_sensitive_headers() {
 }
 
 #[test]
-fn preflight_accepts_mixed_case_options_and_request_method() {
+fn should_accept_mixed_case_given_options_and_request_method() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::list(["X-MiXeD", "Content-Type"]))
         .build();
@@ -413,7 +413,7 @@ fn preflight_accepts_mixed_case_options_and_request_method() {
 }
 
 #[test]
-fn preflight_allowed_headers_any_sets_wildcard_header() {
+fn should_set_wildcard_header_given_allowed_headers_any() {
     let cors = cors().allowed_headers(AllowedHeaders::any()).build();
 
     let headers = assert_preflight(
@@ -429,7 +429,7 @@ fn preflight_allowed_headers_any_sets_wildcard_header() {
 }
 
 #[test]
-fn preflight_with_private_network_request_emits_allow_header() {
+fn should_emit_allow_header_given_private_network_request() {
     let cors = cors()
         .origin(Origin::exact("https://intranet.dev"))
         .credentials(true)
@@ -452,7 +452,7 @@ fn preflight_with_private_network_request_emits_allow_header() {
 }
 
 #[test]
-fn preflight_without_private_network_request_omits_allow_header() {
+fn should_omit_allow_header_given_no_private_network_request() {
     let cors = cors()
         .origin(Origin::exact("https://intranet.dev"))
         .credentials(true)
@@ -473,7 +473,7 @@ fn preflight_without_private_network_request_omits_allow_header() {
 }
 
 #[test]
-fn preflight_with_multiple_allowed_headers_emits_configured_list() {
+fn should_emit_configured_list_given_multiple_allowed_headers() {
     let cors = cors()
         .allowed_headers(AllowedHeaders::list(["X-Allowed", "X-Trace"]))
         .build();

@@ -31,7 +31,7 @@ fn capture_preflight(cors: &Cors, request: PreflightRequestBuilder) -> Preflight
 }
 
 #[test]
-fn default_preflight_snapshot() {
+fn should_capture_default_preflight_snapshot() {
     let snapshot = capture_preflight(
         &cors().build(),
         preflight_request()
@@ -43,7 +43,7 @@ fn default_preflight_snapshot() {
 }
 
 #[test]
-fn mirror_origin_preflight_snapshot() {
+fn should_capture_mirror_origin_preflight_snapshot() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::exact("https://mirror.dev")]))
         .credentials(true)
@@ -63,7 +63,7 @@ fn mirror_origin_preflight_snapshot() {
 }
 
 #[test]
-fn strict_origin_preflight_snapshot() {
+fn should_capture_strict_origin_preflight_snapshot() {
     let cors = cors()
         .origin(Origin::list([OriginMatcher::pattern_str(
             r"^https://.*\.strict\.dev$",

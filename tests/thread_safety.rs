@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::thread;
 
 #[test]
-fn cors_can_be_shared_across_threads() {
+fn should_allow_sharing_cors_across_threads() {
     let cors = Arc::new(
         cors()
             .origin(Origin::any())

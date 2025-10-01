@@ -87,7 +87,7 @@ mod new {
     use super::*;
 
     #[test]
-    fn when_constructed_should_use_provided_options_reference() {
+    fn should_use_provided_options_reference_when_constructed() {
         // Arrange
         let options = CorsOptions::default();
 
@@ -105,7 +105,7 @@ mod build_origin_headers {
     use super::*;
 
     #[test]
-    fn when_origin_is_any_should_emit_wildcard_without_vary() {
+    fn should_emit_wildcard_without_vary_given_origin_is_any() {
         // Arrange
         let options = options_with_origin(Origin::any());
         let builder = HeaderBuilder::new(&options);
@@ -123,7 +123,7 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn when_origin_matches_list_should_mirror_request_origin() {
+    fn should_mirror_request_origin_given_origin_matches_list() {
         // Arrange
         let options = options_with_origin(Origin::list(["https://app.test"]));
         let builder = HeaderBuilder::new(&options);
@@ -142,7 +142,7 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn when_origin_is_custom_skip_should_short_circuit() {
+    fn should_short_circuit_given_origin_is_custom_skip() {
         // Arrange
         let options = options_with_origin(Origin::custom(|_, _| OriginDecision::Skip));
         let builder = HeaderBuilder::new(&options);
@@ -156,7 +156,7 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn when_any_origin_with_credentials_should_error() {
+    fn should_error_given_any_origin_with_credentials() {
         // Arrange
         let mut options = options_with_origin(Origin::any());
         options.credentials = true;
@@ -173,7 +173,7 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn when_custom_origin_returns_any_with_credentials_should_error() {
+    fn should_error_given_custom_origin_returns_any_with_credentials() {
         // Arrange
         let base = options_with_origin(Origin::custom(|_, _| OriginDecision::Any));
         let options = CorsOptions {
@@ -193,7 +193,7 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn when_origin_is_disallowed_should_only_emit_vary() {
+    fn should_only_emit_vary_given_origin_is_disallowed() {
         // Arrange
         let options = options_with_origin(Origin::list(["https://allowed.test"]));
         let builder = HeaderBuilder::new(&options);
@@ -208,7 +208,7 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn when_origin_mirror_has_empty_request_should_not_emit_header() {
+    fn should_not_emit_header_given_origin_mirror_has_empty_request() {
         // Arrange
         let options = options_with_origin(Origin::list(["https://app.test"]));
         let builder = HeaderBuilder::new(&options);
@@ -225,7 +225,7 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn when_origin_mirror_should_preserve_original_casing() {
+    fn should_preserve_original_casing_given_origin_mirror() {
         // Arrange
         let options = options_with_origin(Origin::list(["https://app.test"]));
         let builder = HeaderBuilder::new(&options);
@@ -247,7 +247,7 @@ mod build_methods_header {
     use super::*;
 
     #[test]
-    fn when_methods_have_values_should_emit_header() {
+    fn should_emit_header_given_methods_have_values() {
         // Arrange
         let options = CorsOptions {
             methods: AllowedMethods::list(["GET", "PATCH"]),
@@ -266,7 +266,7 @@ mod build_methods_header {
     }
 
     #[test]
-    fn when_methods_header_value_is_none_should_leave_collection_empty() {
+    fn should_leave_collection_empty_given_methods_header_value_is_none() {
         // Arrange
         let options = CorsOptions {
             methods: AllowedMethods::list(Vec::<String>::new()),
@@ -286,7 +286,7 @@ mod build_credentials_header {
     use super::*;
 
     #[test]
-    fn when_credentials_enabled_should_emit_true_header() {
+    fn should_emit_true_header_given_credentials_enabled() {
         // Arrange
         let options = CorsOptions {
             credentials: true,
@@ -305,7 +305,7 @@ mod build_credentials_header {
     }
 
     #[test]
-    fn when_credentials_disabled_should_return_empty_collection() {
+    fn should_return_empty_collection_given_credentials_disabled() {
         // Arrange
         let options = CorsOptions::default();
         let builder = HeaderBuilder::new(&options);
@@ -322,7 +322,7 @@ mod build_allowed_headers {
     use super::*;
 
     #[test]
-    fn when_configured_list_should_emit_joined_value() {
+    fn should_emit_joined_value_given_configured_list() {
         // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(["X-Trace", "X-Auth"]),
@@ -342,7 +342,7 @@ mod build_allowed_headers {
     }
 
     #[test]
-    fn when_configured_list_is_empty_should_return_empty_collection() {
+    fn should_return_empty_collection_given_configured_list_is_empty() {
         // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(Vec::<String>::new()),
@@ -358,7 +358,7 @@ mod build_allowed_headers {
     }
 
     #[test]
-    fn when_request_has_headers_still_emit_configured_list() {
+    fn should_still_emit_configured_list_given_request_has_headers() {
         // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(["X-Test", "X-Trace"]),
@@ -378,7 +378,7 @@ mod build_allowed_headers {
     }
 
     #[test]
-    fn when_request_headers_absent_should_emit_configured_list() {
+    fn should_emit_configured_list_given_request_headers_absent() {
         // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::list(["X-Test"]),
@@ -398,7 +398,7 @@ mod build_allowed_headers {
     }
 
     #[test]
-    fn when_any_should_emit_wildcard() {
+    fn should_emit_wildcard_given_any() {
         // Arrange
         let options = CorsOptions {
             allowed_headers: AllowedHeaders::Any,
@@ -421,7 +421,7 @@ mod build_exposed_headers {
     use super::*;
 
     #[test]
-    fn when_values_present_should_emit_comma_separated_header() {
+    fn should_emit_comma_separated_header_given_values_present() {
         // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["X-Trace".into(), "X-Auth".into()]),
@@ -440,7 +440,7 @@ mod build_exposed_headers {
     }
 
     #[test]
-    fn when_values_absent_should_return_empty_collection() {
+    fn should_return_empty_collection_given_values_absent() {
         // Arrange
         let options = CorsOptions::default();
         let builder = HeaderBuilder::new(&options);
@@ -453,7 +453,7 @@ mod build_exposed_headers {
     }
 
     #[test]
-    fn when_configured_list_is_empty_should_return_empty_collection() {
+    fn should_return_empty_collection_given_configured_list_is_empty() {
         let options = CorsOptions {
             exposed_headers: Some(Vec::new()),
             ..CorsOptions::default()
@@ -466,7 +466,7 @@ mod build_exposed_headers {
     }
 
     #[test]
-    fn when_values_have_whitespace_and_wildcard_should_emit_trimmed_value() {
+    fn should_emit_trimmed_value_given_values_have_whitespace_and_wildcard() {
         // Arrange
         let options = CorsOptions {
             exposed_headers: Some(vec!["  *  ".into()]),
@@ -485,7 +485,7 @@ mod build_exposed_headers {
     }
 
     #[test]
-    fn when_values_trim_to_empty_should_return_empty_collection() {
+    fn should_return_empty_collection_given_values_trim_to_empty() {
         let options = CorsOptions {
             exposed_headers: Some(vec!["   ".into(), "\t".into()]),
             ..CorsOptions::default()
@@ -502,7 +502,7 @@ mod build_max_age_header {
     use super::*;
 
     #[test]
-    fn when_max_age_specified_should_emit_header() {
+    fn should_emit_header_given_max_age_specified() {
         // Arrange
         let options = CorsOptions {
             max_age: Some("600".into()),
@@ -521,7 +521,7 @@ mod build_max_age_header {
     }
 
     #[test]
-    fn when_max_age_missing_should_return_empty_collection() {
+    fn should_return_empty_collection_given_max_age_missing() {
         // Arrange
         let options = CorsOptions::default();
         let builder = HeaderBuilder::new(&options);
@@ -534,7 +534,7 @@ mod build_max_age_header {
     }
 
     #[test]
-    fn when_max_age_blank_should_not_emit_header() {
+    fn should_not_emit_header_given_max_age_blank() {
         // Arrange
         let options = CorsOptions {
             max_age: Some(String::new()),
@@ -554,7 +554,7 @@ mod build_private_network_header {
     use super::*;
 
     #[test]
-    fn when_request_includes_private_network_should_emit_allow_header() {
+    fn should_emit_allow_header_given_request_includes_private_network() {
         // Arrange
         let options = CorsOptions {
             allow_private_network: true,
@@ -574,7 +574,7 @@ mod build_private_network_header {
     }
 
     #[test]
-    fn when_private_network_disabled_should_not_emit_header() {
+    fn should_not_emit_header_given_private_network_disabled() {
         // Arrange
         let options = CorsOptions::default();
         let builder = HeaderBuilder::new(&options);
@@ -588,7 +588,7 @@ mod build_private_network_header {
     }
 
     #[test]
-    fn when_request_does_not_include_private_network_should_return_empty_collection() {
+    fn should_return_empty_collection_given_request_does_not_include_private_network() {
         // Arrange
         let options = CorsOptions {
             allow_private_network: true,
@@ -605,7 +605,7 @@ mod build_private_network_header {
     }
 
     #[test]
-    fn when_request_is_simple_should_not_emit_header() {
+    fn should_not_emit_header_given_request_is_simple() {
         // Arrange
         let options = CorsOptions {
             allow_private_network: true,
@@ -626,7 +626,7 @@ mod build_timing_allow_origin_header {
     use super::*;
 
     #[test]
-    fn when_configuration_absent_should_emit_empty_collection() {
+    fn should_emit_empty_collection_given_configuration_absent() {
         // Arrange
         let options = CorsOptions::default();
         let builder = HeaderBuilder::new(&options);
@@ -639,7 +639,7 @@ mod build_timing_allow_origin_header {
     }
 
     #[test]
-    fn when_any_should_emit_wildcard_value() {
+    fn should_emit_wildcard_value_given_any() {
         // Arrange
         let options = CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::any()),
@@ -655,7 +655,7 @@ mod build_timing_allow_origin_header {
     }
 
     #[test]
-    fn when_list_should_emit_space_separated_value() {
+    fn should_emit_space_separated_value_given_list() {
         // Arrange
         let options = CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::list([

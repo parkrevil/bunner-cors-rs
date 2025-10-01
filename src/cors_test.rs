@@ -149,7 +149,7 @@ mod check {
     use super::*;
 
     #[test]
-    fn when_preflight_request_should_return_preflight_decision() {
+    fn given_any_origin_when_preflight_request_then_return_preflight_decision() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
@@ -172,7 +172,7 @@ mod check {
     }
 
     #[test]
-    fn when_simple_request_should_return_simple_decision() {
+    fn given_any_origin_when_simple_request_then_return_simple_decision() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
@@ -195,7 +195,7 @@ mod check {
     }
 
     #[test]
-    fn when_origin_skips_processing_should_return_not_applicable() {
+    fn should_return_not_applicable_given_origin_skips_processing_when_check() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Skip),
@@ -214,7 +214,7 @@ mod check {
     }
 
     #[test]
-    fn when_origin_disabled_should_return_not_applicable() {
+    fn should_return_not_applicable_given_origin_disabled_when_check() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::disabled(),
@@ -237,7 +237,7 @@ mod process_preflight {
     use super::*;
 
     #[test]
-    fn when_origin_skip_should_return_not_applicable() {
+    fn should_return_not_applicable_given_origin_skip_when_preflight_request() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Skip),
@@ -251,7 +251,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_origin_disallowed_should_report_rejection_reason() {
+    fn should_report_rejection_reason_given_disallowed_origin_when_preflight_request() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::list(["https://allowed.test"]),
@@ -268,7 +268,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_origin_returns_any_with_credentials_should_fail() {
+    fn should_fail_given_origin_returns_any_with_credentials_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Any),
@@ -287,7 +287,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_origin_allowed_should_aggregate_expected_headers() {
+    fn should_aggregate_expected_headers_given_allowed_origin_when_preflight_request() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::any(),
@@ -306,7 +306,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_request_method_missing_should_return_not_applicable() {
+    fn should_return_not_applicable_given_missing_request_method_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
         let original = request("OPTIONS", "https://allowed.test", "", "X-Test");
@@ -316,7 +316,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_request_headers_not_allowed_should_return_not_applicable() {
+    fn should_reject_given_not_allowed_request_headers_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
@@ -339,7 +339,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_request_method_not_allowed_should_return_not_applicable() {
+    fn should_reject_given_not_allowed_request_method_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
@@ -362,7 +362,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_allowed_headers_any_should_emit_wildcard_header() {
+    fn should_emit_wildcard_header_given_allowed_headers_any_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
@@ -382,7 +382,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_max_age_not_configured_should_omit_header() {
+    fn should_omit_header_given_max_age_not_configured_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::any(),
@@ -400,7 +400,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_private_network_requested_should_emit_private_network_header() {
+    fn should_emit_private_network_header_given_private_network_requested_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             allow_private_network: true,
@@ -421,7 +421,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_private_network_disabled_should_not_emit_header() {
+    fn should_not_emit_header_given_private_network_disabled_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
         let original = request_with_private_network("OPTIONS", "https://intranet.test", "GET", "");
@@ -433,7 +433,7 @@ mod process_preflight {
     }
 
     #[test]
-    fn when_timing_allow_origin_configured_should_not_emit_header() {
+    fn should_not_emit_header_given_timing_allow_origin_configured_when_preflight_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::list([
@@ -460,7 +460,7 @@ mod process_simple {
     use super::*;
 
     #[test]
-    fn when_origin_skip_should_return_not_applicable() {
+    fn should_return_not_applicable_given_origin_skip_when_simple_request() {
         // Arrange
         let options = CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Skip),
@@ -474,7 +474,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_method_not_allowed_should_return_not_applicable() {
+    fn should_return_not_applicable_given_method_not_allowed_when_simple_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             methods: AllowedMethods::list(["POST"]),
@@ -488,7 +488,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_origin_returns_any_with_credentials_should_fail() {
+    fn should_fail_given_origin_returns_any_with_credentials_when_simple_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Any),
@@ -507,7 +507,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_origin_disallowed_should_emit_vary_without_allow_origin() {
+    fn should_emit_vary_without_allow_origin_given_disallowed_origin_when_simple_request() {
         let cors = Cors::new(CorsOptions {
             origin: Origin::list(["https://allowed.test"]),
             ..CorsOptions::default()
@@ -522,7 +522,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_origin_allowed_should_emit_simple_headers() {
+    fn should_emit_simple_headers_given_allowed_origin_when_simple_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::list(["https://allowed.test"]),
@@ -547,7 +547,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_credentials_disabled_should_not_emit_credentials_header() {
+    fn should_not_emit_credentials_header_given_credentials_disabled_when_simple_request() {
         // Arrange
         let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
         let original = request("GET", "https://allowed.test", "", "");
@@ -560,7 +560,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_origin_list_used_should_mirror_request_origin() {
+    fn should_mirror_request_origin_given_origin_list_used_when_simple_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             origin: Origin::list(["https://allowed.test"]),
@@ -581,7 +581,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_private_network_allowed_should_not_emit_header_on_simple_response() {
+    fn should_not_emit_header_on_simple_response_given_private_network_allowed_when_simple_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             allow_private_network: true,
@@ -599,7 +599,7 @@ mod process_simple {
     }
 
     #[test]
-    fn when_timing_allow_origin_configured_should_emit_header() {
+    fn should_emit_header_given_timing_allow_origin_configured_when_simple_request() {
         // Arrange
         let cors = Cors::new(CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::any()),

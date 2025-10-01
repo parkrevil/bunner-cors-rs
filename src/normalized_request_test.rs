@@ -21,7 +21,7 @@ mod new {
     use super::*;
 
     #[test]
-    fn when_components_have_uppercase_should_store_lowercase() {
+    fn should_store_lowercase_given_components_have_uppercase() {
         // Arrange
         let ctx = request("OPTIONS", "HTTPS://API.TEST", "POST", "X-CUSTOM");
 
@@ -36,7 +36,7 @@ mod new {
     }
 
     #[test]
-    fn when_components_are_lowercase_should_borrow_original() {
+    fn should_borrow_original_given_components_are_lowercase() {
         // Arrange
         let ctx = request("get", "https://api.test", "post", "x-custom");
 
@@ -52,7 +52,7 @@ mod new {
     }
 
     #[test]
-    fn when_origin_is_empty_should_remain_empty_without_allocation() {
+    fn should_remain_empty_without_allocation_given_origin_is_empty() {
         // Arrange
         let ctx = request("get", "", "post", "x-custom");
 
@@ -69,7 +69,7 @@ mod as_context {
     use super::*;
 
     #[test]
-    fn when_called_should_return_normalized_view() {
+    fn should_return_normalized_view_when_called() {
         // Arrange
         let ctx = request("OPTIONS", "https://API.TEST", "POST", "X-CUSTOM");
         let normalized = NormalizedRequest::new(&ctx);
@@ -86,7 +86,7 @@ mod as_context {
     }
 
     #[test]
-    fn when_private_network_flag_set_should_preserve_true() {
+    fn should_preserve_true_given_private_network_flag_set() {
         // Arrange
         let ctx = RequestContext {
             method: "OPTIONS",
@@ -109,7 +109,7 @@ mod is_options {
     use super::*;
 
     #[test]
-    fn when_method_is_options_should_return_true() {
+    fn should_return_true_given_method_is_options() {
         // Arrange
         let ctx = request("OPTIONS", "https://api.test", "", "");
         let normalized = NormalizedRequest::new(&ctx);
@@ -122,7 +122,7 @@ mod is_options {
     }
 
     #[test]
-    fn when_method_is_not_options_should_return_false() {
+    fn should_return_false_given_method_is_not_options() {
         // Arrange
         let ctx = request("GET", "https://api.test", "", "");
         let normalized = NormalizedRequest::new(&ctx);

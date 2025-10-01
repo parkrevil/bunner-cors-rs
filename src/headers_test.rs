@@ -5,7 +5,7 @@ mod new {
     use super::*;
 
     #[test]
-    fn when_called_should_start_with_empty_headers() {
+    fn should_start_with_empty_headers_when_called() {
         // Arrange & Act
         let collection = HeaderCollection::new();
 
@@ -18,7 +18,7 @@ mod push {
     use super::*;
 
     #[test]
-    fn when_header_is_regular_should_store_once() {
+    fn should_store_once_given_header_is_regular() {
         // Arrange
         let mut collection = HeaderCollection::new();
 
@@ -34,7 +34,7 @@ mod push {
     }
 
     #[test]
-    fn when_header_is_vary_should_use_deduplicated_value() {
+    fn should_use_deduplicated_value_given_header_is_vary() {
         // Arrange
         let mut collection = HeaderCollection::new();
 
@@ -52,7 +52,7 @@ mod add_vary {
     use super::*;
 
     #[test]
-    fn when_values_have_mixed_case_should_store_unique_entries() {
+    fn should_store_unique_entries_given_values_have_mixed_case() {
         // Arrange
         let mut collection = HeaderCollection::new();
 
@@ -70,7 +70,7 @@ mod add_vary {
     }
 
     #[test]
-    fn when_value_is_whitespace_should_remove_vary_header() {
+    fn should_remove_vary_header_given_value_is_whitespace() {
         // Arrange
         let mut collection = HeaderCollection::new();
 
@@ -83,7 +83,7 @@ mod add_vary {
     }
 
     #[test]
-    fn when_value_is_whitespace_and_existing_entries_present_should_preserve_them() {
+    fn should_preserve_them_given_value_is_whitespace_and_existing_entries_present() {
         // Arrange
         let mut collection = HeaderCollection::new();
         collection.add_vary("Origin");
@@ -101,7 +101,7 @@ mod extend {
     use super::*;
 
     #[test]
-    fn when_merging_collections_should_combine_and_deduplicate() {
+    fn should_combine_and_deduplicate_given_merging_collections() {
         // Arrange
         let mut base = HeaderCollection::new();
         base.push("Access-Control-Allow-Credentials".into(), "true".into());
@@ -127,7 +127,7 @@ mod extend {
     }
 
     #[test]
-    fn when_extending_with_whitespace_vary_should_remove_header() {
+    fn should_remove_header_given_extending_with_whitespace_vary() {
         // Arrange
         let mut base = HeaderCollection::new();
         let mut other = HeaderCollection::new();
@@ -142,7 +142,7 @@ mod extend {
     }
 
     #[test]
-    fn when_extending_existing_vary_with_whitespace_should_preserve_value() {
+    fn should_preserve_value_given_extending_existing_vary_with_whitespace() {
         // Arrange
         let mut base = HeaderCollection::new();
         base.add_vary("Origin");
@@ -162,7 +162,7 @@ mod into_headers {
     use super::*;
 
     #[test]
-    fn when_called_should_consume_collection_and_return_map() {
+    fn should_consume_collection_and_return_map_when_called() {
         // Arrange
         let mut collection = HeaderCollection::new();
         collection.push("Access-Control-Allow-Methods".into(), "GET".into());
