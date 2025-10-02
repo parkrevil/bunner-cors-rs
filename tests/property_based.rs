@@ -29,68 +29,72 @@ fn header_name_strategy() -> impl Strategy<Value = String> {
     proptest::string::string_regex("[A-Za-z]{1,16}").unwrap()
 }
 
-proptest! {
-    #[test]
-    fn should_reflect_arbitrary_https_subdomain_given_exact_origin(subdomain in subdomain_strategy()) {
-        let origin = format!("https://{}.example.com", subdomain);
+mod check {
+    use super::*;
 
-        let headers = assert_simple(
-            simple_request()
-                .origin(origin.as_str())
-                .check(
-                    &cors()
-                        .origin(Origin::exact(origin.clone()))
-                        .build()
-                ),
-        );
+    proptest! {
+        #[test]
+        fn should_mirror_origin_when_exact_origin_matches_arbitrary_subdomain_then_reflect_origin(subdomain in subdomain_strategy()) {
+            let origin = format!("https://{}.example.com", subdomain);
 
-        prop_assert_eq!(
-            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-            Some(origin.as_str())
-        );
-    }
-
-    #[test]
-    fn should_be_case_insensitive_in_allowed_headers_matching(header in header_name_strategy()) {
-        let allowed = header.to_uppercase();
-        let request_variant = staggered_case(&header);
-
-        let decision = preflight_request()
-            .origin("https://prop.test")
-            .request_method(method::GET)
-            .request_headers(request_variant)
-            .check(
-                &cors()
-                    .allowed_headers(AllowedHeaders::list([allowed.clone()]))
-                    .build()
+            let headers = assert_simple(
+                simple_request()
+                    .origin(origin.as_str())
+                    .check(
+                        &cors()
+                            .origin(Origin::exact(origin.clone()))
+                            .build()
+                    ),
             );
 
-        let is_preflight_accepted = matches!(
-            decision,
-            CorsDecision::PreflightAccepted { .. }
-        );
-        prop_assert!(is_preflight_accepted);
-    }
+            prop_assert_eq!(
+                header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+                Some(origin.as_str())
+            );
+        }
 
-    #[test]
-    fn should_accept_hybrid_subdomains_given_origin_regex_list(subdomain in subdomain_strategy()) {
-        let origin = format!("https://{}.hybrid.dev", subdomain);
-        let cors = cors()
-            .origin(Origin::list([
-                OriginMatcher::from(false),
-                OriginMatcher::pattern_str(r"^https://.*\.hybrid\.dev$").unwrap(),
-            ]))
-            .build();
+        #[test]
+        fn should_accept_preflight_when_allowed_headers_match_case_insensitively_then_pass_validation(header in header_name_strategy()) {
+            let allowed = header.to_uppercase();
+            let request_variant = super::staggered_case(&header);
 
-        let headers = assert_simple(
-            simple_request()
-                .origin(origin.as_str())
-                .check(&cors),
-        );
+            let decision = preflight_request()
+                .origin("https://prop.test")
+                .request_method(method::GET)
+                .request_headers(request_variant)
+                .check(
+                    &cors()
+                        .allowed_headers(AllowedHeaders::list([allowed.clone()]))
+                        .build()
+                );
 
-        prop_assert_eq!(
-            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-            Some(origin.as_str())
-        );
+            let is_preflight_accepted = matches!(
+                decision,
+                CorsDecision::PreflightAccepted { .. }
+            );
+            prop_assert!(is_preflight_accepted);
+        }
+
+        #[test]
+        fn should_mirror_origin_when_regex_list_matches_hybrid_subdomain_then_reflect_origin(subdomain in subdomain_strategy()) {
+            let origin = format!("https://{}.hybrid.dev", subdomain);
+            let cors = cors()
+                .origin(Origin::list([
+                    OriginMatcher::from(false),
+                    OriginMatcher::pattern_str(r"^https://.*\.hybrid\.dev$").unwrap(),
+                ]))
+                .build();
+
+            let headers = assert_simple(
+                simple_request()
+                    .origin(origin.as_str())
+                    .check(&cors),
+            );
+
+            prop_assert_eq!(
+                header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+                Some(origin.as_str())
+            );
+        }
     }
 }

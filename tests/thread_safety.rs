@@ -8,48 +8,52 @@ use common::headers::header_value;
 use std::sync::Arc;
 use std::thread;
 
-#[test]
-fn should_allow_sharing_cors_across_threads() {
-    let cors = Arc::new(
-        cors()
-            .origin(Origin::any())
-            .credentials(true)
-            .allowed_headers(AllowedHeaders::list(["X-Thread"]))
-            .build(),
-    );
+mod check {
+    use super::*;
 
-    let mut handles = Vec::new();
-    for i in 0..8 {
-        let cors = Arc::clone(&cors);
-        handles.push(thread::spawn(move || {
-            let origin = format!("https://thread{}.example", i);
-            let headers = assert_preflight(
-                preflight_request()
-                    .origin(origin.as_str())
-                    .request_method(method::POST)
-                    .request_headers("X-Thread")
-                    .check(&cors),
-            );
+    #[test]
+    fn should_allow_sharing_cors_when_multiple_threads_execute_checks_then_return_consistent_headers() {
+        let cors = Arc::new(
+            cors()
+                .origin(Origin::any())
+                .credentials(true)
+                .allowed_headers(AllowedHeaders::list(["X-Thread"]))
+                .build(),
+        );
 
-            assert_eq!(
-                header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-                Some(origin.as_str()),
-            );
-            assert_eq!(
-                header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
-                Some("X-Thread"),
-            );
+        let mut handles = Vec::new();
+        for i in 0..8 {
+            let cors = Arc::clone(&cors);
+            handles.push(thread::spawn(move || {
+                let origin = format!("https://thread{}.example", i);
+                let headers = assert_preflight(
+                    preflight_request()
+                        .origin(origin.as_str())
+                        .request_method(method::POST)
+                        .request_headers("X-Thread")
+                        .check(&cors),
+                );
 
-            let simple_headers =
-                assert_simple(simple_request().origin(origin.as_str()).check(&cors));
-            assert_eq!(
-                header_value(&simple_headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-                Some(origin.as_str()),
-            );
-        }));
-    }
+                assert_eq!(
+                    header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+                    Some(origin.as_str()),
+                );
+                assert_eq!(
+                    header_value(&headers, header::ACCESS_CONTROL_ALLOW_HEADERS),
+                    Some("X-Thread"),
+                );
 
-    for handle in handles {
-        handle.join().expect("thread panic");
+                let simple_headers =
+                    assert_simple(simple_request().origin(origin.as_str()).check(&cors));
+                assert_eq!(
+                    header_value(&simple_headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+                    Some(origin.as_str()),
+                );
+            }));
+        }
+
+        for handle in handles {
+            handle.join().expect("thread panic");
+        }
     }
 }

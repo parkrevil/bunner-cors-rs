@@ -5,7 +5,7 @@ mod new {
     use super::*;
 
     #[test]
-    fn should_start_with_empty_headers_when_called() {
+    fn should_start_with_empty_headers_when_new_called_then_initialize_collection() {
         let collection = HeaderCollection::new();
 
         assert!(collection.into_headers().is_empty());
@@ -16,7 +16,7 @@ mod push {
     use super::*;
 
     #[test]
-    fn should_store_once_given_header_is_regular() {
+    fn should_store_header_once_when_header_regular_then_persist_value() {
         let mut collection = HeaderCollection::new();
 
         collection.push("Access-Control-Expose-Headers".into(), "X-Trace".into());
@@ -29,7 +29,7 @@ mod push {
     }
 
     #[test]
-    fn should_use_deduplicated_value_given_header_is_vary() {
+    fn should_use_deduplicated_value_when_header_vary_then_preserve_first_entry() {
         let mut collection = HeaderCollection::new();
 
         collection.push(header::VARY.to_string(), "Origin".into());
@@ -44,7 +44,7 @@ mod add_vary {
     use super::*;
 
     #[test]
-    fn should_store_unique_entries_given_values_have_mixed_case() {
+    fn should_store_unique_entries_when_values_have_mixed_case_then_deduplicate_case_insensitively() {
         let mut collection = HeaderCollection::new();
 
         collection.add_vary("Origin");
@@ -59,7 +59,7 @@ mod add_vary {
     }
 
     #[test]
-    fn should_remove_vary_header_given_value_is_whitespace() {
+    fn should_remove_vary_header_when_value_whitespace_then_skip_entry() {
         let mut collection = HeaderCollection::new();
 
         collection.add_vary("   ");
@@ -69,7 +69,7 @@ mod add_vary {
     }
 
     #[test]
-    fn should_preserve_them_given_value_is_whitespace_and_existing_entries_present() {
+    fn should_preserve_existing_entries_when_value_whitespace_then_ignore_addition() {
         let mut collection = HeaderCollection::new();
         collection.add_vary("Origin");
 
@@ -84,7 +84,7 @@ mod extend {
     use super::*;
 
     #[test]
-    fn should_combine_and_deduplicate_given_merging_collections() {
+    fn should_combine_and_deduplicate_when_extending_collections_then_merge_headers() {
         let mut base = HeaderCollection::new();
         base.push("Access-Control-Allow-Credentials".into(), "true".into());
         base.add_vary("Origin");
@@ -107,7 +107,7 @@ mod extend {
     }
 
     #[test]
-    fn should_remove_header_given_extending_with_whitespace_vary() {
+    fn should_remove_vary_header_when_extending_with_whitespace_then_skip_entry() {
         let mut base = HeaderCollection::new();
         let mut other = HeaderCollection::new();
         other.push(header::VARY.to_string(), "   ".into());
@@ -119,7 +119,7 @@ mod extend {
     }
 
     #[test]
-    fn should_preserve_value_given_extending_existing_vary_with_whitespace() {
+    fn should_preserve_vary_value_when_extending_with_whitespace_then_retain_existing_entry() {
         let mut base = HeaderCollection::new();
         base.add_vary("Origin");
         let mut other = HeaderCollection::new();
@@ -132,7 +132,7 @@ mod extend {
     }
 
     #[test]
-    fn should_merge_vary_from_other_collection() {
+    fn should_merge_vary_header_when_extending_with_other_collection_then_combine_entries() {
         let mut base = HeaderCollection::new();
         base.add_vary("Access-Control-Request-Method");
         let mut other = HeaderCollection::new();
@@ -152,7 +152,7 @@ mod into_headers {
     use super::*;
 
     #[test]
-    fn should_consume_collection_and_return_map_when_called() {
+    fn should_consume_collection_and_return_map_when_into_headers_called_then_produce_map() {
         let mut collection = HeaderCollection::new();
         collection.push("Access-Control-Allow-Methods".into(), "GET".into());
 
@@ -165,7 +165,7 @@ mod into_headers {
     }
 
     #[test]
-    fn should_emit_vary_header_before_others() {
+    fn should_emit_vary_header_first_when_into_headers_called_then_preserve_ordering() {
         let mut collection = HeaderCollection::new();
         collection.add_vary("Origin");
         collection.push("Access-Control-Allow-Methods".into(), "GET".into());

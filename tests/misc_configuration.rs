@@ -6,117 +6,126 @@ use common::asserts::{assert_preflight, assert_vary_contains, assert_vary_not_co
 use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
 
-#[test]
-fn should_affect_preflight_response_given_max_age() {
-    let cors = cors().max_age("600").build();
+mod new {
+    use super::*;
 
-    let headers = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .check(&cors),
-    );
+    #[test]
+    fn should_return_error_when_max_age_empty_then_fail_validation() {
+        let result = Cors::new(CorsOptions {
+            max_age: Some(String::new()),
+            ..CorsOptions::default()
+        });
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
-        Some("600")
-    );
-}
+        let error = match result {
+            Ok(_) => panic!("empty max-age should be rejected"),
+            Err(error) => error,
+        };
 
-#[test]
-fn should_reject_given_empty_max_age() {
-    let result = Cors::new(CorsOptions {
-        max_age: Some(String::new()),
-        ..CorsOptions::default()
-    });
-
-    let error = match result {
-        Ok(_) => panic!("empty max-age should be rejected"),
-        Err(error) => error,
-    };
-    assert_eq!(
-        error.to_string(),
-        "The max-age value '' must be a non-negative integer representing seconds."
-    );
-}
-
-#[test]
-fn should_be_absent_given_default_max_age() {
-    let cors = cors().build();
-
-    let headers = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .check(&cors),
-    );
-
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
-}
-
-#[test]
-fn should_emit_given_zero_max_age() {
-    let cors = cors().max_age("0").build();
-
-    let headers = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .check(&cors),
-    );
-
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
-        Some("0")
-    );
-}
-
-#[test]
-fn should_omit_allow_methods_header_given_empty_methods_list() {
-    let cors = cors().methods(Vec::<String>::new()).build();
-
-    let decision = preflight_request()
-        .origin("https://foo.bar")
-        .request_method(method::PATCH)
-        .check(&cors);
-
-    match decision {
-        CorsDecision::PreflightRejected(rejection) => assert_eq!(
-            rejection.reason,
-            PreflightRejectionReason::MethodNotAllowed {
-                requested_method: "patch".to_string(),
-            }
-        ),
-        other => panic!("expected preflight rejection, got {:?}", other),
+        assert_eq!(
+            error.to_string(),
+            "The max-age value '' must be a non-negative integer representing seconds.",
+        );
     }
 }
 
-#[test]
-fn should_emit_vary_origin_header_given_origin_list_configured() {
-    let cors = cors()
-        .origin(Origin::list(["https://foo.bar", "https://bar.baz"]))
-        .build();
+mod check {
+    use super::*;
 
-    let headers = assert_preflight(
-        preflight_request()
+    #[test]
+    fn should_emit_max_age_when_configured_then_include_in_preflight_response() {
+        let cors = cors().max_age("600").build();
+
+        let headers = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .check(&cors),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
+            Some("600"),
+        );
+    }
+
+    #[test]
+    fn should_omit_max_age_when_not_configured_then_skip_header() {
+        let cors = cors().build();
+
+        let headers = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .check(&cors),
+        );
+
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_MAX_AGE));
+    }
+
+    #[test]
+    fn should_emit_zero_max_age_when_configured_then_include_header() {
+        let cors = cors().max_age("0").build();
+
+        let headers = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .check(&cors),
+        );
+
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_MAX_AGE),
+            Some("0"),
+        );
+    }
+
+    #[test]
+    fn should_reject_preflight_when_methods_list_empty_then_return_rejection() {
+        let cors = cors().methods(Vec::<String>::new()).build();
+
+        let decision = preflight_request()
             .origin("https://foo.bar")
-            .request_method(method::GET)
-            .check(&cors),
-    );
+            .request_method(method::PATCH)
+            .check(&cors);
 
-    assert_vary_contains(&headers, header::ORIGIN);
-}
+        match decision {
+            CorsDecision::PreflightRejected(rejection) => assert_eq!(
+                rejection.reason,
+                PreflightRejectionReason::MethodNotAllowed {
+                    requested_method: "patch".to_string(),
+                }
+            ),
+            other => panic!("expected preflight rejection, got {:?}", other),
+        }
+    }
 
-#[test]
-fn should_not_emit_vary_header_given_origin_allows_any() {
-    let cors = cors().origin(Origin::any()).build();
+    #[test]
+    fn should_emit_vary_origin_when_origin_list_configured_then_include_header() {
+        let cors = cors()
+            .origin(Origin::list(["https://foo.bar", "https://bar.baz"]))
+            .build();
 
-    let headers = assert_preflight(
-        preflight_request()
-            .origin("https://foo.bar")
-            .request_method(method::GET)
-            .check(&cors),
-    );
+        let headers = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .check(&cors),
+        );
 
-    assert_vary_not_contains(&headers, header::ORIGIN);
+        assert_vary_contains(&headers, header::ORIGIN);
+    }
+
+    #[test]
+    fn should_omit_vary_origin_when_origin_allows_any_then_skip_header() {
+        let cors = cors().origin(Origin::any()).build();
+
+        let headers = assert_preflight(
+            preflight_request()
+                .origin("https://foo.bar")
+                .request_method(method::GET)
+                .check(&cors),
+        );
+
+        assert_vary_not_contains(&headers, header::ORIGIN);
+    }
 }

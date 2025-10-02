@@ -6,94 +6,119 @@ use common::asserts::assert_simple;
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value};
 
-#[test]
-fn should_allow_any_origin_in_default_simple_request() {
-    let cors = cors().build();
-    let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
+mod check {
+    use super::*;
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
-        Some("*")
-    );
-    assert!(!has_header(&headers, header::VARY));
-}
+    #[test]
+    fn should_allow_any_origin_when_default_simple_request_then_return_wildcard() {
+        let cors = cors().build();
 
-#[test]
-fn should_be_not_applicable_given_simple_request_without_origin() {
-    let cors = cors().build();
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://example.com")
+                .check(&cors),
+        );
 
-    let decision = simple_request().check(&cors);
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some("*"),
+        );
+        assert!(!has_header(&headers, header::VARY));
+    }
 
-    assert!(matches!(decision, CorsDecision::NotApplicable));
-}
+    #[test]
+    fn should_return_not_applicable_when_simple_request_without_origin_then_skip() {
+        let cors = cors().build();
 
-#[test]
-fn should_emit_expose_header_given_simple_request_with_expose_headers() {
-    let cors = cors().exposed_headers(["X-Trace", "X-Auth"]).build();
+        let decision = simple_request().check(&cors);
 
-    let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
+        assert!(matches!(decision, CorsDecision::NotApplicable));
+    }
 
-    assert_eq!(
-        header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
-        Some("X-Trace,X-Auth"),
-    );
-}
+    #[test]
+    fn should_emit_expose_headers_when_simple_request_configures_expose_headers_then_return_value() {
+        let cors = cors().exposed_headers(["X-Trace", "X-Auth"]).build();
 
-#[test]
-fn should_not_emit_expose_header_given_simple_request_without_expose_headers() {
-    let cors = cors().build();
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://example.com")
+                .check(&cors),
+        );
 
-    let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
+        assert_eq!(
+            header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
+            Some("X-Trace,X-Auth"),
+        );
+    }
 
-    assert!(
-        !has_header(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
-        "expose headers should be absent when not configured",
-    );
-}
+    #[test]
+    fn should_omit_expose_headers_when_not_configured_then_keep_absent() {
+        let cors = cors().build();
 
-#[test]
-fn simple_request_with_private_network_support_does_not_emit_header() {
-    let cors = cors()
-        .origin(Origin::exact("https://example.com"))
-        .credentials(true)
-        .private_network(true)
-        .build();
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://example.com")
+                .check(&cors),
+        );
 
-    let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
+        assert!(
+            !has_header(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
+            "expose headers should be absent when not configured",
+        );
+    }
 
-    assert!(
-        !has_header(&headers, header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
-        "private network header should remain absent on simple responses"
-    );
-}
+    #[test]
+    fn should_omit_private_network_header_when_simple_request_has_private_network_support_then_skip_header() {
+        let cors = cors()
+            .origin(Origin::exact("https://example.com"))
+            .credentials(true)
+            .private_network(true)
+            .build();
 
-#[test]
-fn simple_request_with_disallowed_origin_omits_sensitive_headers() {
-    let cors = cors()
-        .origin(Origin::list(["https://allowed.example"]))
-        .credentials(true)
-        .exposed_headers(["X-Trace"])
-        .build();
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://example.com")
+                .check(&cors),
+        );
 
-    let headers = assert_simple(simple_request().origin("https://deny.example").check(&cors));
+        assert!(
+            !has_header(&headers, header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
+            "private network header should remain absent on simple responses",
+        );
+    }
 
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
-    assert!(!has_header(
-        &headers,
-        header::ACCESS_CONTROL_ALLOW_CREDENTIALS
-    ));
-    assert!(!has_header(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS));
-    assert!(has_header(&headers, header::VARY));
-}
+    #[test]
+    fn should_omit_sensitive_headers_when_simple_request_origin_disallowed_then_exclude_sensitive() {
+        let cors = cors()
+            .origin(Origin::list(["https://allowed.example"]))
+            .credentials(true)
+            .exposed_headers(["X-Trace"])
+            .build();
 
-#[test]
-fn simple_request_with_disallowed_method_is_rejected() {
-    let cors = cors().methods([method::POST]).build();
+        let headers = assert_simple(
+            simple_request()
+                .origin("https://deny.example")
+                .check(&cors),
+        );
 
-    let decision = simple_request()
-        .method(method::DELETE)
-        .origin("https://methods.example")
-        .check(&cors);
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+        assert!(!has_header(
+            &headers,
+            header::ACCESS_CONTROL_ALLOW_CREDENTIALS
+        ));
+        assert!(!has_header(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS));
+        assert!(has_header(&headers, header::VARY));
+    }
 
-    assert!(matches!(decision, CorsDecision::NotApplicable));
+    #[test]
+    fn should_return_not_applicable_when_simple_request_method_disallowed_then_skip() {
+        let cors = cors().methods([method::POST]).build();
+
+        let decision = simple_request()
+            .method(method::DELETE)
+            .origin("https://methods.example")
+            .check(&cors);
+
+        assert!(matches!(decision, CorsDecision::NotApplicable));
+    }
 }
