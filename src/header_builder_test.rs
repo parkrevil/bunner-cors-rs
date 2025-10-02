@@ -566,6 +566,26 @@ mod build_private_network_header {
 
         assert!(map.is_empty());
     }
+
+    #[test]
+    fn should_emit_allow_header_when_request_method_lowercase_then_private_network_allowed() {
+        // Arrange
+        let options = CorsOptions {
+            allow_private_network: true,
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request_with_private_network("options", "https://api.test", "POST", "X-Test");
+
+        // Act
+        let map = builder.build_private_network_header(&ctx).into_headers();
+
+        // Assert
+        assert_eq!(
+            map.get(header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
+            Some(&"true".to_string())
+        );
+    }
 }
 
 mod build_timing_allow_origin_header {
