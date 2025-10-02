@@ -1,11 +1,12 @@
 use crate::constants::header;
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
-pub type Headers = std::collections::HashMap<String, String>;
+pub type Headers = IndexMap<String, String>;
 
 #[derive(Debug, Default, Clone)]
 pub(crate) struct HeaderCollection {
-    headers: Headers,
+    vary: Option<String>,
+    headers: IndexMap<String, String>,
 }
 
 impl HeaderCollection {
@@ -16,7 +17,8 @@ impl HeaderCollection {
     pub(crate) fn with_estimate(estimate: usize) -> Self {
         let capacity = estimate.max(16);
         Self {
-            headers: HashMap::with_capacity(capacity),
+            vary: None,
+            headers: IndexMap::with_capacity(capacity),
         }
     }
 
@@ -30,8 +32,8 @@ impl HeaderCollection {
 
     pub(crate) fn add_vary<S: Into<String>>(&mut self, value: S) {
         let mut entries: Vec<String> = self
-            .headers
-            .get(header::VARY)
+            .vary
+            .as_ref()
             .map(|existing| {
                 existing
                     .split(',')
@@ -47,7 +49,7 @@ impl HeaderCollection {
         }
 
         if entries.is_empty() {
-            self.headers.remove(header::VARY);
+            self.vary = None;
             return;
         }
 
@@ -63,10 +65,14 @@ impl HeaderCollection {
         }
 
         let value = deduped.join(", ");
-        self.headers.insert(header::VARY.to_string(), value);
+        self.vary = Some(value);
     }
 
     pub(crate) fn extend(&mut self, other: HeaderCollection) {
+        if let Some(vary) = other.vary {
+            self.add_vary(vary);
+        }
+
         for (name, value) in other.headers {
             if name.eq_ignore_ascii_case(header::VARY) {
                 self.add_vary(value);
@@ -77,7 +83,15 @@ impl HeaderCollection {
     }
 
     pub(crate) fn into_headers(self) -> Headers {
-        self.headers
+        let capacity = self.headers.len() + usize::from(self.vary.is_some());
+        let mut headers = Headers::with_capacity(capacity);
+
+        if let Some(vary) = self.vary {
+            headers.insert(header::VARY.to_string(), vary);
+        }
+
+        headers.extend(self.headers);
+        headers
     }
 }
 

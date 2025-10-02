@@ -130,6 +130,22 @@ mod extend {
         let headers = base.into_headers();
         assert_eq!(headers.get(header::VARY), Some(&"Origin".to_string()));
     }
+
+    #[test]
+    fn should_merge_vary_from_other_collection() {
+        let mut base = HeaderCollection::new();
+        base.add_vary("Access-Control-Request-Method");
+        let mut other = HeaderCollection::new();
+        other.add_vary("Origin");
+
+        base.extend(other);
+
+        let headers = base.into_headers();
+        assert_eq!(
+            headers.get(header::VARY),
+            Some(&"Access-Control-Request-Method, Origin".to_string())
+        );
+    }
 }
 
 mod into_headers {
@@ -145,6 +161,22 @@ mod into_headers {
         assert_eq!(
             headers.get("Access-Control-Allow-Methods"),
             Some(&"GET".to_string())
+        );
+    }
+
+    #[test]
+    fn should_emit_vary_header_before_others() {
+        let mut collection = HeaderCollection::new();
+        collection.add_vary("Origin");
+        collection.push("Access-Control-Allow-Methods".into(), "GET".into());
+
+        let headers = collection.into_headers();
+        let mut keys = headers.keys();
+
+        assert_eq!(keys.next(), Some(&header::VARY.to_string()));
+        assert_eq!(
+            keys.next(),
+            Some(&"Access-Control-Allow-Methods".to_string())
         );
     }
 }
