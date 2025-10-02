@@ -187,6 +187,36 @@ mod build_origin_headers {
     }
 
     #[test]
+    fn should_disallow_null_origin_when_not_allowed() {
+        let options = CorsOptions::default();
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request("GET", "null", "", "");
+
+        let map = expect_disallow(builder.build_origin_headers(&ctx, &ctx)).into_headers();
+
+        assert_eq!(map.get(header::VARY), Some(&"Origin".to_string()));
+        assert!(!map.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    #[test]
+    fn should_allow_null_origin_when_explicitly_enabled() {
+        let options = CorsOptions {
+            allow_null_origin: true,
+            ..CorsOptions::default()
+        };
+        let builder = HeaderBuilder::new(&options);
+        let ctx = request("GET", "null", "", "");
+
+        let map = expect_allow(builder.build_origin_headers(&ctx, &ctx)).into_headers();
+
+        assert_eq!(
+            map.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"*".to_string())
+        );
+        assert!(!map.contains_key(header::VARY));
+    }
+
+    #[test]
     fn should_not_emit_header_given_origin_mirror_has_empty_request() {
         let options = options_with_origin(Origin::list(["https://app.test"]));
         let builder = HeaderBuilder::new(&options);

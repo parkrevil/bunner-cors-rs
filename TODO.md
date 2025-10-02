@@ -88,7 +88,7 @@
 - [ ] 테스트 실패 시 더 명확한 디버깅 정보 제공
 
 ### 9. CORS 표준 준수 강화
-- [ ] `Origin: null` 명시적 처리 추가
+- [x] `Origin: null` 명시적 처리 추가
 - [ ] CORS-safelisted headers 자동 허용 검토
   - Accept
   - Accept-Language

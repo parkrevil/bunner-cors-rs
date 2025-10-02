@@ -37,6 +37,41 @@ mod origin_decision {
                 _ => panic!("expected exact variant"),
             }
         }
+
+    mod compile_pattern {
+        use super::*;
+        use std::time::Duration;
+
+        #[test]
+        fn should_compile_case_insensitively() {
+            let regex = OriginMatcher::compile_pattern("^https://svc$", Duration::from_secs(1))
+                .expect("pattern should compile");
+
+            assert!(regex.is_match("https://SVC".as_bytes()));
+            assert!(regex.is_match("https://svc".as_bytes()));
+        }
+
+        #[test]
+        fn should_return_timeout_error_given_zero_budget() {
+            let result = OriginMatcher::compile_pattern(".*", Duration::ZERO);
+
+            assert!(matches!(result, Err(PatternError::Timeout { .. })));
+        }
+
+        #[test]
+        fn should_return_too_long_error_given_pattern_exceeds_limit() {
+            let pattern = "a".repeat(super::MAX_PATTERN_LENGTH + 1);
+
+            let result = OriginMatcher::compile_pattern(&pattern, Duration::from_secs(1));
+
+            if let Err(PatternError::TooLong { length, max }) = result {
+                assert_eq!(length, super::MAX_PATTERN_LENGTH + 1);
+                assert_eq!(max, super::MAX_PATTERN_LENGTH);
+            } else {
+                panic!("expected too long error");
+            }
+        }
+    }
     }
 
     mod mirror {

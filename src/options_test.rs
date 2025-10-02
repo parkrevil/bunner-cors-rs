@@ -17,6 +17,7 @@ mod default {
         assert_eq!(options.exposed_headers, None);
         assert!(!options.credentials);
         assert!(options.max_age.is_none());
+        assert!(!options.allow_null_origin);
         assert!(!options.allow_private_network);
         assert!(options.timing_allow_origin.is_none());
     }

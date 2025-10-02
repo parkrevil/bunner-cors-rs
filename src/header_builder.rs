@@ -20,14 +20,24 @@ impl<'a> HeaderBuilder<'a> {
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
     ) -> Result<(HeaderCollection, OriginDecision), CorsError> {
-        match self.options.origin.resolve(
-            if normalized.origin.is_empty() {
-                None
-            } else {
-                Some(normalized.origin)
-            },
-            normalized,
-        ) {
+        let normalized_origin = normalized.origin;
+        if normalized_origin.eq_ignore_ascii_case("null") && !self.options.allow_null_origin {
+            let mut headers = HeaderCollection::with_estimate(1);
+            headers.add_vary(header::ORIGIN);
+            return Ok((headers, OriginDecision::Disallow));
+        }
+
+        let request_origin = if normalized_origin.is_empty() {
+            None
+        } else {
+            Some(normalized_origin)
+        };
+
+        match self
+            .options
+            .origin
+            .resolve(request_origin, normalized)
+        {
             OriginDecision::Any => {
                 if self.options.credentials {
                     return Err(CorsError::InvalidOriginAnyWithCredentials);

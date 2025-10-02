@@ -125,6 +125,7 @@ pub struct CorsOptions {
     pub exposed_headers: Option<Vec<String>>,
     pub credentials: bool,
     pub max_age: Option<String>,
+    pub allow_null_origin: bool,
     pub allow_private_network: bool,
     pub timing_allow_origin: Option<TimingAllowOrigin>,
 }
@@ -138,6 +139,7 @@ impl Default for CorsOptions {
             exposed_headers: None,
             credentials: false,
             max_age: None,
+            allow_null_origin: false,
             allow_private_network: false,
             timing_allow_origin: None,
         }

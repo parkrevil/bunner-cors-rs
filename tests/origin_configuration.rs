@@ -2,7 +2,7 @@ mod common;
 
 use bunner_cors_rs::constants::{header, method};
 use bunner_cors_rs::{CorsDecision, Origin, OriginDecision, OriginMatcher, PatternError};
-use common::asserts::{assert_simple, assert_vary_eq};
+use common::asserts::{assert_simple, assert_vary_eq, assert_vary_is_empty};
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value};
 use regex_automata::meta::Regex;
@@ -116,6 +116,29 @@ fn should_disallow_exact_origin_mismatch() {
 
     assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
     assert_vary_eq(&headers, [header::ORIGIN]);
+}
+
+#[test]
+fn should_reject_null_origin_by_default() {
+    let cors = cors().build();
+
+    let headers = assert_simple(simple_request().origin("null").check(&cors));
+
+    assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    assert_vary_eq(&headers, [header::ORIGIN]);
+}
+
+#[test]
+fn should_allow_null_origin_when_enabled() {
+    let cors = cors().allow_null_origin(true).build();
+
+    let headers = assert_simple(simple_request().origin("null").check(&cors));
+
+    assert_eq!(
+        header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
+        Some("*")
+    );
+    assert_vary_is_empty(&headers);
 }
 
 #[test]

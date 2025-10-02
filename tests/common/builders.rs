@@ -13,6 +13,7 @@ pub struct CorsBuilder {
     exposed_headers: Option<Vec<String>>,
     credentials: Option<bool>,
     max_age: Option<String>,
+    allow_null_origin: Option<bool>,
     private_network: Option<bool>,
     timing_allow_origin: Option<TimingAllowOrigin>,
 }
@@ -60,6 +61,11 @@ impl CorsBuilder {
         self
     }
 
+    pub fn allow_null_origin(mut self, enabled: bool) -> Self {
+        self.allow_null_origin = Some(enabled);
+        self
+    }
+
     pub fn private_network(mut self, enabled: bool) -> Self {
         self.private_network = Some(enabled);
         self
@@ -78,6 +84,7 @@ impl CorsBuilder {
             exposed_headers: default_exposed_headers,
             credentials: default_credentials,
             max_age: default_max_age,
+            allow_null_origin: default_allow_null_origin,
             allow_private_network: default_private_network,
             timing_allow_origin: default_timing_allow_origin,
         } = CorsOptions::default();
@@ -99,6 +106,9 @@ impl CorsBuilder {
             exposed_headers: self.exposed_headers.or(default_exposed_headers),
             credentials,
             max_age: self.max_age.or(default_max_age),
+            allow_null_origin: self
+                .allow_null_origin
+                .unwrap_or(default_allow_null_origin),
             allow_private_network: self.private_network.unwrap_or(default_private_network),
             timing_allow_origin: self.timing_allow_origin.or(default_timing_allow_origin),
         })

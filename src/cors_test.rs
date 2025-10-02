@@ -245,6 +245,39 @@ mod process_preflight {
     }
 
     #[test]
+    fn should_reject_given_null_origin_when_not_allowed() {
+        let options = CorsOptions {
+            origin: Origin::any(),
+            ..CorsOptions::default()
+        };
+        let cors = cors_with(options);
+        let original = request("OPTIONS", "null", "GET", "X-Test");
+
+        let rejection = expect_preflight_rejected(preflight_decision(&cors, &original));
+
+        assert_eq!(rejection.reason, PreflightRejectionReason::OriginNotAllowed);
+        assert!(rejection.headers.contains_key(header::VARY));
+    }
+
+    #[test]
+    fn should_allow_null_origin_when_explicitly_enabled() {
+        let options = CorsOptions {
+            origin: Origin::any(),
+            allow_null_origin: true,
+            ..CorsOptions::default()
+        };
+        let cors = cors_with(options);
+        let original = request("OPTIONS", "null", "GET", "X-Test");
+
+        let headers = expect_preflight_accepted(preflight_decision(&cors, &original));
+
+        assert_eq!(
+            headers.get(header::ACCESS_CONTROL_ALLOW_ORIGIN),
+            Some(&"*".to_string())
+        );
+    }
+
+    #[test]
     fn should_fail_given_origin_returns_any_with_credentials_when_preflight_request() {
         let cors = Cors::new(CorsOptions {
             origin: Origin::custom(|_, _| OriginDecision::Any),
