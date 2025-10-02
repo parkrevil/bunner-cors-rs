@@ -88,7 +88,7 @@
 - [ ] 테스트 실패 시 더 명확한 디버깅 정보 제공
 
 ### 9. CORS 표준 준수 강화
-- [x] `Origin: null` 명시적 처리 추가
+- [x] ~~`Origin: null` 명시적 처리 추가~~
 - [ ] CORS-safelisted headers 자동 허용 검토
   - Accept
   - Accept-Language
@@ -97,7 +97,7 @@
 - [ ] CORS-safelisted methods 자동 허용 검토
   - GET, HEAD, POST
 - [ ] Preflight max-age 권장값 문서화 (1-86400초)
-- [ ] 응답 헤더 순서 최적화 (Vary를 먼저)
+- [x] ~~응답 헤더 순서 최적화 (Vary를 먼저)~~
 
 ### 10. 벤치마크 추가
 - [ ] `benches/` 디렉토리 생성
