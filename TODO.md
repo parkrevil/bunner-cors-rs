@@ -87,15 +87,6 @@
   - GET, HEAD, POST
 - [ ] Preflight max-age 권장값 문서화 (1-86400초)
 
-### 10. 벤치마크 추가
-- [ ] `benches/` 디렉토리 생성
-- [ ] Criterion 벤치마크 구성
-- [ ] Preflight request 처리 성능 측정
-- [ ] Simple request 처리 성능 측정
-- [ ] Origin matching 성능 (정확한 매칭 vs 정규식)
-- [ ] 대량 헤더 처리 성능
-- [ ] 메모리 할당 프로파일링
-
 ---
 
 ## 🟢 Medium Priority (1개월 내 완료)
@@ -136,9 +127,7 @@
 ## 🔵 Low Priority (Future Enhancements)
 
 ### 17. Edge Cases 처리
-  - [x] 매우 긴 Origin 처리 (길이 4,096자 초과 요청 차단)
   - [ ] 비정상적인 헤더 값 처리
-  - [x] Unicode Origin 처리 (비-ASCII 케이스 폴딩 지원)
   - [ ] IDN (Internationalized Domain Names) 지원
 
 ### 18. 문서 추가

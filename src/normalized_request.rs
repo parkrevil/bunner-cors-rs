@@ -1,7 +1,8 @@
 use crate::context::RequestContext;
 use std::borrow::Cow;
 
-pub(crate) struct NormalizedRequest<'a> {
+#[doc(hidden)]
+pub struct NormalizedRequest<'a> {
     method: Cow<'a, str>,
     origin: Cow<'a, str>,
     access_control_request_method: Cow<'a, str>,
@@ -10,7 +11,8 @@ pub(crate) struct NormalizedRequest<'a> {
 }
 
 impl<'a> NormalizedRequest<'a> {
-    pub(crate) fn new(request: &'a RequestContext<'a>) -> Self {
+    #[doc(hidden)]
+    pub fn new(request: &'a RequestContext<'a>) -> Self {
         Self {
             method: Self::normalize_component(request.method),
             origin: Self::normalize_component(request.origin),
@@ -32,7 +34,8 @@ impl<'a> NormalizedRequest<'a> {
         }
     }
 
-    pub(crate) fn as_context(&self) -> RequestContext<'_> {
+    #[doc(hidden)]
+    pub fn as_context(&self) -> RequestContext<'_> {
         RequestContext {
             method: self.method.as_ref(),
             origin: self.origin.as_ref(),
@@ -42,7 +45,8 @@ impl<'a> NormalizedRequest<'a> {
         }
     }
 
-    pub(crate) fn is_options(&self) -> bool {
+    #[doc(hidden)]
+    pub fn is_options(&self) -> bool {
         self.method.as_ref() == "options"
     }
 }

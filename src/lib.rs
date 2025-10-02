@@ -17,6 +17,8 @@ pub use allowed_methods::AllowedMethods;
 pub use context::RequestContext;
 pub use cors::Cors;
 pub use headers::Headers;
+#[doc(hidden)]
+pub use normalized_request::NormalizedRequest;
 pub use options::{CorsOptions, ValidationError};
 pub use origin::{
     Origin, OriginCallbackFn, OriginDecision, OriginMatcher, OriginPredicateFn, PatternError,
