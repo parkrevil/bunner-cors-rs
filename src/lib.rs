@@ -25,3 +25,5 @@ pub use origin::{
 };
 pub use result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
 pub use timing_allow_origin::TimingAllowOrigin;
+#[doc(hidden)]
+pub use util::{equals_ignore_case, normalize_lower};

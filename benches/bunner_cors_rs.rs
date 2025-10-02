@@ -1,6 +1,7 @@
 use bunner_cors_rs::{
     AllowedHeaders, AllowedMethods, Cors, CorsDecision, CorsOptions, NormalizedRequest, Origin,
-    OriginDecision, OriginMatcher, RequestContext, TimingAllowOrigin,
+    OriginDecision, OriginMatcher, RequestContext, TimingAllowOrigin, equals_ignore_case,
+    normalize_lower,
 };
 use criterion::{
     BenchmarkId, Criterion, SamplingMode, Throughput, black_box, criterion_group, criterion_main,
@@ -567,6 +568,67 @@ fn bench_header_feature_toggles(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_string_comparisons(c: &mut Criterion) {
+    let mut group = c.benchmark_group("string_comparisons");
+    group.throughput(Throughput::Elements(1));
+
+    let ascii_lower = "https://edge.bench.allowed";
+    let ascii_mixed = "HTTPS://EDGE.BENCH.ALLOWED";
+    let ascii_other = "https://other.bench.allowed";
+    let unicode_mixed = "https://DÉV.BENCH.ALLOWED";
+    let unicode_lower = normalize_lower(unicode_mixed);
+
+    group.bench_function("equals_ascii_same_case", |b| {
+        b.iter(|| {
+            black_box(equals_ignore_case(
+                black_box(ascii_lower),
+                black_box(ascii_lower),
+            ));
+        })
+    });
+
+    group.bench_function("equals_ascii_mixed_case", |b| {
+        b.iter(|| {
+            black_box(equals_ignore_case(
+                black_box(ascii_mixed),
+                black_box(ascii_lower),
+            ));
+        })
+    });
+
+    group.bench_function("equals_ascii_mismatch", |b| {
+        b.iter(|| {
+            black_box(equals_ignore_case(
+                black_box(ascii_lower),
+                black_box(ascii_other),
+            ));
+        })
+    });
+
+    group.bench_function("equals_unicode_mixed_case", |b| {
+        b.iter(|| {
+            black_box(equals_ignore_case(
+                black_box(unicode_mixed),
+                black_box(&unicode_lower),
+            ));
+        })
+    });
+
+    group.bench_function("normalize_lower_ascii", |b| {
+        b.iter(|| {
+            black_box(normalize_lower(black_box(ascii_mixed)));
+        })
+    });
+
+    group.bench_function("normalize_lower_unicode", |b| {
+        b.iter(|| {
+            black_box(normalize_lower(black_box(unicode_mixed)));
+        })
+    });
+
+    group.finish();
+}
+
 fn bench_request_normalization(c: &mut Criterion) {
     let mut group = c.benchmark_group("request_normalization");
 
@@ -642,6 +704,7 @@ fn bench_cors(c: &mut Criterion) {
     bench_scaling_inputs(c);
     bench_header_evaluation(c);
     bench_header_feature_toggles(c);
+    bench_string_comparisons(c);
     bench_request_normalization(c);
     bench_allocation_profile(c);
 }

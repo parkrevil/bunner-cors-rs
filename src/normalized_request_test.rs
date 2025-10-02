@@ -46,6 +46,18 @@ mod new {
     }
 
     #[test]
+    fn should_lowercase_unicode_uppercase_origin_then_normalize_non_ascii() {
+        let ctx = request("GET", "https://DÉV.TEST", "POST", "X-CUSTOM");
+
+        let normalized = NormalizedRequest::new(&ctx);
+
+        assert_eq!(normalized.origin, "https://dév.test");
+        assert_eq!(normalized.method, "get");
+        assert_eq!(normalized.access_control_request_method, "post");
+        assert_eq!(normalized.access_control_request_headers, "x-custom");
+    }
+
+    #[test]
     fn should_remain_empty_without_allocation_when_origin_is_empty_then_preserve_borrowed_slice() {
         let ctx = request("get", "", "post", "x-custom");
 

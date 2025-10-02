@@ -27,8 +27,14 @@ impl<'a> NormalizedRequest<'a> {
     }
 
     fn normalize_component(value: &'a str) -> Cow<'a, str> {
-        if value.bytes().any(|byte| byte.is_ascii_uppercase()) {
-            Cow::Owned(value.to_ascii_lowercase())
+        if value.is_ascii() {
+            if value.bytes().any(|byte| byte.is_ascii_uppercase()) {
+                Cow::Owned(value.to_ascii_lowercase())
+            } else {
+                Cow::Borrowed(value)
+            }
+        } else if value.chars().any(|ch| ch.is_uppercase()) {
+            Cow::Owned(value.to_lowercase())
         } else {
             Cow::Borrowed(value)
         }
