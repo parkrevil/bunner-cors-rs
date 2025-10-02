@@ -8,40 +8,36 @@ mod list {
     fn should_collect_into_list_variant_given_values_provided() {
         let methods = ["GET", "POST"];
 
-        let result = AllowedMethods::list(methods);
+    let result = AllowedMethods::list(methods);
 
-        let AllowedMethods::List(values) = result;
-        assert_eq!(values, vec!["GET", "POST"]);
+    assert_eq!(result.into_inner(), vec!["GET", "POST"]);
     }
 
     #[test]
     fn should_create_empty_list_variant_given_iterator_is_empty() {
         let methods: [&str; 0] = [];
 
-        let result = AllowedMethods::list(methods);
+    let result = AllowedMethods::list(methods);
 
-        let AllowedMethods::List(values) = result;
-        assert!(values.is_empty());
+    assert!(result.into_inner().is_empty());
     }
 
     #[test]
     fn should_preserve_order_given_values_include_empty_entries() {
         let methods = ["", "GET"];
 
-        let result = AllowedMethods::list(methods);
+    let result = AllowedMethods::list(methods);
 
-        let AllowedMethods::List(values) = result;
-        assert_eq!(values, vec![String::new(), "GET".to_string()]);
+    assert_eq!(result.into_inner(), vec![String::new(), "GET".to_string()]);
     }
 
     #[test]
     fn should_keep_first_instance_given_values_include_case_duplicates() {
         let methods = ["GET", "get", "POST"];
 
-        let result = AllowedMethods::list(methods);
+    let result = AllowedMethods::list(methods);
 
-        let AllowedMethods::List(values) = result;
-        assert_eq!(values, vec!["GET".to_string(), "POST".to_string()]);
+    assert_eq!(result.into_inner(), vec!["GET".to_string(), "POST".to_string()]);
     }
 }
 
@@ -101,8 +97,6 @@ mod default {
     fn should_return_standard_method_list_when_called() {
         let methods = AllowedMethods::default();
 
-        let AllowedMethods::List(values) = methods;
-
         let expected = vec![
             method::GET.to_string(),
             method::HEAD.to_string(),
@@ -111,6 +105,6 @@ mod default {
             method::POST.to_string(),
             method::DELETE.to_string(),
         ];
-        assert_eq!(values, expected);
+    assert_eq!(methods.into_inner(), expected);
     }
 }

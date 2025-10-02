@@ -12,7 +12,7 @@ mod default {
         let options = CorsOptions::default();
 
         assert!(matches!(options.origin, Origin::Any));
-        assert_eq!(options.methods, AllowedMethods::default());
+    assert_eq!(options.methods, AllowedMethods::default());
         assert!(options.allowed_headers == AllowedHeaders::default());
         assert_eq!(options.exposed_headers, None);
         assert!(!options.credentials);

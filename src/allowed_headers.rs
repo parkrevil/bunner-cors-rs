@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum AllowedHeaders {
-    List(Vec<String>),
     Any,
+    List(Vec<String>),
 }
 
 impl Default for AllowedHeaders {

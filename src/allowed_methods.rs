@@ -1,10 +1,9 @@
 use crate::constants::method;
 use std::collections::HashSet;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum AllowedMethods {
-    List(Vec<String>),
-}
+pub struct AllowedMethods(Vec<String>);
 
 impl AllowedMethods {
     pub fn list<I, S>(values: I) -> Self
@@ -22,13 +21,14 @@ impl AllowedMethods {
             }
         }
 
-        Self::List(deduped)
+        Self(deduped)
     }
 
     pub fn header_value(&self) -> Option<String> {
-        match self {
-            AllowedMethods::List(values) if values.is_empty() => None,
-            AllowedMethods::List(values) => Some(values.join(",")),
+        if self.0.is_empty() {
+            None
+        } else {
+            Some(self.0.join(","))
         }
     }
 
@@ -38,11 +38,22 @@ impl AllowedMethods {
             return false;
         }
 
-        match self {
-            AllowedMethods::List(values) => values
-                .iter()
-                .any(|allowed| allowed.eq_ignore_ascii_case(method)),
-        }
+        self
+            .0
+            .iter()
+            .any(|allowed| allowed.eq_ignore_ascii_case(method))
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &String> {
+        self.0.iter()
+    }
+
+    pub fn into_inner(self) -> Vec<String> {
+        self.0
+    }
+
+    pub fn as_slice(&self) -> &[String] {
+        &self.0
     }
 }
 
@@ -56,6 +67,50 @@ impl Default for AllowedMethods {
             method::POST,
             method::DELETE,
         ])
+    }
+}
+
+impl From<Vec<String>> for AllowedMethods {
+    fn from(values: Vec<String>) -> Self {
+        AllowedMethods(values)
+    }
+}
+
+impl From<AllowedMethods> for Vec<String> {
+    fn from(methods: AllowedMethods) -> Self {
+        methods.0
+    }
+}
+
+impl Deref for AllowedMethods {
+    type Target = [String];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for AllowedMethods {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<'a> IntoIterator for &'a AllowedMethods {
+    type Item = &'a String;
+    type IntoIter = std::slice::Iter<'a, String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+impl IntoIterator for AllowedMethods {
+    type Item = String;
+    type IntoIter = std::vec::IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 

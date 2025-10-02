@@ -163,22 +163,19 @@ impl CorsOptions {
             return Err(ValidationError::AllowedHeadersListCannotContainWildcard);
         }
 
-        match &self.methods {
-            AllowedMethods::List(values) => {
-                if values.iter().any(|value| value.trim().is_empty()) {
-                    return Err(ValidationError::AllowedMethodsCannotContainEmptyToken);
-                }
-                if values.iter().any(|value| value.trim() == "*") {
-                    return Err(ValidationError::AllowedMethodsCannotContainWildcard);
-                }
-                if values
-                    .iter()
-                    .map(|value| value.trim())
-                    .any(|value| !is_http_token(value))
-                {
-                    return Err(ValidationError::AllowedMethodsListContainsInvalidToken);
-                }
-            }
+        if self.methods.iter().any(|value| value.trim().is_empty()) {
+            return Err(ValidationError::AllowedMethodsCannotContainEmptyToken);
+        }
+        if self.methods.iter().any(|value| value.trim() == "*") {
+            return Err(ValidationError::AllowedMethodsCannotContainWildcard);
+        }
+        if self
+            .methods
+            .iter()
+            .map(|value| value.trim())
+            .any(|value| !is_http_token(value))
+        {
+            return Err(ValidationError::AllowedMethodsListContainsInvalidToken);
         }
 
         if let AllowedHeaders::List(values) = &self.allowed_headers

@@ -94,10 +94,6 @@ mod allows_headers {
     }
 
     #[test]
-    fn when_mirror_request_should_allow_all_headers() {
-    }
-
-    #[test]
     fn should_validate_case_insensitively_given_list() {
         let headers = AllowedHeaders::list(["X-Custom", "Content-Type"]);
         assert!(headers.allows_headers("x-custom, content-type"));
