@@ -504,6 +504,30 @@ mod origin_type {
         }
 
         #[test]
+        fn should_return_disallow_decision_when_origin_length_exceeds_limit_then_block_request() {
+            let origin = Origin::any();
+            let ctx = request_context("GET", "https://edge.test");
+            let long_origin = format!("https://{}", "a".repeat(super::MAX_ORIGIN_LENGTH + 10));
+
+            let decision = origin.resolve(Some(&long_origin), &ctx);
+
+            assert!(matches!(decision, OriginDecision::Disallow));
+        }
+
+        #[test]
+        fn should_match_unicode_origins_case_insensitively_then_allow_exact_origin() {
+            let origin = Origin::exact("https://TÉST.dev");
+            let ctx = request_context("GET", "https://tést.dev");
+
+            let decision = origin.resolve(Some("https://tést.dev"), &ctx);
+
+            match decision {
+                OriginDecision::Exact(value) => assert_eq!(value, "https://TÉST.dev"),
+                _ => panic!("expected exact decision"),
+            }
+        }
+
+        #[test]
         fn should_return_skip_decision_when_origin_list_missing_request_origin_then_skip_processing()
          {
             let origin = Origin::list(["https://api.test"]);

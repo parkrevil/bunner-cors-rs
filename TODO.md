@@ -77,18 +77,7 @@
 - [ ] 보안 정책 설명
 - [ ] 책임 있는 공개 절차
 
-### 8. 테스트 코드 개선
-- [ ] 모든 `panic!()` 호출을 더 나은 에러 메시지로 개선
-  - [ ] `src/allowed_headers_test.rs` (5개 위치)
-  - [ ] `src/allowed_methods_test.rs`
-  - [ ] `src/cors_test.rs` (20+ 위치)
-  - [ ] `src/header_builder_test.rs`
-  - [ ] 기타 테스트 파일들
-- [ ] `assert_matches!` 매크로 고려 또는 더 나은 패턴 사용
-- [ ] 테스트 실패 시 더 명확한 디버깅 정보 제공
-
 ### 9. CORS 표준 준수 강화
-- [x] ~~`Origin: null` 명시적 처리 추가~~
 - [ ] CORS-safelisted headers 자동 허용 검토
   - Accept
   - Accept-Language
@@ -97,7 +86,6 @@
 - [ ] CORS-safelisted methods 자동 허용 검토
   - GET, HEAD, POST
 - [ ] Preflight max-age 권장값 문서화 (1-86400초)
-- [x] ~~응답 헤더 순서 최적화 (Vary를 먼저)~~
 
 ### 10. 벤치마크 추가
 - [ ] `benches/` 디렉토리 생성
@@ -121,14 +109,6 @@
   - [ ] WHATWG Fetch Standard
   - [ ] W3C CORS Recommendation
   - [ ] Private Network Access Draft
-
-### 12. 에러 처리 개선
-- [ ] `CorsError` enum 확장:
-  - [ ] RegexTimeout 에러 추가
-  - [ ] InvalidOriginPattern 에러 추가
-  - [ ] InvalidHeaderToken 에러 추가
-- [ ] 모든 에러에 사용자 친화적 메시지 추가
-- [ ] 에러 복구 가이드 추가
 
 ### 13. 성능 최적화
 - [ ] 헤더 할당 최적화 (pool 패턴 검토)
@@ -155,18 +135,11 @@
 
 ## 🔵 Low Priority (Future Enhancements)
 
-### 16. 추가 기능
-- [ ] Middleware 래퍼 제공 (tower-layer)
-- [ ] Async 지원 검토
-- [ ] 설정 직렬화/역직렬화 (serde)
-- [ ] 동적 설정 업데이트 지원
-- [ ] 메트릭/로깅 통합
-
 ### 17. Edge Cases 처리
-- [ ] 매우 긴 Origin 처리
-- [ ] 비정상적인 헤더 값 처리
-- [ ] Unicode Origin 처리
-- [ ] IDN (Internationalized Domain Names) 지원
+  - [x] 매우 긴 Origin 처리 (길이 4,096자 초과 요청 차단)
+  - [ ] 비정상적인 헤더 값 처리
+  - [x] Unicode Origin 처리 (비-ASCII 케이스 폴딩 지원)
+  - [ ] IDN (Internationalized Domain Names) 지원
 
 ### 18. 문서 추가
 - [ ] Architecture Decision Records (ADR)
@@ -175,17 +148,12 @@
 - [ ] FAQ 섹션
 - [ ] Troubleshooting 가이드
 
-### 19. 커뮤니티
-- [ ] Discord/Slack 채널
-- [ ] 정기적인 릴리스 노트
-- [ ] 블로그 포스트/튜토리얼
-- [ ] Conference 발표 검토
-
 ### 20. 안정성
 - [ ] Fuzzing 테스트 추가
 - [ ] Mutation 테스트
-- [ ] Property-based 테스트 확대
-- [ ] Integration 테스트 확대
+  - [ ] Property-based 테스트 확대
+  - [ ] Integration 테스트 확대
+  - [x] Unicode/초과 길이 Origin 회귀 테스트 추가
 - [ ] Stress 테스트
 
 ---

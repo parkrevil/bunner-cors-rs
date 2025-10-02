@@ -1,3 +1,4 @@
+use crate::case::equals_ignore_case;
 use crate::context::RequestContext;
 use regex_automata::meta::{BuildError, Regex};
 use std::fmt;
@@ -105,6 +106,7 @@ impl std::error::Error for PatternError {
 
 const PATTERN_COMPILE_BUDGET: Duration = Duration::from_millis(100);
 const MAX_PATTERN_LENGTH: usize = 50_000;
+const MAX_ORIGIN_LENGTH: usize = 4_096;
 
 #[derive(Clone)]
 pub enum OriginMatcher {
@@ -155,7 +157,7 @@ impl OriginMatcher {
 
     pub fn matches(&self, candidate: &str) -> bool {
         match self {
-            OriginMatcher::Exact(value) => value.eq_ignore_ascii_case(candidate),
+            OriginMatcher::Exact(value) => equals_ignore_case(value, candidate),
             OriginMatcher::Pattern(regex) => regex.is_match(candidate.as_bytes()),
             OriginMatcher::Bool(value) => *value,
         }
@@ -223,13 +225,19 @@ impl Origin {
         request_origin: Option<&str>,
         ctx: &RequestContext<'_>,
     ) -> OriginDecision {
+        if let Some(origin) = request_origin
+            && origin.len() > MAX_ORIGIN_LENGTH
+        {
+            return OriginDecision::Disallow;
+        }
+
         match self {
             Origin::Any => match request_origin {
                 Some(_) => OriginDecision::Any,
                 None => OriginDecision::Skip,
             },
             Origin::Exact(value) => match request_origin {
-                Some(origin) if value.eq_ignore_ascii_case(origin) => {
+                Some(origin) if equals_ignore_case(value, origin) => {
                     OriginDecision::Exact(value.clone())
                 }
                 Some(_) => OriginDecision::Disallow,

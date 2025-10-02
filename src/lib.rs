@@ -1,5 +1,6 @@
 mod allowed_headers;
 mod allowed_methods;
+mod case;
 pub mod constants;
 mod context;
 mod cors;

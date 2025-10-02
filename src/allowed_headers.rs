@@ -1,3 +1,4 @@
+use crate::case::{equals_ignore_case, normalize_lower};
 use std::collections::HashSet;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -22,7 +23,7 @@ impl AllowedHeaders {
         let mut deduped: Vec<String> = Vec::new();
         for value in values.into_iter() {
             let trimmed = value.into().trim().to_string();
-            let key = trimmed.to_ascii_lowercase();
+            let key = normalize_lower(&trimmed);
             if seen.insert(key) {
                 deduped.push(trimmed);
             }
@@ -51,7 +52,7 @@ impl AllowedHeaders {
                     .all(|header| {
                         allowed
                             .iter()
-                            .any(|allowed_header| allowed_header.eq_ignore_ascii_case(header))
+                            .any(|allowed_header| equals_ignore_case(allowed_header, header))
                     })
             }
         }

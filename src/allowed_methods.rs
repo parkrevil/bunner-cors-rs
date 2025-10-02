@@ -1,3 +1,4 @@
+use crate::case::{equals_ignore_case, normalize_lower};
 use crate::constants::method;
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
@@ -15,7 +16,7 @@ impl AllowedMethods {
         let mut deduped: Vec<String> = Vec::new();
         for value in values.into_iter() {
             let trimmed = value.into().trim().to_string();
-            let key = trimmed.to_ascii_lowercase();
+            let key = normalize_lower(&trimmed);
             if seen.insert(key) {
                 deduped.push(trimmed);
             }
@@ -40,7 +41,7 @@ impl AllowedMethods {
 
         self.0
             .iter()
-            .any(|allowed| allowed.eq_ignore_ascii_case(method))
+            .any(|allowed| equals_ignore_case(allowed, method))
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &String> {
