@@ -52,7 +52,8 @@ mod list {
     }
 
     #[test]
-    fn should_retain_single_empty_value_when_list_contains_whitespace_entries_then_preserve_positions() {
+    fn should_retain_single_empty_value_when_list_contains_whitespace_entries_then_preserve_positions()
+     {
         let timing = TimingAllowOrigin::list(["   ", "https://metrics.test"]);
 
         assert_eq!(

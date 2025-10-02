@@ -178,13 +178,17 @@ mod into_iter {
     use super::*;
 
     #[test]
-    fn should_iterate_without_consuming_when_into_iter_called_on_reference_then_preserve_collection() {
+    fn should_iterate_without_consuming_when_into_iter_called_on_reference_then_preserve_collection()
+     {
         let methods = AllowedMethods::list(["DELETE", "TRACE"]);
 
         let collected: Vec<&str> = (&methods).into_iter().map(String::as_str).collect();
 
         assert_eq!(collected, vec!["DELETE", "TRACE"]);
-        assert_eq!(methods.as_slice(), &["DELETE".to_string(), "TRACE".to_string()]);
+        assert_eq!(
+            methods.as_slice(),
+            &["DELETE".to_string(), "TRACE".to_string()]
+        );
     }
 
     #[test]

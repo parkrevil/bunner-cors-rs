@@ -15,7 +15,8 @@ mod new {
     use super::*;
 
     #[test]
-    fn should_return_error_when_allowed_headers_any_with_credentials_enabled_then_fail_validation() {
+    fn should_return_error_when_allowed_headers_any_with_credentials_enabled_then_fail_validation()
+    {
         let result = Cors::new(CorsOptions {
             origin: Origin::exact("https://wild.dev"),
             credentials: true,
@@ -66,7 +67,8 @@ mod check {
     }
 
     #[test]
-    fn should_emit_wildcard_header_when_allowed_headers_any_and_request_headers_missing_then_return_star() {
+    fn should_emit_wildcard_header_when_allowed_headers_any_and_request_headers_missing_then_return_star()
+     {
         let cors = cors().allowed_headers(AllowedHeaders::any()).build();
 
         let headers = assert_preflight(

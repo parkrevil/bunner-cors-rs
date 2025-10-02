@@ -441,7 +441,8 @@ mod origin_type {
         }
 
         #[test]
-        fn should_return_skip_decision_when_origin_exact_missing_request_origin_then_skip_processing() {
+        fn should_return_skip_decision_when_origin_exact_missing_request_origin_then_skip_processing()
+         {
             let origin = Origin::exact("https://app.test");
             let ctx = request_context("GET", "https://app.test");
 
@@ -471,7 +472,8 @@ mod origin_type {
         }
 
         #[test]
-        fn should_return_disallow_decision_when_origin_list_has_different_scheme_then_block_origin() {
+        fn should_return_disallow_decision_when_origin_list_has_different_scheme_then_block_origin()
+        {
             let origin = Origin::list(["https://api.test"]);
             let ctx = request_context("GET", "http://api.test");
 
@@ -481,7 +483,8 @@ mod origin_type {
         }
 
         #[test]
-        fn should_return_disallow_decision_when_origin_list_contains_false_matcher_then_block_origin() {
+        fn should_return_disallow_decision_when_origin_list_contains_false_matcher_then_block_origin()
+         {
             let origin = Origin::list([OriginMatcher::Bool(false)]);
             let ctx = request_context("GET", "https://api.test");
 
@@ -501,7 +504,8 @@ mod origin_type {
         }
 
         #[test]
-        fn should_return_skip_decision_when_origin_list_missing_request_origin_then_skip_processing() {
+        fn should_return_skip_decision_when_origin_list_missing_request_origin_then_skip_processing()
+         {
             let origin = Origin::list(["https://api.test"]);
             let ctx = request_context("GET", "");
 
@@ -511,7 +515,8 @@ mod origin_type {
         }
 
         #[test]
-        fn should_return_mirror_decision_when_origin_list_contains_null_string_then_allow_null_origin() {
+        fn should_return_mirror_decision_when_origin_list_contains_null_string_then_allow_null_origin()
+         {
             let origin = Origin::list(["null"]);
             let ctx = request_context("GET", "null");
 
@@ -521,7 +526,8 @@ mod origin_type {
         }
 
         #[test]
-        fn should_return_any_decision_when_origin_any_receives_null_string_then_allow_null_origin() {
+        fn should_return_any_decision_when_origin_any_receives_null_string_then_allow_null_origin()
+        {
             let origin = Origin::any();
             let ctx = request_context("GET", "null");
 
@@ -595,7 +601,8 @@ mod origin_type {
         }
 
         #[test]
-        fn should_return_disallow_decision_when_custom_callback_receives_no_origin_then_handle_missing_header() {
+        fn should_return_disallow_decision_when_custom_callback_receives_no_origin_then_handle_missing_header()
+         {
             let origin = Origin::custom(|origin, _| {
                 assert!(origin.is_none());
                 OriginDecision::Disallow

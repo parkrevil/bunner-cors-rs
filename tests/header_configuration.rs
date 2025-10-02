@@ -18,7 +18,8 @@ mod check {
         use std::collections::HashSet;
 
         #[test]
-        fn should_emit_configured_headers_when_preflight_has_explicit_headers_then_return_configured_list() {
+        fn should_emit_configured_headers_when_preflight_has_explicit_headers_then_return_configured_list()
+         {
             let cors = cors()
                 .allowed_headers(AllowedHeaders::list(["Content-Type", "X-Custom"]))
                 .build();
@@ -40,7 +41,8 @@ mod check {
         }
 
         #[test]
-        fn should_emit_single_vary_entry_when_preflight_matches_exact_origin_then_return_unique_vary() {
+        fn should_emit_single_vary_entry_when_preflight_matches_exact_origin_then_return_unique_vary()
+         {
             let cors = cors()
                 .origin(Origin::exact("https://allowed.dev"))
                 .allowed_headers(AllowedHeaders::list(["X-Test"]))
@@ -58,7 +60,8 @@ mod check {
         }
 
         #[test]
-        fn should_contain_unique_vary_entries_when_preflight_emits_multiple_headers_then_avoid_duplicates() {
+        fn should_contain_unique_vary_entries_when_preflight_emits_multiple_headers_then_avoid_duplicates()
+         {
             let cors = cors()
                 .origin(Origin::exact("https://allowed.dev"))
                 .allowed_headers(AllowedHeaders::list(["X-Test"]))
@@ -180,17 +183,14 @@ mod check {
         use super::*;
 
         #[test]
-        fn should_emit_credentials_and_expose_headers_when_simple_request_configured_then_return_headers() {
+        fn should_emit_credentials_and_expose_headers_when_simple_request_configured_then_return_headers()
+         {
             let cors = cors()
                 .credentials(true)
                 .exposed_headers(["X-Response-Time", "X-Trace"])
                 .build();
 
-            let headers = assert_simple(
-                simple_request()
-                    .origin("https://foo.bar")
-                    .check(&cors),
-            );
+            let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
 
             assert_header_eq(&headers, header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
             assert_header_eq(
@@ -204,11 +204,7 @@ mod check {
         fn should_omit_allow_credentials_when_credentials_disabled_then_skip_header() {
             let cors = cors().build();
 
-            let headers = assert_simple(
-                simple_request()
-                    .origin("https://foo.bar")
-                    .check(&cors),
-            );
+            let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
 
             assert!(!has_header(
                 &headers,
@@ -243,11 +239,7 @@ mod check {
                 ])
                 .build();
 
-            let headers = assert_simple(
-                simple_request()
-                    .origin("https://foo.bar")
-                    .check(&cors),
-            );
+            let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
 
             let exposed = header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS).unwrap();
             assert!(exposed.contains("X-Header-1"));
@@ -258,11 +250,7 @@ mod check {
         fn should_emit_timing_allow_origin_when_simple_request_has_wildcard_then_return_star() {
             let cors = cors().timing_allow_origin(TimingAllowOrigin::any()).build();
 
-            let headers = assert_simple(
-                simple_request()
-                    .origin("https://foo.bar")
-                    .check(&cors),
-            );
+            let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
 
             assert_header_eq(&headers, header::TIMING_ALLOW_ORIGIN, "*");
         }

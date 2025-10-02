@@ -44,7 +44,8 @@ mod add_vary {
     use super::*;
 
     #[test]
-    fn should_store_unique_entries_when_values_have_mixed_case_then_deduplicate_case_insensitively() {
+    fn should_store_unique_entries_when_values_have_mixed_case_then_deduplicate_case_insensitively()
+    {
         let mut collection = HeaderCollection::new();
 
         collection.add_vary("Origin");

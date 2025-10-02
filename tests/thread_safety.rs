@@ -12,7 +12,8 @@ mod check {
     use super::*;
 
     #[test]
-    fn should_allow_sharing_cors_when_multiple_threads_execute_checks_then_return_consistent_headers() {
+    fn should_allow_sharing_cors_when_multiple_threads_execute_checks_then_return_consistent_headers()
+     {
         let cors = Arc::new(
             cors()
                 .origin(Origin::any())

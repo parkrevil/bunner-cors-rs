@@ -409,7 +409,8 @@ mod process_preflight {
     }
 
     #[test]
-    fn should_omit_private_network_header_when_private_network_disabled_then_skip_preflight_header() {
+    fn should_omit_private_network_header_when_private_network_disabled_then_skip_preflight_header()
+    {
         let cors = Cors::new(CorsOptions::default()).expect("valid CORS configuration");
         let original = request_with_private_network("OPTIONS", "https://intranet.test", "GET", "");
 
@@ -562,7 +563,8 @@ mod process_simple {
     }
 
     #[test]
-    fn should_emit_timing_allow_origin_header_when_configuration_allows_then_return_wildcard_value() {
+    fn should_emit_timing_allow_origin_header_when_configuration_allows_then_return_wildcard_value()
+    {
         let cors = Cors::new(CorsOptions {
             timing_allow_origin: Some(TimingAllowOrigin::any()),
             ..CorsOptions::default()

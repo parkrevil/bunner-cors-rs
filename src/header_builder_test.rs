@@ -158,7 +158,8 @@ mod build_origin_headers {
     }
 
     #[test]
-    fn should_return_error_when_custom_origin_returns_any_with_credentials_then_reject_configuration() {
+    fn should_return_error_when_custom_origin_returns_any_with_credentials_then_reject_configuration()
+     {
         let base = options_with_origin(Origin::custom(|_, _| OriginDecision::Any));
         let options = CorsOptions {
             credentials: true,
@@ -512,7 +513,8 @@ mod build_private_network_header {
     use super::*;
 
     #[test]
-    fn should_emit_allow_private_network_header_when_request_includes_private_network_then_return_true_value() {
+    fn should_emit_allow_private_network_header_when_request_includes_private_network_then_return_true_value()
+     {
         let options = CorsOptions {
             allow_private_network: true,
             ..CorsOptions::default()
@@ -568,7 +570,8 @@ mod build_private_network_header {
     }
 
     #[test]
-    fn should_emit_allow_private_network_header_when_request_method_lowercase_then_allow_private_network() {
+    fn should_emit_allow_private_network_header_when_request_method_lowercase_then_allow_private_network()
+     {
         let options = CorsOptions {
             allow_private_network: true,
             ..CorsOptions::default()

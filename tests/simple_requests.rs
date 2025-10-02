@@ -13,11 +13,7 @@ mod check {
     fn should_allow_any_origin_when_default_simple_request_then_return_wildcard() {
         let cors = cors().build();
 
-        let headers = assert_simple(
-            simple_request()
-                .origin("https://example.com")
-                .check(&cors),
-        );
+        let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
 
         assert_eq!(
             header_value(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN),
@@ -36,14 +32,11 @@ mod check {
     }
 
     #[test]
-    fn should_emit_expose_headers_when_simple_request_configures_expose_headers_then_return_value() {
+    fn should_emit_expose_headers_when_simple_request_configures_expose_headers_then_return_value()
+    {
         let cors = cors().exposed_headers(["X-Trace", "X-Auth"]).build();
 
-        let headers = assert_simple(
-            simple_request()
-                .origin("https://example.com")
-                .check(&cors),
-        );
+        let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
 
         assert_eq!(
             header_value(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
@@ -55,11 +48,7 @@ mod check {
     fn should_omit_expose_headers_when_not_configured_then_keep_absent() {
         let cors = cors().build();
 
-        let headers = assert_simple(
-            simple_request()
-                .origin("https://example.com")
-                .check(&cors),
-        );
+        let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
 
         assert!(
             !has_header(&headers, header::ACCESS_CONTROL_EXPOSE_HEADERS),
@@ -68,18 +57,15 @@ mod check {
     }
 
     #[test]
-    fn should_omit_private_network_header_when_simple_request_has_private_network_support_then_skip_header() {
+    fn should_omit_private_network_header_when_simple_request_has_private_network_support_then_skip_header()
+     {
         let cors = cors()
             .origin(Origin::exact("https://example.com"))
             .credentials(true)
             .private_network(true)
             .build();
 
-        let headers = assert_simple(
-            simple_request()
-                .origin("https://example.com")
-                .check(&cors),
-        );
+        let headers = assert_simple(simple_request().origin("https://example.com").check(&cors));
 
         assert!(
             !has_header(&headers, header::ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK),
@@ -88,18 +74,15 @@ mod check {
     }
 
     #[test]
-    fn should_omit_sensitive_headers_when_simple_request_origin_disallowed_then_exclude_sensitive() {
+    fn should_omit_sensitive_headers_when_simple_request_origin_disallowed_then_exclude_sensitive()
+    {
         let cors = cors()
             .origin(Origin::list(["https://allowed.example"]))
             .credentials(true)
             .exposed_headers(["X-Trace"])
             .build();
 
-        let headers = assert_simple(
-            simple_request()
-                .origin("https://deny.example")
-                .check(&cors),
-        );
+        let headers = assert_simple(simple_request().origin("https://deny.example").check(&cors));
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert!(!has_header(
