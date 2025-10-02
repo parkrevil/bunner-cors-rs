@@ -1,4 +1,4 @@
-use crate::case::equals_ignore_case;
+use crate::util::equals_ignore_case;
 use crate::context::RequestContext;
 use regex_automata::meta::{BuildError, Regex};
 use std::fmt;

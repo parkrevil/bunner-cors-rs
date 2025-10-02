@@ -1,5 +1,5 @@
-use crate::case::{equals_ignore_case, normalize_lower};
 use crate::constants::method;
+use crate::util::{equals_ignore_case, normalize_lower};
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 

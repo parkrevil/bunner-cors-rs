@@ -1,4 +1,4 @@
-use crate::case::{equals_ignore_case, normalize_lower};
+use crate::util::{equals_ignore_case, normalize_lower};
 use std::collections::HashSet;
 
 #[derive(Clone, PartialEq, Eq)]

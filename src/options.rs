@@ -2,35 +2,9 @@ use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
 use crate::origin::Origin;
 use crate::timing_allow_origin::TimingAllowOrigin;
+use crate::util::is_http_token;
 use std::error::Error;
 use std::fmt::{self, Display};
-
-fn is_http_token(value: &str) -> bool {
-    !value.is_empty()
-        && value.bytes().all(|byte| {
-            matches!(
-                byte,
-                b'0'..=b'9'
-                    | b'A'..=b'Z'
-                    | b'a'..=b'z'
-                    | b'!'
-                    | b'#'
-                    | b'$'
-                    | b'%'
-                    | b'&'
-                    | b'\''
-                    | b'*'
-                    | b'+'
-                    | b'-'
-                    | b'.'
-                    | b'^'
-                    | b'_'
-                    | b'`'
-                    | b'|'
-                    | b'~'
-            )
-        })
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
