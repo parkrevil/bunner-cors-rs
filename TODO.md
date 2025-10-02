@@ -102,11 +102,26 @@
   - [ ] Private Network Access Draft
 
 ### 13. 성능 최적화
-- [ ] 헤더 할당 최적화 (pool 패턴 검토)
-- [ ] 문자열 비교 최적화
-- [ ] 불필요한 clone() 제거
-- [ ] Zero-copy 처리 확대
-- [ ] 프로파일링 및 핫스팟 최적화
+- [ ] **Phase 0 · 관측 및 기준선 확립**
+  - [x] `cargo bench --bench bunner_cors_rs` 기준선 실행 및 결과 스냅샷(alloc/시간) 기록
+  - [ ] flamegraph 또는 `perf record`로 `preflight_large`·`allows_headers_large` 핫스팟 식별
+  - [x] Criterion HTML 리포트/Plotters 그래프를 `docs/perf/criterion-baseline/`에 보관
+- [ ] **Phase 1 · 헤더 할당 최적화**
+  - [x] `AllowedHeaders::allows_headers`를 HashSet 기반 케이스 폴딩 구조로 재구성
+  - [x] 헤더 조합 경로(`HeaderCollection`) 영향도 점검 및 추가 할당 발생 여부 평가
+  - [x] 벤치 재실행으로 `header_evaluation/*` 그룹 15% 이상 개선 목표 검증
+- [ ] **Phase 2 · 문자열 비교 최적화**
+  - [ ] `OriginMatcher::pattern_str` 및 `equals_ignore_case` 호출 빈도 계측
+  - [ ] 정규식 매칭 사전 컴파일/캐시, 소문자 변환 경량화 전략 적용
+  - [ ] `origin_matching/*` 그룹 회귀 해소 및 `preflight_large` 평균 20% 절감 목표 확인
+- [ ] **Phase 3 · clone 감소 & Zero-copy**
+  - [ ] `CorsOptions::process_preflight`/`process_simple` 내 `to_string`/`clone` 호출 위치 감사
+  - [ ] `NormalizedRequest`와 헤더 빌더 간 참조 전달로 복제 제거, 필요한 경우 `Arc<str>` 도입 검토
+  - [ ] scaling 벤치 `preflight_large/128` 메모리 할당 25% 이상 감소 목표 측정
+- [ ] **Phase 4 · 회귀 방지 장치**
+  - [ ] `Makefile`에 `bench-compare` 타겟 추가(`cargo criterion --baseline main` 활용)
+  - [ ] README `Performance` 섹션에 최신 수치와 최적화 포인트 정리
+  - [ ] CI에 주간 벤치 리포트 업로드 워크플로우 설계
 
 ### 14. 통합 예제
 - [ ] `examples/` 디렉토리 생성

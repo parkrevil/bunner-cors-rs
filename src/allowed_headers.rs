@@ -1,15 +1,16 @@
-use crate::util::{equals_ignore_case, normalize_lower};
+use crate::util::normalize_lower;
 use std::collections::HashSet;
+use std::ops::Deref;
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum AllowedHeaders {
     Any,
-    List(Vec<String>),
+    List(AllowedHeaderList),
 }
 
 impl Default for AllowedHeaders {
     fn default() -> Self {
-        AllowedHeaders::List(Vec::new())
+        AllowedHeaders::List(AllowedHeaderList::default())
     }
 }
 
@@ -29,7 +30,7 @@ impl AllowedHeaders {
             }
         }
 
-        Self::List(deduped)
+        Self::List(AllowedHeaderList::new(deduped, seen))
     }
 
     pub fn any() -> Self {
@@ -39,23 +40,48 @@ impl AllowedHeaders {
     pub fn allows_headers(&self, request_headers: &str) -> bool {
         match self {
             Self::Any => true,
-            Self::List(allowed) => {
-                let request_headers = request_headers.trim();
-                if request_headers.is_empty() {
-                    return true;
-                }
-
-                request_headers
-                    .split(',')
-                    .map(|value| value.trim())
-                    .filter(|value| !value.is_empty())
-                    .all(|header| {
-                        allowed
-                            .iter()
-                            .any(|allowed_header| equals_ignore_case(allowed_header, header))
-                    })
-            }
+            Self::List(allowed) => allowed.allows_headers(request_headers),
         }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Default)]
+pub struct AllowedHeaderList {
+    values: Vec<String>,
+    normalized: HashSet<String>,
+}
+
+impl AllowedHeaderList {
+    fn new(values: Vec<String>, normalized: HashSet<String>) -> Self {
+        Self { values, normalized }
+    }
+
+    pub fn values(&self) -> &[String] {
+        &self.values
+    }
+
+    fn allows_headers(&self, request_headers: &str) -> bool {
+        let request_headers = request_headers.trim();
+        if request_headers.is_empty() {
+            return true;
+        }
+
+        request_headers
+            .split(',')
+            .map(|value| value.trim())
+            .filter(|value| !value.is_empty())
+            .all(|header| {
+                let normalized = normalize_lower(header);
+                self.normalized.contains(normalized.as_str())
+            })
+    }
+}
+
+impl Deref for AllowedHeaderList {
+    type Target = [String];
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
     }
 }
 

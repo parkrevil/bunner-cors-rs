@@ -9,10 +9,15 @@ mod list {
 
         let result = AllowedHeaders::list(input);
 
-        assert!(matches!(
-            result,
-            AllowedHeaders::List(values) if values == vec!["Content-Type", "X-Custom"]
-        ));
+        match result {
+            AllowedHeaders::List(list) => {
+                assert_eq!(
+                    list.values(),
+                    &["Content-Type".to_string(), "X-Custom".to_string()]
+                );
+            }
+            _ => panic!("expected list variant"),
+        }
     }
 
     #[test]
@@ -21,10 +26,12 @@ mod list {
 
         let result = AllowedHeaders::list(input);
 
-        assert!(matches!(
-            result,
-            AllowedHeaders::List(values) if values.is_empty()
-        ));
+        match result {
+            AllowedHeaders::List(list) => {
+                assert!(list.values().is_empty());
+            }
+            _ => panic!("expected list variant"),
+        }
     }
 
     #[test]
@@ -33,11 +40,12 @@ mod list {
 
         let result = AllowedHeaders::list(input);
 
-        assert!(matches!(
-            result,
-            AllowedHeaders::List(values)
-                if values == vec![String::new(), "X-Custom".to_string()]
-        ));
+        match result {
+            AllowedHeaders::List(list) => {
+                assert_eq!(list.values(), &[String::new(), "X-Custom".to_string()]);
+            }
+            _ => panic!("expected list variant"),
+        }
     }
 
     #[test]
@@ -46,11 +54,32 @@ mod list {
 
         let result = AllowedHeaders::list(input);
 
-        assert!(matches!(
-            result,
-            AllowedHeaders::List(values)
-                if values == vec!["X-Trace".to_string(), "X-Other".to_string()]
-        ));
+        match result {
+            AllowedHeaders::List(list) => {
+                assert_eq!(
+                    list.values(),
+                    &["X-Trace".to_string(), "X-Other".to_string()]
+                );
+            }
+            _ => panic!("expected list variant"),
+        }
+    }
+
+    #[test]
+    fn should_store_normalized_lookup_set_when_values_mixed_case_then_support_case_insensitive_queries()
+     {
+        let input = ["X-Trace", "X-Other"];
+
+        let result = AllowedHeaders::list(input);
+
+        match result {
+            AllowedHeaders::List(list) => {
+                assert!(list.allows_headers("x-trace"));
+                assert!(list.allows_headers("X-other"));
+                assert!(!list.allows_headers("x-missing"));
+            }
+            _ => panic!("expected list variant"),
+        }
     }
 }
 
@@ -72,10 +101,12 @@ mod default {
     fn should_return_empty_list_variant_when_default_then_match_constructor() {
         let value = AllowedHeaders::default();
 
-        assert!(matches!(
-            value,
-            AllowedHeaders::List(values) if values.is_empty()
-        ));
+        match value {
+            AllowedHeaders::List(list) => {
+                assert!(list.values().is_empty());
+            }
+            _ => panic!("expected list variant"),
+        }
     }
 }
 
@@ -116,5 +147,24 @@ mod allows_headers {
         let is_allowed = headers.allows_headers("  ");
 
         assert!(is_allowed);
+    }
+
+    #[test]
+    fn should_ignore_extra_commas_and_whitespace_when_request_headers_sparse_then_validate_each_token()
+     {
+        let headers = AllowedHeaders::list(["X-Custom", "Content-Type"]);
+
+        let is_allowed = headers.allows_headers(",, x-custom ,  , CONTENT-TYPE ,, ");
+
+        assert!(is_allowed);
+    }
+
+    #[test]
+    fn should_reject_when_request_contains_disallowed_token_amidst_allowed_headers() {
+        let headers = AllowedHeaders::list(["X-Custom", "Content-Type"]);
+
+        let is_allowed = headers.allows_headers("content-type, x-forbidden, x-custom");
+
+        assert!(!is_allowed);
     }
 }
