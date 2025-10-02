@@ -1,5 +1,5 @@
-use crate::util::equals_ignore_case;
 use crate::context::RequestContext;
+use crate::util::equals_ignore_case;
 use regex_automata::meta::{BuildError, Regex};
 use std::fmt;
 use std::sync::Arc;

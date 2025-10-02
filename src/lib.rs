@@ -1,6 +1,5 @@
 mod allowed_headers;
 mod allowed_methods;
-mod util;
 pub mod constants;
 mod context;
 mod cors;
@@ -11,6 +10,7 @@ mod options;
 mod origin;
 mod result;
 mod timing_allow_origin;
+mod util;
 
 pub use allowed_headers::AllowedHeaders;
 pub use allowed_methods::AllowedMethods;
