@@ -33,11 +33,7 @@ impl<'a> HeaderBuilder<'a> {
             Some(normalized_origin)
         };
 
-        match self
-            .options
-            .origin
-            .resolve(request_origin, normalized)
-        {
+        match self.options.origin.resolve(request_origin, normalized) {
             OriginDecision::Any => {
                 if self.options.credentials {
                     return Err(CorsError::InvalidOriginAnyWithCredentials);

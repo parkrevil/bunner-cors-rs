@@ -106,9 +106,7 @@ impl CorsBuilder {
             exposed_headers: self.exposed_headers.or(default_exposed_headers),
             credentials,
             max_age: self.max_age.or(default_max_age),
-            allow_null_origin: self
-                .allow_null_origin
-                .unwrap_or(default_allow_null_origin),
+            allow_null_origin: self.allow_null_origin.unwrap_or(default_allow_null_origin),
             allow_private_network: self.private_network.unwrap_or(default_private_network),
             timing_allow_origin: self.timing_allow_origin.or(default_timing_allow_origin),
         })
