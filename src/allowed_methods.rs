@@ -38,8 +38,7 @@ impl AllowedMethods {
             return false;
         }
 
-        self
-            .0
+        self.0
             .iter()
             .any(|allowed| allowed.eq_ignore_ascii_case(method))
     }
