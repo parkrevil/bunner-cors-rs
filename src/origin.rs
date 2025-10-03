@@ -211,19 +211,18 @@ impl CompiledOriginList {
             }
         }
 
-        if !self.unicode_exact.is_empty() && !candidate.is_ascii() {
-            let matched = ORIGIN_UNICODE_BUFFER.with(|buffer| {
+        if !self.unicode_exact.is_empty()
+            && !candidate.is_ascii()
+            && ORIGIN_UNICODE_BUFFER.with(|buffer| {
                 let mut buffer = buffer.borrow_mut();
                 if lowercase_unicode_into(candidate, &mut buffer) {
                     self.unicode_exact.contains(buffer.as_str())
                 } else {
                     self.unicode_exact.contains(candidate)
                 }
-            });
-
-            if matched {
-                return true;
-            }
+            })
+        {
+            return true;
         }
 
         let haystack = candidate.as_bytes();

@@ -245,6 +245,18 @@ mod build_origin_headers {
             Some(&"https://API.test".to_string())
         );
     }
+
+    #[test]
+    fn should_return_skip_when_normalized_origin_missing_then_skip_processing() {
+        let options = options_with_origin(Origin::any());
+        let builder = HeaderBuilder::new(&options);
+        let original = request("GET", "", "", "");
+        let normalized = request("GET", "", "", "");
+
+        let outcome = builder.build_origin_headers(&original, &normalized);
+
+        expect_skip(outcome);
+    }
 }
 
 mod build_methods_header {

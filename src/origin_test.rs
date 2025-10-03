@@ -240,6 +240,54 @@ mod origin_matcher {
 
             assert!(matches!(result, Err(PatternError::Timeout { .. })));
         }
+
+        #[test]
+        fn should_compile_with_budget_then_cache_pattern() {
+            super::clear_regex_cache();
+            let pattern = r"^https://budget\.test$";
+
+            let matcher =
+                OriginMatcher::pattern_str_with_budget(pattern, Duration::from_millis(25))
+                    .expect("pattern should compile within budget");
+
+            assert!(matches!(matcher, OriginMatcher::Pattern(_)));
+            assert!(super::regex_cache_contains(pattern));
+
+            super::clear_regex_cache();
+        }
+
+        #[test]
+        fn should_recover_from_poisoned_cache_then_continue_operations() {
+            use std::panic::{catch_unwind, AssertUnwindSafe};
+
+            super::clear_regex_cache();
+
+            let poison_lock = || {
+                let _ = catch_unwind(AssertUnwindSafe(|| {
+                    let _guard = super::super::REGEX_CACHE.write().unwrap();
+                    panic!("poison cache");
+                }));
+            };
+
+            let pattern = r"^https://poisoned\.test$";
+
+            poison_lock();
+            assert!(super::super::OriginMatcher::cached_pattern(pattern).is_none());
+
+            poison_lock();
+            let regex = Regex::new(pattern).unwrap();
+            super::super::OriginMatcher::cache_pattern(pattern, &regex);
+
+            assert!(super::super::OriginMatcher::cached_pattern(pattern).is_some());
+
+            poison_lock();
+            assert!(super::regex_cache_contains(pattern));
+            assert_eq!(super::regex_cache_size(), 1);
+
+            poison_lock();
+            super::clear_regex_cache();
+            assert_eq!(super::regex_cache_size(), 0);
+        }
     }
 
     mod matches_fn {
@@ -304,6 +352,151 @@ mod origin_matcher {
 
             assert!(matches!(matcher, OriginMatcher::Bool(true)));
         }
+    }
+}
+
+mod origin_list_behavior {
+    use super::*;
+    use regex_automata::meta::Regex;
+
+    fn list_from<I, T>(values: I) -> OriginList
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<OriginMatcher>,
+    {
+        match Origin::list(values) {
+            Origin::List(list) => list,
+            _ => unreachable!(),
+        }
+    }
+
+    #[test]
+    fn should_report_empty_when_no_matchers_then_return_true() {
+        let list = list_from(Vec::<OriginMatcher>::new());
+
+        assert!(list.is_empty());
+        assert_eq!(list.len(), 0);
+    }
+
+    #[test]
+    fn should_iterate_insertion_order_when_iter_called_then_return_matchers() {
+        let list = list_from([
+            OriginMatcher::exact("https://one.test"),
+            OriginMatcher::exact("https://two.test"),
+        ]);
+
+        let collected: Vec<_> = list
+            .iter()
+            .map(|matcher| match matcher {
+                OriginMatcher::Exact(value) => value.as_str(),
+                _ => "unexpected",
+            })
+            .collect();
+
+        assert_eq!(collected, vec!["https://one.test", "https://two.test"]);
+    }
+
+    #[test]
+    fn should_use_linear_scan_when_list_small_then_match_via_original_matchers() {
+        let list = list_from([
+            OriginMatcher::pattern(Regex::new(r"^https://allowed\.service$").unwrap()),
+            OriginMatcher::exact("https://fallback.test"),
+        ]);
+
+        assert!(list.matches("https://allowed.service"));
+        assert!(list.matches("https://FALLBACK.TEST"));
+        assert!(!list.matches("https://denied.service"));
+    }
+
+    #[test]
+    fn should_use_ascii_hash_lookup_when_many_matchers_then_match_case_insensitively() {
+        let list = list_from([
+            OriginMatcher::exact("https://alpha.test"),
+            OriginMatcher::exact("https://beta.test"),
+            OriginMatcher::exact("https://gamma.test"),
+            OriginMatcher::exact("https://delta.test"),
+            OriginMatcher::exact("https://allowed.test"),
+        ]);
+
+        assert!(list.matches("https://ALLOWED.TEST"));
+        assert!(!list.matches("https://blocked.test"));
+    }
+
+    #[test]
+    fn should_match_unicode_exact_when_candidate_requires_case_folding_then_normalize() {
+        let list = list_from([
+            OriginMatcher::exact("Straße"),
+            OriginMatcher::exact("München"),
+            OriginMatcher::exact("東京"),
+            OriginMatcher::exact("Δelta"),
+            OriginMatcher::exact("пример"),
+        ]);
+
+        assert!(list.matches("Straße"));
+        assert!(list.matches("straße"));
+    }
+
+    #[test]
+    fn should_match_unicode_exact_when_linear_scan_disabled_then_use_compiled_set() {
+        let matchers = vec![
+            OriginMatcher::exact("Straße".to_string()),
+            OriginMatcher::exact("Ålesund".to_string()),
+            OriginMatcher::exact("東京".to_string()),
+            OriginMatcher::exact("Δelta".to_string()),
+            OriginMatcher::exact("пример".to_string()),
+        ];
+        let compiled = super::CompiledOriginList::compile(&matchers);
+
+        assert!(!compiled.prefer_linear_scan);
+        assert!(compiled.matches("Straße", &matchers));
+        assert!(compiled.matches("straße", &matchers));
+    }
+
+    #[test]
+    fn should_match_using_regex_when_no_exact_match_then_use_compiled_pattern() {
+        let list = list_from([
+            OriginMatcher::exact("https://alpha.test"),
+            OriginMatcher::exact("https://beta.test"),
+            OriginMatcher::exact("https://gamma.test"),
+            OriginMatcher::exact("https://delta.test"),
+            OriginMatcher::pattern(Regex::new(r"^https://allowed\..+$").unwrap()),
+        ]);
+
+        assert!(list.matches("https://allowed.service"));
+        assert!(!list.matches("https://denied.service"));
+    }
+}
+
+mod ascii_case_helpers {
+    #[test]
+    fn should_compare_ascii_exact_structs_case_insensitively() {
+        let left = super::AsciiExact::new("HTTPS://API.TEST".to_string());
+        let right = super::AsciiExact::new("https://api.test".to_string());
+
+        assert!(super::AsciiExact::eq(&left, &right));
+        assert!(super::AsciiExact::eq(&right, &left));
+    }
+
+    #[test]
+    fn should_compare_ascii_exact_with_case_insensitive_wrapper_then_ignore_case() {
+        let exact = super::AsciiExact::new("HTTPS://API.TEST".to_string());
+        let wrapper = super::AsciiCaseInsensitive::new("https://api.test");
+
+        assert!(<super::AsciiExact as PartialEq<super::AsciiCaseInsensitive>>::eq(
+            &exact,
+            wrapper,
+        ));
+    }
+
+    #[test]
+    fn should_compare_case_insensitive_wrapper_with_ascii_exact_then_ignore_case() {
+        let exact = super::AsciiExact::new("https://api.test".to_string());
+        let wrapper = super::AsciiCaseInsensitive::new("HTTPS://API.TEST");
+
+        assert!(<super::AsciiCaseInsensitive as PartialEq<super::AsciiExact>>::eq(
+            wrapper,
+            &exact,
+        ));
     }
 }
 

@@ -36,27 +36,19 @@ pub fn equals_ignore_case(a: &str, b: &str) -> bool {
         let mut buffers = buffers.borrow_mut();
         let (a_buf, b_buf) = &mut *buffers;
 
-        let a_ref = if a_has_upper {
-            if lowercase_unicode_into(a, a_buf) {
-                a_buf.as_str()
-            } else {
-                a
-            }
+        let a_ref = if a_has_upper && lowercase_unicode_into(a, a_buf) {
+            a_buf.as_str()
         } else {
             a
         };
 
-        if !b_has_upper {
-            a_ref == b
+        let b_ref = if b_has_upper && lowercase_unicode_into(b, b_buf) {
+            b_buf.as_str()
         } else {
-            let b_ref = if lowercase_unicode_into(b, b_buf) {
-                b_buf.as_str()
-            } else {
-                b
-            };
+            b
+        };
 
-            a_ref == b_ref
-        }
+        a_ref == b_ref
     })
 }
 

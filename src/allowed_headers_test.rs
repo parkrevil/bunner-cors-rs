@@ -123,6 +123,14 @@ mod allows_headers {
     }
 
     #[test]
+    fn should_allow_all_headers_with_cache_when_any_variant_then_return_true() {
+        let headers = AllowedHeaders::any();
+        let mut cache = AllowedHeadersCache::new();
+
+        assert!(headers.allows_headers_with_cache("x-custom", &mut cache));
+    }
+
+    #[test]
     fn should_allow_headers_when_case_differs_then_accept_request() {
         let headers = AllowedHeaders::list(["X-Custom", "Content-Type"]);
 
@@ -166,5 +174,45 @@ mod allows_headers {
         let is_allowed = headers.allows_headers("content-type, x-forbidden, x-custom");
 
         assert!(!is_allowed);
+    }
+
+    #[test]
+    fn should_allow_headers_when_tokens_filter_to_empty_then_default_to_true() {
+        let headers = AllowedHeaders::list(["X-Custom"]);
+        let mut cache = AllowedHeadersCache::new();
+
+        let is_allowed = headers.allows_headers_with_cache(", , ,", &mut cache);
+
+        assert!(is_allowed);
+    }
+}
+
+mod cache_behavior {
+    use super::*;
+
+    #[test]
+    fn should_reuse_tokens_when_identity_matches_then_skip_normalization() {
+        let mut cache = AllowedHeadersCache::new();
+        let request = "X-Custom";
+
+        let first = cache.prepare(request);
+        assert_eq!(first, &["x-custom".to_string()]);
+
+        cache.normalized_tokens.push("sentinel".to_string());
+
+        let second = cache.prepare(request);
+        assert_eq!(second.len(), 2);
+        assert_eq!(second[1], "sentinel");
+    }
+
+    #[test]
+    fn should_reset_cache_when_reset_called_then_clear_state() {
+        let mut cache = AllowedHeadersCache::new();
+        cache.prepare("X-Custom");
+
+        cache.reset();
+
+        assert_eq!(cache.identity, (0, 0));
+        assert!(cache.normalized_tokens.is_empty());
     }
 }

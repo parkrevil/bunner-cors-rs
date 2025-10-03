@@ -58,6 +58,16 @@ mod new {
     }
 
     #[test]
+    fn should_release_unicode_buffer_when_no_uppercase_then_preserve_borrowed_origin() {
+        let ctx = request("get", "https://mañana.test", "post", "x-custom");
+
+        let normalized = NormalizedRequest::new(&ctx);
+
+        assert!(matches!(normalized.origin, Cow::Borrowed("https://mañana.test")));
+        assert!(matches!(normalized.method, Cow::Borrowed("get")));
+    }
+
+    #[test]
     fn should_remain_empty_without_allocation_when_origin_is_empty_then_preserve_borrowed_slice() {
         let ctx = request("get", "", "post", "x-custom");
 
@@ -144,5 +154,37 @@ mod pool_instrumentation {
         assert_eq!(stats.acquired, stats.released);
         assert_eq!(stats.current_in_use, 0);
         assert!(stats.max_in_use >= 1);
+    }
+
+    #[test]
+    fn should_discard_extra_buffers_when_pool_full_then_skip_reinsertion() {
+        super::normalization_pool_reset();
+        super::NORMALIZATION_BUFFER_POOL.with(|pool| pool.borrow_mut().clear());
+
+        let ctx = request("OPTIONS", "HTTPS://FILL.TEST", "POST", "X-CUSTOM");
+        let mut held = Vec::with_capacity(super::NORMALIZATION_BUFFER_POOL_LIMIT);
+        for _ in 0..super::NORMALIZATION_BUFFER_POOL_LIMIT {
+            let normalized = NormalizedRequest::new(&ctx);
+            assert!(matches!(normalized.method, Cow::Owned(_)));
+            held.push(normalized);
+        }
+
+        drop(held);
+
+        super::NORMALIZATION_BUFFER_POOL.with(|pool| {
+            let pool = pool.borrow();
+            assert_eq!(pool.len(), super::NORMALIZATION_BUFFER_POOL_LIMIT);
+        });
+
+        {
+            let ctx = request("OPTIONS", "HTTPS://OVERFLOW.TEST", "POST", "X-CUSTOM");
+            let normalized = NormalizedRequest::new(&ctx);
+            assert!(matches!(normalized.method, Cow::Owned(_)));
+        }
+
+        super::NORMALIZATION_BUFFER_POOL.with(|pool| {
+            let pool = pool.borrow();
+            assert_eq!(pool.len(), super::NORMALIZATION_BUFFER_POOL_LIMIT);
+        });
     }
 }

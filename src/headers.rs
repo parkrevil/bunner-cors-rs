@@ -70,13 +70,15 @@ fn acquire_entries(estimate: usize) -> Vec<(String, String)> {
 
     let entries = HEADER_BUFFER_POOL.with(|pool| {
         let mut pool = pool.borrow_mut();
-        if let Some(mut entries) = pool.pop() {
-            if entries.capacity() < capacity {
-                entries.reserve(capacity - entries.capacity());
+        match pool.pop() {
+            Some(mut entries) => {
+                let required = capacity.saturating_sub(entries.len());
+                if required > 0 {
+                    entries.reserve(required);
+                }
+                entries
             }
-            entries
-        } else {
-            Vec::with_capacity(capacity)
+            None => Vec::with_capacity(capacity),
         }
     });
 
@@ -86,6 +88,10 @@ fn acquire_entries(estimate: usize) -> Vec<(String, String)> {
 }
 
 fn release_entries(mut entries: Vec<(String, String)>) {
+    if entries.capacity() == 0 {
+        return;
+    }
+
     entries.clear();
 
     header_stats_record_release();
@@ -215,9 +221,7 @@ impl Default for HeaderCollection {
 impl Drop for HeaderCollection {
     fn drop(&mut self) {
         let entries = mem::take(&mut self.headers);
-        if entries.capacity() != 0 {
-            release_entries(entries);
-        }
+        release_entries(entries);
     }
 }
 
