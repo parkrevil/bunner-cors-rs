@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use bunner_cors_rs::constants::method;
 use bunner_cors_rs::{
     AllowedHeaders, AllowedMethods, Cors, CorsOptions, Origin, RequestContext, TimingAllowOrigin,

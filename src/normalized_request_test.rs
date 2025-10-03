@@ -150,7 +150,7 @@ mod pool_instrumentation {
         {
             let ctx = request("OPTIONS", "HTTPS://POOL.TEST", "POST", "X-CUSTOM");
             let normalized = NormalizedRequest::new(&ctx);
-            assert!(matches!(normalized.method, Cow::Owned(_))); // ensure allocation
+            assert!(matches!(normalized.method, Cow::Owned(_)));
         }
 
         let stats = super::normalization_pool_stats();

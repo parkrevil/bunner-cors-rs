@@ -5,7 +5,6 @@ use std::cell::RefCell;
 use std::mem;
 
 #[cfg(debug_assertions)]
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct PoolStats {
     pub acquired: usize,
@@ -31,9 +30,6 @@ fn normalization_stats_record_acquire() {
     });
 }
 
-#[cfg(not(debug_assertions))]
-fn normalization_stats_record_acquire() {}
-
 #[cfg(debug_assertions)]
 fn normalization_stats_record_release() {
     NORMALIZATION_POOL_STATS.with(|stats| {
@@ -43,17 +39,12 @@ fn normalization_stats_record_release() {
     });
 }
 
-#[cfg(not(debug_assertions))]
-fn normalization_stats_record_release() {}
-
-#[cfg(debug_assertions)]
-#[allow(dead_code)]
+#[cfg(all(test, debug_assertions))]
 pub(crate) fn normalization_pool_stats() -> PoolStats {
     NORMALIZATION_POOL_STATS.with(|stats| *stats.borrow())
 }
 
-#[cfg(debug_assertions)]
-#[allow(dead_code)]
+#[cfg(all(test, debug_assertions))]
 pub(crate) fn normalization_pool_reset() {
     NORMALIZATION_POOL_STATS.with(|stats| *stats.borrow_mut() = PoolStats::default());
 }

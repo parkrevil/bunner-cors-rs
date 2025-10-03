@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use std::mem;
 
 #[cfg(debug_assertions)]
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct PoolStats {
     pub acquired: usize,
@@ -30,9 +29,6 @@ fn header_stats_record_acquire() {
     });
 }
 
-#[cfg(not(debug_assertions))]
-fn header_stats_record_acquire() {}
-
 #[cfg(debug_assertions)]
 fn header_stats_record_release() {
     HEADER_POOL_STATS.with(|stats| {
@@ -42,17 +38,12 @@ fn header_stats_record_release() {
     });
 }
 
-#[cfg(not(debug_assertions))]
-fn header_stats_record_release() {}
-
-#[cfg(debug_assertions)]
-#[allow(dead_code)]
+#[cfg(all(test, debug_assertions))]
 pub(crate) fn header_pool_stats() -> PoolStats {
     HEADER_POOL_STATS.with(|stats| *stats.borrow())
 }
 
-#[cfg(debug_assertions)]
-#[allow(dead_code)]
+#[cfg(all(test, debug_assertions))]
 pub(crate) fn header_pool_reset() {
     HEADER_POOL_STATS.with(|stats| *stats.borrow_mut() = PoolStats::default());
 }

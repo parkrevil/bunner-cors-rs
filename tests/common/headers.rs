@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use bunner_cors_rs::Headers;
 use bunner_cors_rs::constants::header;
 use std::collections::HashSet;
