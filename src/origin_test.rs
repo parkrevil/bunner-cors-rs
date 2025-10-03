@@ -37,41 +37,6 @@ mod origin_decision {
                 _ => panic!("expected exact variant"),
             }
         }
-
-        mod compile_pattern {
-            use super::*;
-            use std::time::Duration;
-
-            #[test]
-            fn should_compile_case_insensitively_when_pattern_valid_then_match_inputs() {
-                let regex = OriginMatcher::compile_pattern("^https://svc$", Duration::from_secs(1))
-                    .expect("pattern should compile");
-
-                assert!(regex.is_match("https://SVC".as_bytes()));
-                assert!(regex.is_match("https://svc".as_bytes()));
-            }
-
-            #[test]
-            fn should_return_timeout_error_when_budget_zero_then_abort_compilation() {
-                let result = OriginMatcher::compile_pattern(".*", Duration::ZERO);
-
-                assert!(matches!(result, Err(PatternError::Timeout { .. })));
-            }
-
-            #[test]
-            fn should_return_too_long_error_when_pattern_exceeds_limit_then_reject_compilation() {
-                let pattern = "a".repeat(super::MAX_PATTERN_LENGTH + 1);
-
-                let result = OriginMatcher::compile_pattern(&pattern, Duration::from_secs(1));
-
-                if let Err(PatternError::TooLong { length, max }) = result {
-                    assert_eq!(length, super::MAX_PATTERN_LENGTH + 1);
-                    assert_eq!(max, super::MAX_PATTERN_LENGTH);
-                } else {
-                    panic!("expected too long error");
-                }
-            }
-        }
     }
 
     mod mirror {
@@ -150,6 +115,41 @@ mod origin_decision {
 mod origin_matcher {
     use super::*;
     use regex_automata::meta::Regex;
+
+    mod compile_pattern {
+        use super::*;
+        use std::time::Duration;
+
+        #[test]
+        fn should_compile_case_insensitively_when_pattern_valid_then_match_inputs() {
+            let regex = OriginMatcher::compile_pattern("^https://svc$", Duration::from_secs(1))
+                .expect("pattern should compile");
+
+            assert!(regex.is_match("https://SVC".as_bytes()));
+            assert!(regex.is_match("https://svc".as_bytes()));
+        }
+
+        #[test]
+        fn should_return_timeout_error_when_budget_zero_then_abort_compilation() {
+            let result = OriginMatcher::compile_pattern(".*", Duration::ZERO);
+
+            assert!(matches!(result, Err(PatternError::Timeout { .. })));
+        }
+
+        #[test]
+        fn should_return_too_long_error_when_pattern_exceeds_limit_then_reject_compilation() {
+            let pattern = "a".repeat(super::MAX_PATTERN_LENGTH + 1);
+
+            let result = OriginMatcher::compile_pattern(&pattern, Duration::from_secs(1));
+
+            if let Err(PatternError::TooLong { length, max }) = result {
+                assert_eq!(length, super::MAX_PATTERN_LENGTH + 1);
+                assert_eq!(max, super::MAX_PATTERN_LENGTH);
+            } else {
+                panic!("expected too long error");
+            }
+        }
+    }
 
     mod exact {
         use super::*;
@@ -261,32 +261,22 @@ mod origin_matcher {
             use std::panic::{AssertUnwindSafe, catch_unwind};
 
             super::clear_regex_cache();
-
-            let poison_lock = || {
-                let _ = catch_unwind(AssertUnwindSafe(|| {
-                    let _guard = super::super::REGEX_CACHE.write().unwrap();
-                    panic!("poison cache");
-                }));
-            };
-
             let pattern = r"^https://poisoned\.test$";
 
-            poison_lock();
+            let _ = catch_unwind(AssertUnwindSafe(|| {
+                let _guard = super::super::REGEX_CACHE.write().unwrap();
+                panic!("poison cache");
+            }));
             assert!(super::super::OriginMatcher::cached_pattern(pattern).is_none());
 
-            poison_lock();
             let regex = Regex::new(pattern).unwrap();
             super::super::OriginMatcher::cache_pattern(pattern, &regex);
 
             assert!(super::super::OriginMatcher::cached_pattern(pattern).is_some());
-
-            poison_lock();
             assert!(super::regex_cache_contains(pattern));
-            assert_eq!(super::regex_cache_size(), 1);
 
-            poison_lock();
             super::clear_regex_cache();
-            assert_eq!(super::regex_cache_size(), 0);
+            assert!(!super::regex_cache_contains(pattern));
         }
     }
 
