@@ -579,6 +579,10 @@ fn bench_string_comparisons(c: &mut Criterion) {
     let ascii_other = "https://other.bench.allowed";
     let unicode_mixed = "https://DÉV.BENCH.ALLOWED";
     let unicode_lower = normalize_lower(unicode_mixed);
+    let hybrid_case = "https://DÉV.bench.ALLOWED";
+    let hybrid_lower = normalize_lower(hybrid_case);
+    let unicode_ascii_mix = "https://dév.BENCH.allowed";
+    let unicode_ascii_mix_lower = normalize_lower(unicode_ascii_mix);
 
     group.bench_function("equals_ascii_same_case", |b| {
         b.iter(|| {
@@ -616,6 +620,24 @@ fn bench_string_comparisons(c: &mut Criterion) {
         })
     });
 
+    group.bench_function("equals_unicode_hybrid_case", |b| {
+        b.iter(|| {
+            black_box(equals_ignore_case(
+                black_box(hybrid_case),
+                black_box(&hybrid_lower),
+            ));
+        })
+    });
+
+    group.bench_function("equals_unicode_ascii_mix", |b| {
+        b.iter(|| {
+            black_box(equals_ignore_case(
+                black_box(unicode_ascii_mix),
+                black_box(&unicode_ascii_mix_lower),
+            ));
+        })
+    });
+
     group.bench_function("normalize_lower_ascii", |b| {
         b.iter(|| {
             black_box(normalize_lower(black_box(ascii_mixed)));
@@ -646,6 +668,21 @@ fn bench_request_normalization(c: &mut Criterion) {
     group.bench_function("preflight_request_normalization", |b| {
         b.iter(|| {
             let normalized = NormalizedRequest::new(&heavy_preflight_request);
+            black_box(normalized);
+        })
+    });
+
+    let mixed_unicode_request = RequestContext {
+        method: "OpTiOns",
+        origin: "https://DÉV.edge.BENCH.allowed",
+        access_control_request_method: "PuT",
+        access_control_request_headers: "X-Trace, X-DÉBUG",
+        access_control_request_private_network: true,
+    };
+
+    group.bench_function("mixed_request_normalization", |b| {
+        b.iter(|| {
+            let normalized = NormalizedRequest::new(&mixed_unicode_request);
             black_box(normalized);
         })
     });

@@ -181,3 +181,23 @@ mod into_headers {
         );
     }
 }
+
+#[cfg(debug_assertions)]
+mod pool_instrumentation {
+    use super::*;
+
+    #[test]
+    fn should_return_entries_to_pool_when_collection_dropped_then_balance_counts() {
+        super::header_pool_reset();
+
+        {
+            let mut collection = HeaderCollection::with_estimate(2);
+            collection.push("X-Debug".into(), "true".into());
+        }
+
+        let stats = super::header_pool_stats();
+        assert_eq!(stats.acquired, stats.released);
+        assert_eq!(stats.current_in_use, 0);
+        assert!(stats.max_in_use >= 1);
+    }
+}

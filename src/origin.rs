@@ -1,7 +1,8 @@
 use crate::context::RequestContext;
-use crate::util::{equals_ignore_case, normalize_lower};
+use crate::util::{equals_ignore_case, lowercase_unicode_into, normalize_lower};
 use once_cell::sync::Lazy;
 use regex_automata::meta::{BuildError, Regex};
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -114,6 +115,10 @@ const MAX_ORIGIN_LENGTH: usize = 4_096;
 static REGEX_CACHE: Lazy<RwLock<HashMap<String, Regex>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
 
+thread_local! {
+    static ORIGIN_UNICODE_BUFFER: RefCell<String> = const { RefCell::new(String::new()) };
+}
+
 #[derive(Clone, Debug)]
 pub enum OriginMatcher {
     Exact(String),
@@ -207,8 +212,16 @@ impl CompiledOriginList {
         }
 
         if !self.unicode_exact.is_empty() && !candidate.is_ascii() {
-            let lowered = normalize_lower(candidate);
-            if self.unicode_exact.contains(&lowered) {
+            let matched = ORIGIN_UNICODE_BUFFER.with(|buffer| {
+                let mut buffer = buffer.borrow_mut();
+                if lowercase_unicode_into(candidate, &mut buffer) {
+                    self.unicode_exact.contains(buffer.as_str())
+                } else {
+                    self.unicode_exact.contains(candidate)
+                }
+            });
+
+            if matched {
                 return true;
             }
         }

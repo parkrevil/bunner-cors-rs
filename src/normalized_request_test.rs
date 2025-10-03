@@ -125,3 +125,24 @@ mod is_options {
         assert!(!result);
     }
 }
+
+#[cfg(debug_assertions)]
+mod pool_instrumentation {
+    use super::*;
+
+    #[test]
+    fn should_release_buffers_after_drop_then_balance_stats() {
+        super::normalization_pool_reset();
+
+        {
+            let ctx = request("OPTIONS", "HTTPS://POOL.TEST", "POST", "X-CUSTOM");
+            let normalized = NormalizedRequest::new(&ctx);
+            assert!(matches!(normalized.method, Cow::Owned(_))); // ensure allocation
+        }
+
+        let stats = super::normalization_pool_stats();
+        assert_eq!(stats.acquired, stats.released);
+        assert_eq!(stats.current_in_use, 0);
+        assert!(stats.max_in_use >= 1);
+    }
+}

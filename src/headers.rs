@@ -1,32 +1,133 @@
 use crate::constants::header;
 use indexmap::IndexMap;
+use std::cell::RefCell;
+use std::mem;
+
+#[cfg(debug_assertions)]
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct PoolStats {
+    pub acquired: usize,
+    pub released: usize,
+    pub current_in_use: usize,
+    pub max_in_use: usize,
+}
+
+#[cfg(debug_assertions)]
+thread_local! {
+    static HEADER_POOL_STATS: RefCell<PoolStats> = RefCell::new(PoolStats::default());
+}
+
+#[cfg(debug_assertions)]
+fn header_stats_record_acquire() {
+    HEADER_POOL_STATS.with(|stats| {
+        let mut stats = stats.borrow_mut();
+        stats.acquired += 1;
+        stats.current_in_use += 1;
+        if stats.current_in_use > stats.max_in_use {
+            stats.max_in_use = stats.current_in_use;
+        }
+    });
+}
+
+#[cfg(not(debug_assertions))]
+fn header_stats_record_acquire() {}
+
+#[cfg(debug_assertions)]
+fn header_stats_record_release() {
+    HEADER_POOL_STATS.with(|stats| {
+        let mut stats = stats.borrow_mut();
+        stats.released += 1;
+        stats.current_in_use = stats.current_in_use.saturating_sub(1);
+    });
+}
+
+#[cfg(not(debug_assertions))]
+fn header_stats_record_release() {}
+
+#[cfg(debug_assertions)]
+#[allow(dead_code)]
+pub(crate) fn header_pool_stats() -> PoolStats {
+    HEADER_POOL_STATS.with(|stats| *stats.borrow())
+}
+
+#[cfg(debug_assertions)]
+#[allow(dead_code)]
+pub(crate) fn header_pool_reset() {
+    HEADER_POOL_STATS.with(|stats| *stats.borrow_mut() = PoolStats::default());
+}
 
 pub type Headers = IndexMap<String, String>;
 
-#[derive(Debug, Default, Clone)]
+const HEADER_BUFFER_POOL_LIMIT: usize = 64;
+
+thread_local! {
+    static HEADER_BUFFER_POOL: RefCell<Vec<Vec<(String, String)>>> = const { RefCell::new(Vec::new()) };
+}
+
+fn acquire_entries(estimate: usize) -> Vec<(String, String)> {
+    let capacity = estimate.max(4);
+
+    let entries = HEADER_BUFFER_POOL.with(|pool| {
+        let mut pool = pool.borrow_mut();
+        if let Some(mut entries) = pool.pop() {
+            if entries.capacity() < capacity {
+                entries.reserve(capacity - entries.capacity());
+            }
+            entries
+        } else {
+            Vec::with_capacity(capacity)
+        }
+    });
+
+    header_stats_record_acquire();
+
+    entries
+}
+
+fn release_entries(mut entries: Vec<(String, String)>) {
+    entries.clear();
+
+    header_stats_record_release();
+
+    HEADER_BUFFER_POOL.with(|pool| {
+        let mut pool = pool.borrow_mut();
+        if pool.len() < HEADER_BUFFER_POOL_LIMIT {
+            pool.push(entries);
+        }
+    });
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct HeaderCollection {
     vary: Option<String>,
-    headers: IndexMap<String, String>,
+    headers: Vec<(String, String)>,
 }
 
 impl HeaderCollection {
     pub(crate) fn new() -> Self {
-        Self::with_estimate(16)
+        Self::with_estimate(4)
     }
 
     pub(crate) fn with_estimate(estimate: usize) -> Self {
-        let capacity = estimate.max(16);
         Self {
             vary: None,
-            headers: IndexMap::with_capacity(capacity),
+            headers: acquire_entries(estimate),
         }
     }
 
     pub(crate) fn push(&mut self, name: String, value: String) {
         if name.eq_ignore_ascii_case(header::VARY) {
             self.add_vary(value);
+        } else if let Some((_, existing)) = self
+            .headers
+            .iter_mut()
+            .rev()
+            .find(|(existing_name, _)| existing_name.eq_ignore_ascii_case(&name))
+        {
+            *existing = value;
         } else {
-            self.headers.insert(name, value);
+            self.headers.push((name, value));
         }
     }
 
@@ -68,30 +169,55 @@ impl HeaderCollection {
         self.vary = Some(value);
     }
 
-    pub(crate) fn extend(&mut self, other: HeaderCollection) {
-        if let Some(vary) = other.vary {
+    pub(crate) fn extend(&mut self, mut other: HeaderCollection) {
+        if let Some(vary) = other.vary.take() {
             self.add_vary(vary);
         }
 
-        for (name, value) in other.headers {
+        for (name, value) in other.headers.drain(..) {
             if name.eq_ignore_ascii_case(header::VARY) {
                 self.add_vary(value);
+            } else if let Some((_, existing)) = self
+                .headers
+                .iter_mut()
+                .rev()
+                .find(|(existing_name, _)| existing_name.eq_ignore_ascii_case(&name))
+            {
+                *existing = value;
             } else {
-                self.headers.insert(name, value);
+                self.headers.push((name, value));
             }
         }
     }
 
-    pub(crate) fn into_headers(self) -> Headers {
-        let capacity = self.headers.len() + usize::from(self.vary.is_some());
-        let mut headers = Headers::with_capacity(capacity);
+    pub(crate) fn into_headers(mut self) -> Headers {
+        let mut headers =
+            Headers::with_capacity(self.headers.len() + usize::from(self.vary.is_some()));
 
-        if let Some(vary) = self.vary {
+        if let Some(vary) = self.vary.take() {
             headers.insert(header::VARY.to_string(), vary);
         }
 
-        headers.extend(self.headers);
+        for (name, value) in self.headers.drain(..) {
+            headers.insert(name, value);
+        }
+
         headers
+    }
+}
+
+impl Default for HeaderCollection {
+    fn default() -> Self {
+        Self::with_estimate(4)
+    }
+}
+
+impl Drop for HeaderCollection {
+    fn drop(&mut self) {
+        let entries = mem::take(&mut self.headers);
+        if entries.capacity() != 0 {
+            release_entries(entries);
+        }
     }
 }
 
