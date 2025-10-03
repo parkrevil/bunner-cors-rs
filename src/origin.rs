@@ -1,8 +1,11 @@
 use crate::context::RequestContext;
-use crate::util::equals_ignore_case;
+use crate::util::{equals_ignore_case, normalize_lower};
+use once_cell::sync::Lazy;
 use regex_automata::meta::{BuildError, Regex};
+use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::sync::Arc;
+use std::hash::{Hash, Hasher};
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
 pub type OriginPredicateFn = dyn for<'a> Fn(&str, &RequestContext<'a>) -> bool + Send + Sync;
@@ -14,7 +17,7 @@ pub enum Origin {
     #[default]
     Any,
     Exact(String),
-    List(Vec<OriginMatcher>),
+    List(OriginList),
     Predicate(Arc<OriginPredicateFn>),
     Custom(Arc<OriginCallbackFn>),
 }
@@ -108,11 +111,190 @@ const PATTERN_COMPILE_BUDGET: Duration = Duration::from_millis(100);
 const MAX_PATTERN_LENGTH: usize = 50_000;
 const MAX_ORIGIN_LENGTH: usize = 4_096;
 
-#[derive(Clone)]
+static REGEX_CACHE: Lazy<RwLock<HashMap<String, Regex>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
+
+#[derive(Clone, Debug)]
 pub enum OriginMatcher {
     Exact(String),
     Pattern(Regex),
     Bool(bool),
+}
+
+#[derive(Clone, Debug)]
+pub struct OriginList {
+    matchers: Vec<OriginMatcher>,
+    compiled: CompiledOriginList,
+}
+
+impl OriginList {
+    fn new(matchers: Vec<OriginMatcher>) -> Self {
+        let compiled = CompiledOriginList::compile(&matchers);
+        Self { matchers, compiled }
+    }
+
+    pub fn len(&self) -> usize {
+        self.matchers.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.matchers.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &OriginMatcher> {
+        self.matchers.iter()
+    }
+
+    pub(crate) fn matches(&self, candidate: &str) -> bool {
+        self.compiled.matches(candidate, &self.matchers)
+    }
+}
+
+const SMALL_LIST_LINEAR_SCAN_THRESHOLD: usize = 4;
+
+#[derive(Clone, Debug, Default)]
+struct CompiledOriginList {
+    ascii_exact: HashSet<AsciiExact>,
+    unicode_exact: HashSet<String>,
+    regexes: Vec<Regex>,
+    allow_all: bool,
+    prefer_linear_scan: bool,
+}
+
+impl CompiledOriginList {
+    fn compile(matchers: &[OriginMatcher]) -> Self {
+        let prefer_linear_scan = matchers.len() <= SMALL_LIST_LINEAR_SCAN_THRESHOLD;
+        let mut compiled = Self {
+            prefer_linear_scan,
+            ..Self::default()
+        };
+
+        for matcher in matchers {
+            match matcher {
+                OriginMatcher::Exact(value) => {
+                    if value.is_ascii() {
+                        compiled.ascii_exact.insert(AsciiExact::new(value.clone()));
+                    } else {
+                        compiled.unicode_exact.insert(normalize_lower(value));
+                    }
+                }
+                OriginMatcher::Pattern(regex) => compiled.regexes.push(regex.clone()),
+                OriginMatcher::Bool(value) => {
+                    if *value {
+                        compiled.allow_all = true;
+                    }
+                }
+            }
+        }
+
+        compiled
+    }
+
+    fn matches(&self, candidate: &str, matchers: &[OriginMatcher]) -> bool {
+        if self.allow_all {
+            return true;
+        }
+
+        if self.prefer_linear_scan {
+            return matchers.iter().any(|matcher| matcher.matches(candidate));
+        }
+
+        if !self.ascii_exact.is_empty() && candidate.is_ascii() {
+            let borrowed = AsciiCaseInsensitive::new(candidate);
+            if self.ascii_exact.contains(borrowed) {
+                return true;
+            }
+        }
+
+        if !self.unicode_exact.is_empty() && !candidate.is_ascii() {
+            let lowered = normalize_lower(candidate);
+            if self.unicode_exact.contains(&lowered) {
+                return true;
+            }
+        }
+
+        let haystack = candidate.as_bytes();
+        for regex in &self.regexes {
+            if regex.is_match(haystack) {
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
+#[derive(Clone, Debug, Eq)]
+struct AsciiExact {
+    value: String,
+}
+
+impl AsciiExact {
+    fn new(value: String) -> Self {
+        Self { value }
+    }
+}
+
+impl PartialEq for AsciiExact {
+    fn eq(&self, other: &Self) -> bool {
+        self.value.eq_ignore_ascii_case(&other.value)
+    }
+}
+
+impl Hash for AsciiExact {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        for byte in self.value.as_bytes() {
+            state.write_u8(byte.to_ascii_lowercase());
+        }
+    }
+}
+
+impl std::borrow::Borrow<AsciiCaseInsensitive> for AsciiExact {
+    fn borrow(&self) -> &AsciiCaseInsensitive {
+        AsciiCaseInsensitive::new(&self.value)
+    }
+}
+
+#[repr(transparent)]
+struct AsciiCaseInsensitive(str);
+
+impl AsciiCaseInsensitive {
+    fn new(value: &str) -> &Self {
+        // SAFETY: AsciiCaseInsensitive is a transparent wrapper around str.
+        unsafe { &*(value as *const str as *const AsciiCaseInsensitive) }
+    }
+
+    fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Hash for AsciiCaseInsensitive {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        for byte in self.as_str().as_bytes() {
+            state.write_u8(byte.to_ascii_lowercase());
+        }
+    }
+}
+
+impl PartialEq for AsciiCaseInsensitive {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_str().eq_ignore_ascii_case(other.as_str())
+    }
+}
+
+impl Eq for AsciiCaseInsensitive {}
+
+impl PartialEq<AsciiCaseInsensitive> for AsciiExact {
+    fn eq(&self, other: &AsciiCaseInsensitive) -> bool {
+        self.value.eq_ignore_ascii_case(other.as_str())
+    }
+}
+
+impl PartialEq<AsciiExact> for AsciiCaseInsensitive {
+    fn eq(&self, other: &AsciiExact) -> bool {
+        other.value.eq_ignore_ascii_case(self.as_str())
+    }
 }
 
 impl OriginMatcher {
@@ -125,7 +307,12 @@ impl OriginMatcher {
     }
 
     pub fn pattern_str(pattern: &str) -> Result<Self, PatternError> {
-        Self::compile_pattern(pattern, PATTERN_COMPILE_BUDGET).map(Self::Pattern)
+        if let Some(regex) = Self::cached_pattern(pattern) {
+            return Ok(Self::Pattern(regex));
+        }
+        let regex = Self::compile_pattern(pattern, PATTERN_COMPILE_BUDGET)?;
+        Self::cache_pattern(pattern, &regex);
+        Ok(Self::Pattern(regex))
     }
 
     fn compile_pattern(pattern: &str, budget: Duration) -> Result<Regex, PatternError> {
@@ -147,12 +334,27 @@ impl OriginMatcher {
         Ok(regex)
     }
 
+    fn cached_pattern(pattern: &str) -> Option<Regex> {
+        let cache = REGEX_CACHE.read().unwrap_or_else(|err| err.into_inner());
+        cache.get(pattern).cloned()
+    }
+
+    fn cache_pattern(pattern: &str, regex: &Regex) {
+        let mut cache = REGEX_CACHE.write().unwrap_or_else(|err| err.into_inner());
+        cache.insert(pattern.to_owned(), regex.clone());
+    }
+
     #[cfg(test)]
     pub(crate) fn pattern_str_with_budget(
         pattern: &str,
         budget: Duration,
     ) -> Result<Self, PatternError> {
-        Self::compile_pattern(pattern, budget).map(Self::Pattern)
+        if let Some(regex) = Self::cached_pattern(pattern) {
+            return Ok(Self::Pattern(regex));
+        }
+        let regex = Self::compile_pattern(pattern, budget)?;
+        Self::cache_pattern(pattern, &regex);
+        Ok(Self::Pattern(regex))
     }
 
     pub fn matches(&self, candidate: &str) -> bool {
@@ -196,7 +398,8 @@ impl Origin {
         I: IntoIterator<Item = T>,
         T: Into<OriginMatcher>,
     {
-        Self::List(values.into_iter().map(Into::into).collect())
+        let matchers = values.into_iter().map(Into::into).collect();
+        Self::List(OriginList::new(matchers))
     }
 
     pub fn predicate<F>(predicate: F) -> Self
@@ -243,9 +446,9 @@ impl Origin {
                 Some(_) => OriginDecision::Disallow,
                 None => OriginDecision::Skip,
             },
-            Origin::List(matchers) => {
+            Origin::List(list) => {
                 if let Some(origin) = request_origin {
-                    if matchers.iter().any(|matcher| matcher.matches(origin)) {
+                    if list.matches(origin) {
                         OriginDecision::Mirror
                     } else {
                         OriginDecision::Disallow
@@ -277,3 +480,27 @@ impl Origin {
 #[cfg(test)]
 #[path = "origin_test.rs"]
 mod origin_test;
+
+#[cfg(test)]
+pub(crate) fn clear_regex_cache() {
+    REGEX_CACHE
+        .write()
+        .unwrap_or_else(|err| err.into_inner())
+        .clear();
+}
+
+#[cfg(test)]
+pub(crate) fn regex_cache_size() -> usize {
+    REGEX_CACHE
+        .read()
+        .unwrap_or_else(|err| err.into_inner())
+        .len()
+}
+
+#[cfg(test)]
+pub(crate) fn regex_cache_contains(pattern: &str) -> bool {
+    REGEX_CACHE
+        .read()
+        .unwrap_or_else(|err| err.into_inner())
+        .contains_key(pattern)
+}

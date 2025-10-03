@@ -112,8 +112,9 @@
   - [x] 벤치 재실행으로 `header_evaluation/*` 그룹 15% 이상 개선 목표 검증
 - [ ] **Phase 2 · 문자열 비교 최적화**
   - [ ] `criterion` 벤치에서 `origin_matching/*` 및 `scaling_inputs/*`에 대한 flamegraph/trace 확보
-  - [ ] `equals_ignore_case`/`normalize_lower`에 대한 마이크로 벤치 추가 및 ASCII fast-path 검증
-  - [ ] `OriginMatcher::pattern_str` 정규식 캐싱(RegexSet/once_cell) 프로토타입 구현
+  - [x] `equals_ignore_case`/`normalize_lower`에 대한 마이크로 벤치 추가 및 ASCII fast-path 검증
+    - `string_comparisons/*` 그룹으로 추가, Unicode 혼합 케이스 회귀 테스트와 연동됨
+  - [x] `OriginMatcher::pattern_str` 정규식 캐싱(RegexSet/once_cell) 프로토타입 구현
   - [ ] `origin_matching/*` 그룹 회귀 해소 및 `preflight_large` 평균 20% 절감 목표 확인
 - [ ] **Phase 3 · clone 감소 & Zero-copy**
   - [ ] `CorsOptions::process_preflight`/`process_simple` 내 `to_string`/`clone` 호출 위치 감사

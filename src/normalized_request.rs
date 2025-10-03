@@ -28,8 +28,18 @@ impl<'a> NormalizedRequest<'a> {
 
     fn normalize_component(value: &'a str) -> Cow<'a, str> {
         if value.is_ascii() {
-            if value.bytes().any(|byte| byte.is_ascii_uppercase()) {
-                Cow::Owned(value.to_ascii_lowercase())
+            if let Some(index) = value
+                .as_bytes()
+                .iter()
+                .position(|byte| byte.is_ascii_uppercase())
+            {
+                let mut owned = value.to_owned();
+                // SAFETY: `index` lies within the string bounds and `make_ascii_lowercase`
+                // operates in-place without altering the slice length.
+                unsafe {
+                    owned.as_mut_vec()[index..].make_ascii_lowercase();
+                }
+                Cow::Owned(owned)
             } else {
                 Cow::Borrowed(value)
             }

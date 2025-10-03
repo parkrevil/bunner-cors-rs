@@ -216,7 +216,26 @@ mod origin_matcher {
         }
 
         #[test]
+        fn should_cache_pattern_then_bypass_budget_on_subsequent_calls() {
+            super::clear_regex_cache();
+            let pattern = r"^https://cached\.allowed$";
+
+            let first = OriginMatcher::pattern_str(pattern).expect("initial compile");
+            assert!(matches!(first, OriginMatcher::Pattern(_)));
+            assert!(super::regex_cache_contains(pattern));
+            let entries_after_first = super::regex_cache_size();
+            assert!(entries_after_first >= 1);
+
+            let second =
+                OriginMatcher::pattern_str_with_budget(pattern, Duration::ZERO).expect("cached");
+            assert!(matches!(second, OriginMatcher::Pattern(_)));
+            assert!(super::regex_cache_contains(pattern));
+            assert_eq!(super::regex_cache_size(), entries_after_first);
+        }
+
+        #[test]
         fn should_return_timeout_error_when_budget_too_small_then_abort_compilation() {
+            super::clear_regex_cache();
             let result = OriginMatcher::pattern_str_with_budget(".*", Duration::ZERO);
 
             assert!(matches!(result, Err(PatternError::Timeout { .. })));
@@ -462,6 +481,17 @@ mod origin_type {
         }
 
         #[test]
+        fn should_return_mirror_decision_when_origin_list_matches_case_insensitively_then_reflect_origin()
+         {
+            let origin = Origin::list(["https://api.test"]);
+            let ctx = request_context("GET", "https://api.test");
+
+            let decision = origin.resolve(Some("HTTPS://API.TEST"), &ctx);
+
+            assert!(matches!(decision, OriginDecision::Mirror));
+        }
+
+        #[test]
         fn should_return_disallow_decision_when_origin_list_misses_then_block_origin() {
             let origin = Origin::list(["https://other.test"]);
             let ctx = request_context("GET", "https://api.test");
@@ -491,6 +521,17 @@ mod origin_type {
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
             assert!(matches!(decision, OriginDecision::Disallow));
+        }
+
+        #[test]
+        fn should_return_mirror_decision_when_origin_list_contains_true_matcher_then_allow_all_origins()
+         {
+            let origin = Origin::list([OriginMatcher::Bool(true)]);
+            let ctx = request_context("GET", "https://api.test");
+
+            let decision = origin.resolve(Some("https://edge.allowed"), &ctx);
+
+            assert!(matches!(decision, OriginDecision::Mirror));
         }
 
         #[test]
@@ -525,6 +566,17 @@ mod origin_type {
                 OriginDecision::Exact(value) => assert_eq!(value, "https://TÉST.dev"),
                 _ => panic!("expected exact decision"),
             }
+        }
+
+        #[test]
+        fn should_return_mirror_decision_when_origin_list_contains_unicode_exact_then_reflect_origin()
+         {
+            let origin = Origin::list(["https://TÉST.dev"]);
+            let ctx = request_context("GET", "https://tést.dev");
+
+            let decision = origin.resolve(Some("https://tést.dev"), &ctx);
+
+            assert!(matches!(decision, OriginDecision::Mirror));
         }
 
         #[test]

@@ -7,7 +7,9 @@ use criterion::{
     BenchmarkId, Criterion, SamplingMode, Throughput, black_box, criterion_group, criterion_main,
 };
 use once_cell::sync::Lazy;
+use pprof::criterion::{Output, PProfProfiler};
 use std::alloc::{GlobalAlloc, Layout, System};
+use std::env;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const HEAVY_METHOD: &str = "POsT";
@@ -709,5 +711,17 @@ fn bench_cors(c: &mut Criterion) {
     bench_allocation_profile(c);
 }
 
-criterion_group!(bunner_cors_rs_benches, bench_cors);
+fn configure_criterion() -> Criterion {
+    if env::var_os("BUNNER_PROFILE_FLAMEGRAPH").is_some() {
+        Criterion::default().with_profiler(PProfProfiler::new(1000, Output::Flamegraph(None)))
+    } else {
+        Criterion::default()
+    }
+}
+
+criterion_group!(
+    name = bunner_cors_rs_benches;
+    config = configure_criterion();
+    targets = bench_cors
+);
 criterion_main!(bunner_cors_rs_benches);
