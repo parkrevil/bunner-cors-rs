@@ -10,10 +10,6 @@
 - **예제 코드 부족**: examples/ 디렉토리 없음, 실제 사용 사례 제공 필요
   - **작업 계획**: `README.md`에 소개·사용법·설치 절차를 작성하고, 핵심 public API에 rustdoc을 추가하며, CHANGELOG/CONTRIBUTING 템플릿과 최소 예제 코드를 마련한다.
 
-### 메타데이터 불완전 ⚠️
-- **Cargo.toml**: description, repository, documentation, homepage, keywords, categories 등 메타데이터 누락
-  - **작업 계획**: `Cargo.toml`에 description, repository, documentation, homepage, keywords, categories 항목을 채워 공개 메타데이터를 완성한다.
-
 ---
 
 ## 2. CORS 국제 표준 준수 검토
