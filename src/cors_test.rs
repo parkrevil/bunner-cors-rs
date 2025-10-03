@@ -138,7 +138,9 @@ mod check {
         let cors = cors_with(CorsOptions::default());
         let request = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
 
-        let decision = cors.check(&request).expect("cors evaluation should succeed");
+        let decision = cors
+            .check(&request)
+            .expect("cors evaluation should succeed");
 
         assert!(matches!(decision, CorsDecision::PreflightAccepted { .. }));
     }
@@ -148,7 +150,9 @@ mod check {
         let cors = cors_with(CorsOptions::default());
         let request = request("GET", "https://allowed.test", "", "");
 
-        let decision = cors.check(&request).expect("cors evaluation should succeed");
+        let decision = cors
+            .check(&request)
+            .expect("cors evaluation should succeed");
 
         assert!(matches!(decision, CorsDecision::SimpleAccepted { .. }));
     }
@@ -161,7 +165,9 @@ mod check {
         });
         let request = request("OPTIONS", "https://skip.test", "GET", "X-Test");
 
-        let decision = cors.check(&request).expect("cors evaluation should succeed");
+        let decision = cors
+            .check(&request)
+            .expect("cors evaluation should succeed");
 
         assert!(matches!(decision, CorsDecision::NotApplicable));
     }
@@ -267,12 +273,8 @@ mod process_preflight {
             origin: Origin::list(["https://intranet.test"]),
             ..CorsOptions::default()
         });
-        let request = request_with_private_network(
-            "OPTIONS",
-            "https://intranet.test",
-            "GET",
-            "X-Test",
-        );
+        let request =
+            request_with_private_network("OPTIONS", "https://intranet.test", "GET", "X-Test");
 
         let headers = expect_preflight_accepted(preflight_decision(&cors, &request));
 
