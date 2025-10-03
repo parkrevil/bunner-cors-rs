@@ -178,7 +178,9 @@ mod extend {
     fn should_handle_vary_entry_stored_in_headers_then_normalize_on_extend() {
         let mut base = HeaderCollection::new();
         let mut other = HeaderCollection::new();
-        other.headers.push((header::VARY.to_string(), "Origin".into()));
+        other
+            .headers
+            .push((header::VARY.to_string(), "Origin".into()));
 
         base.extend(other);
 

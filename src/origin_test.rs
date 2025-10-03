@@ -258,7 +258,7 @@ mod origin_matcher {
 
         #[test]
         fn should_recover_from_poisoned_cache_then_continue_operations() {
-            use std::panic::{catch_unwind, AssertUnwindSafe};
+            use std::panic::{AssertUnwindSafe, catch_unwind};
 
             super::clear_regex_cache();
 
@@ -482,10 +482,9 @@ mod ascii_case_helpers {
         let exact = super::AsciiExact::new("HTTPS://API.TEST".to_string());
         let wrapper = super::AsciiCaseInsensitive::new("https://api.test");
 
-        assert!(<super::AsciiExact as PartialEq<super::AsciiCaseInsensitive>>::eq(
-            &exact,
-            wrapper,
-        ));
+        assert!(<super::AsciiExact as PartialEq<
+            super::AsciiCaseInsensitive,
+        >>::eq(&exact, wrapper,));
     }
 
     #[test]
@@ -493,10 +492,9 @@ mod ascii_case_helpers {
         let exact = super::AsciiExact::new("https://api.test".to_string());
         let wrapper = super::AsciiCaseInsensitive::new("HTTPS://API.TEST");
 
-        assert!(<super::AsciiCaseInsensitive as PartialEq<super::AsciiExact>>::eq(
-            wrapper,
-            &exact,
-        ));
+        assert!(<super::AsciiCaseInsensitive as PartialEq<
+            super::AsciiExact,
+        >>::eq(wrapper, &exact,));
     }
 }
 

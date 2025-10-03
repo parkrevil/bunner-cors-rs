@@ -63,7 +63,10 @@ mod new {
 
         let normalized = NormalizedRequest::new(&ctx);
 
-        assert!(matches!(normalized.origin, Cow::Borrowed("https://mañana.test")));
+        assert!(matches!(
+            normalized.origin,
+            Cow::Borrowed("https://mañana.test")
+        ));
         assert!(matches!(normalized.method, Cow::Borrowed("get")));
     }
 
