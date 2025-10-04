@@ -20,7 +20,7 @@ mod new {
         let result = Cors::new(CorsOptions {
             origin: Origin::exact("https://wild.dev"),
             credentials: true,
-            allowed_headers: AllowedHeaders::any(),
+            allowed_headers: AllowedHeaders::Any,
             ..CorsOptions::default()
         });
 
@@ -69,7 +69,7 @@ mod check {
     #[test]
     fn should_emit_wildcard_header_when_allowed_headers_any_and_request_headers_missing_then_return_star()
      {
-        let cors = cors().allowed_headers(AllowedHeaders::any()).build();
+    let cors = cors().allowed_headers(AllowedHeaders::Any).build();
 
         let headers = assert_preflight(
             preflight_request()
@@ -425,7 +425,7 @@ mod check {
 
     #[test]
     fn should_emit_wildcard_header_when_allowed_headers_any_then_return_star() {
-        let cors = cors().allowed_headers(AllowedHeaders::any()).build();
+    let cors = cors().allowed_headers(AllowedHeaders::Any).build();
 
         let headers = assert_preflight(
             preflight_request()

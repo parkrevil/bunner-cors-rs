@@ -46,7 +46,7 @@ mod validate {
             ),
             (
                 ValidationError::AllowedHeadersAnyNotAllowedWithCredentials,
-                "AllowedHeaders::any()",
+                "AllowedHeaders::Any",
             ),
             (
                 ValidationError::AllowedHeadersListCannotContainWildcard,
@@ -141,7 +141,7 @@ mod validate {
         let options = CorsOptions {
             credentials: true,
             origin: Origin::list(["https://api.test"]),
-            allowed_headers: AllowedHeaders::any(),
+            allowed_headers: AllowedHeaders::Any,
             ..CorsOptions::default()
         };
 

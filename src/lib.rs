@@ -17,13 +17,14 @@ pub use allowed_methods::AllowedMethods;
 pub use context::RequestContext;
 pub use cors::Cors;
 pub use headers::Headers;
-#[doc(hidden)]
-pub use normalized_request::NormalizedRequest;
 pub use options::{CorsOptions, ValidationError};
 pub use origin::{
     Origin, OriginCallbackFn, OriginDecision, OriginMatcher, OriginPredicateFn, PatternError,
 };
 pub use result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
 pub use timing_allow_origin::TimingAllowOrigin;
+
 #[doc(hidden)]
 pub use util::{equals_ignore_case, normalize_lower};
+#[doc(hidden)]
+pub use normalized_request::NormalizedRequest;

@@ -34,10 +34,10 @@ impl Display for ValidationError {
                 "When credentials are enabled, you must configure a specific allowed origin instead of \"*\".",
             ),
             ValidationError::AllowedHeadersAnyNotAllowedWithCredentials => f.write_str(
-                "AllowedHeaders::any() cannot be used when credentials are enabled. Configure an explicit header allow list instead.",
+                "AllowedHeaders::Any cannot be used when credentials are enabled. Configure an explicit header allow list instead.",
             ),
             ValidationError::AllowedHeadersListCannotContainWildcard => f.write_str(
-                "Allowed headers lists cannot include \"*\". Use AllowedHeaders::any() to allow all headers.",
+                "Allowed headers lists cannot include \"*\". Use AllowedHeaders::Any to allow all headers.",
             ),
             ValidationError::AllowedHeadersListContainsInvalidToken => f.write_str(
                 "Allowed headers lists may only contain valid HTTP header field names.",

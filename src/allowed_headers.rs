@@ -76,10 +76,6 @@ impl AllowedHeaders {
         Self::List(AllowedHeaderList::new(deduped, seen))
     }
 
-    pub fn any() -> Self {
-        Self::Any
-    }
-
     pub fn allows_headers(&self, request_headers: &str) -> bool {
         match self {
             Self::Any => true,

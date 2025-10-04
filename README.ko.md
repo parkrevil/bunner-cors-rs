@@ -295,7 +295,7 @@ let options = CorsOptions {
 Access-Control-Allow-Headers: Content-Type,Authorization,X-Api-Key
 ```
 
-> `AllowedHeaders::any()`로 모든 헤더를 허용할 수 있으며, `Access-Control-Allow-Headers` 헤더에 요청된 헤더가 그대로 반영됩니다.
+> `AllowedHeaders::Any`로 모든 헤더를 허용할 수 있으며, `Access-Control-Allow-Headers` 헤더에 요청된 헤더가 그대로 반영됩니다.
 > <br>
 > credentials: true 와 함께 사용할 수 없습니다.
 > 
@@ -303,7 +303,7 @@ Access-Control-Allow-Headers: Content-Type,Authorization,X-Api-Key
 > let options = CorsOptions {
 >     origin: Origin::Any,
 >     credentials: false,
->     allowed_headers: AllowedHeaders::any(),
+>     allowed_headers: AllowedHeaders::Any,
 >     ..Default::default()
 > };
 > ```
@@ -345,7 +345,7 @@ Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 
 쿠키, Authorization 헤더, TLS 클라이언트 인증서 등 자격증명을 포함한 요청을 허용할지 결정합니다.
 <br>
-> `true`로 설정시 `Origin::Any`,  `AllowedHeaders::any()`, `TimingAllowOrigin::any()` 옵션을 사용할 수 없습니다.
+> `true`로 설정시 `Origin::Any`,  `AllowedHeaders::Any`, `TimingAllowOrigin::any()` 옵션을 사용할 수 없습니다.
 
 ```rust
 let options = CorsOptions {
@@ -465,8 +465,8 @@ Timing-Allow-Origin: https://analytics.example.com
 | 오류 | 설명 |
 |------|------|
 | `CredentialsRequireSpecificOrigin` | `credentials: true`일 때 `Origin::Any` 사용 불가 |
-| `AllowedHeadersAnyNotAllowedWithCredentials` | `credentials: true`일 때 `AllowedHeaders::any()` 사용 불가 |
-| `AllowedHeadersListCannotContainWildcard` | 허용 헤더 목록에 `"*"` 포함 불가 (대신 `AllowedHeaders::any()` 사용) |
+| `AllowedHeadersAnyNotAllowedWithCredentials` | `credentials: true`일 때 `AllowedHeaders::Any` 사용 불가 |
+| `AllowedHeadersListCannotContainWildcard` | 허용 헤더 목록에 `"*"` 포함 불가 (대신 `AllowedHeaders::Any` 사용) |
 | `ExposeHeadersWildcardRequiresCredentialsDisabled` | 노출 헤더에 `"*"`를 쓰려면 `credentials: false` 필요 |
 | `ExposeHeadersWildcardCannotBeCombined` | 노출 헤더에 `"*"`와 다른 헤더를 함께 지정 불가 |
 | `InvalidMaxAge` | `max_age`가 유효한 숫자 형식이 아님 |

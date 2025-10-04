@@ -88,7 +88,7 @@ mod any {
 
     #[test]
     fn should_return_any_variant_when_called_then_provide_wildcard_access() {
-        let result = AllowedHeaders::any();
+    let result = AllowedHeaders::Any;
 
         assert!(matches!(result, AllowedHeaders::Any));
     }
@@ -115,7 +115,7 @@ mod allows_headers {
 
     #[test]
     fn should_allow_all_headers_when_any_variant_then_accept_request_headers() {
-        let headers = AllowedHeaders::any();
+    let headers = AllowedHeaders::Any;
 
         let is_allowed = headers.allows_headers("x-custom");
 
@@ -124,7 +124,7 @@ mod allows_headers {
 
     #[test]
     fn should_allow_all_headers_with_cache_when_any_variant_then_return_true() {
-        let headers = AllowedHeaders::any();
+    let headers = AllowedHeaders::Any;
         let mut cache = AllowedHeadersCache::new();
 
         assert!(headers.allows_headers_with_cache("x-custom", &mut cache));
