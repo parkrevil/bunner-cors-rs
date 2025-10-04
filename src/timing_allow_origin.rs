@@ -7,10 +7,6 @@ pub enum TimingAllowOrigin {
 }
 
 impl TimingAllowOrigin {
-    pub fn any() -> Self {
-        Self::Any
-    }
-
     pub fn list<I, S>(values: I) -> Self
     where
         I: IntoIterator<Item = S>,

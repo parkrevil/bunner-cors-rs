@@ -175,11 +175,12 @@ impl<'a> HeaderBuilder<'a> {
     }
 
     pub(crate) fn build_max_age_header(&self) -> HeaderCollection {
-        if let Some(value) = &self.options.max_age
-            && !value.is_empty()
-        {
+        if let Some(value) = self.options.max_age {
             let mut headers = HeaderCollection::with_estimate(1);
-            headers.push(header::ACCESS_CONTROL_MAX_AGE.to_string(), value.clone());
+            headers.push(
+                header::ACCESS_CONTROL_MAX_AGE.to_string(),
+                value.to_string(),
+            );
             return headers;
         }
         HeaderCollection::new()

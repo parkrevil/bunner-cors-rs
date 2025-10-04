@@ -248,7 +248,7 @@ mod check {
 
         #[test]
         fn should_emit_timing_allow_origin_when_simple_request_has_wildcard_then_return_star() {
-            let cors = cors().timing_allow_origin(TimingAllowOrigin::any()).build();
+            let cors = cors().timing_allow_origin(TimingAllowOrigin::Any).build();
 
             let headers = assert_simple(simple_request().origin("https://foo.bar").check(&cors));
 

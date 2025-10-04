@@ -1,39 +1,17 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{Cors, CorsDecision, CorsOptions, Origin, PreflightRejectionReason};
+use bunner_cors_rs::{CorsDecision, Origin, PreflightRejectionReason};
 use common::asserts::{assert_preflight, assert_vary_contains, assert_vary_not_contains};
 use common::builders::{cors, preflight_request};
 use common::headers::{has_header, header_value};
-
-mod new {
-    use super::*;
-
-    #[test]
-    fn should_return_error_when_max_age_empty_then_fail_validation() {
-        let result = Cors::new(CorsOptions {
-            max_age: Some(String::new()),
-            ..CorsOptions::default()
-        });
-
-        let error = match result {
-            Ok(_) => panic!("empty max-age should be rejected"),
-            Err(error) => error,
-        };
-
-        assert_eq!(
-            error.to_string(),
-            "The max-age value '' must be a non-negative integer representing seconds.",
-        );
-    }
-}
 
 mod check {
     use super::*;
 
     #[test]
     fn should_emit_max_age_when_configured_then_include_in_preflight_response() {
-        let cors = cors().max_age("600").build();
+        let cors = cors().max_age(600).build();
 
         let headers = assert_preflight(
             preflight_request()
@@ -64,7 +42,7 @@ mod check {
 
     #[test]
     fn should_emit_zero_max_age_when_configured_then_include_header() {
-        let cors = cors().max_age("0").build();
+        let cors = cors().max_age(0).build();
 
         let headers = assert_preflight(
             preflight_request()

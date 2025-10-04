@@ -16,7 +16,6 @@ pub enum ValidationError {
     ExposeHeadersWildcardRequiresCredentialsDisabled,
     ExposeHeadersWildcardCannotBeCombined,
     ExposeHeadersListContainsInvalidToken,
-    InvalidMaxAge(String),
     PrivateNetworkRequiresCredentials,
     PrivateNetworkRequiresSpecificOrigin,
     AllowedMethodsCannotContainEmptyToken,
@@ -52,10 +51,6 @@ impl Display for ValidationError {
             ),
             ValidationError::ExposeHeadersListContainsInvalidToken => f.write_str(
                 "Exposed headers lists may only contain valid HTTP header field names.",
-            ),
-            ValidationError::InvalidMaxAge(value) => write!(
-                f,
-                "The max-age value '{value}' must be a non-negative integer representing seconds."
             ),
             ValidationError::PrivateNetworkRequiresCredentials => f.write_str(
                 "Allowing private network access requires enabling credentials so Access-Control-Allow-Credentials can be set to true.",
@@ -99,7 +94,7 @@ pub struct CorsOptions {
     pub allowed_headers: AllowedHeaders,
     pub exposed_headers: ExposedHeaders,
     pub credentials: bool,
-    pub max_age: Option<String>,
+    pub max_age: Option<u64>,
     pub allow_null_origin: bool,
     pub allow_private_network: bool,
     pub timing_allow_origin: Option<TimingAllowOrigin>,
@@ -194,13 +189,6 @@ impl CorsOptions {
                 if values.values().iter().any(|value| value.trim() == "*") {
                     return Err(ValidationError::ExposeHeadersWildcardCannotBeCombined);
                 }
-            }
-        }
-
-        if let Some(value) = &self.max_age {
-            let trimmed = value.trim();
-            if trimmed.is_empty() || trimmed.parse::<u64>().is_err() {
-                return Err(ValidationError::InvalidMaxAge(value.clone()));
             }
         }
 

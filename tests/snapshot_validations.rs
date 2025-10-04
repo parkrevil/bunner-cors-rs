@@ -53,7 +53,7 @@ mod capture_preflight {
             .origin(Origin::list([OriginMatcher::exact("https://mirror.dev")]))
             .credentials(true)
             .allowed_headers(AllowedHeaders::list(["X-Trace-Id"]))
-            .max_age("3600")
+            .max_age(3600)
             .build();
 
         let snapshot = super::capture_preflight(
@@ -80,7 +80,7 @@ mod capture_preflight {
             .credentials(true)
             .allowed_headers(AllowedHeaders::list(["X-Strict", "X-Trace"]))
             .exposed_headers(["X-Result"])
-            .max_age("0")
+            .max_age(0)
             .build();
 
         let snapshot = super::capture_preflight(

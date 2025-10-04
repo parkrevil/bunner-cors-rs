@@ -70,10 +70,6 @@ mod validate {
                 "valid HTTP header",
             ),
             (
-                ValidationError::InvalidMaxAge("twenty".into()),
-                "must be a non-negative integer",
-            ),
-            (
                 ValidationError::PrivateNetworkRequiresCredentials,
                 "requires enabling credentials",
             ),
@@ -307,18 +303,6 @@ mod validate {
     }
 
     #[test]
-    fn should_return_error_when_max_age_negative_then_reject_configuration() {
-        let options = CorsOptions {
-            max_age: Some("-1".to_string()),
-            ..CorsOptions::default()
-        };
-
-        let result = options.validate();
-
-        assert!(matches!(result, Err(ValidationError::InvalidMaxAge(_))));
-    }
-
-    #[test]
     fn should_return_error_when_expose_headers_contains_empty_value_then_reject_configuration() {
         let options = CorsOptions {
             exposed_headers: ExposedHeaders::list(["  ", "X-Trace"]),
@@ -397,7 +381,7 @@ mod validate {
     {
         let options = CorsOptions {
             credentials: true,
-            timing_allow_origin: Some(TimingAllowOrigin::any()),
+            timing_allow_origin: Some(TimingAllowOrigin::Any),
             origin: Origin::list(["https://api.test"]),
             ..CorsOptions::default()
         };
@@ -427,30 +411,12 @@ mod validate {
     }
 
     #[test]
-    fn should_return_error_when_max_age_not_numeric_then_reject_configuration() {
+    fn should_return_ok_when_max_age_configured_then_accept_configuration() {
         let options = CorsOptions {
-            max_age: Some("ten minutes".into()),
+            max_age: Some(600),
             ..CorsOptions::default()
         };
 
-        let result = options.validate();
-
-        assert!(matches!(
-            result,
-            Err(ValidationError::InvalidMaxAge(value)) if value == "ten minutes"
-        ));
-    }
-
-    #[test]
-    fn should_return_error_when_max_age_blank_then_reject_configuration() {
-        let options = CorsOptions {
-            max_age: Some("  ".into()),
-            ..CorsOptions::default()
-        };
-
-        assert!(matches!(
-            options.validate(),
-            Err(ValidationError::InvalidMaxAge(value)) if value.trim().is_empty()
-        ));
+        assert!(options.validate().is_ok());
     }
 }

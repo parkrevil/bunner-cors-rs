@@ -485,7 +485,7 @@ mod build_max_age_header {
     #[test]
     fn should_emit_max_age_header_when_max_age_configured_then_include_value() {
         let options = CorsOptions {
-            max_age: Some("600".into()),
+            max_age: Some(600),
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
@@ -501,19 +501,6 @@ mod build_max_age_header {
     #[test]
     fn should_return_empty_collection_when_max_age_missing_then_skip_header() {
         let options = CorsOptions::default();
-        let builder = HeaderBuilder::new(&options);
-
-        let map = builder.build_max_age_header().into_headers();
-
-        assert!(map.is_empty());
-    }
-
-    #[test]
-    fn should_return_empty_collection_when_max_age_blank_then_skip_header() {
-        let options = CorsOptions {
-            max_age: Some(String::new()),
-            ..CorsOptions::default()
-        };
         let builder = HeaderBuilder::new(&options);
 
         let map = builder.build_max_age_header().into_headers();
@@ -617,7 +604,7 @@ mod build_timing_allow_origin_header {
     #[test]
     fn should_emit_wildcard_value_when_timing_allow_origin_any_then_include_header() {
         let options = CorsOptions {
-            timing_allow_origin: Some(TimingAllowOrigin::any()),
+            timing_allow_origin: Some(TimingAllowOrigin::Any),
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);

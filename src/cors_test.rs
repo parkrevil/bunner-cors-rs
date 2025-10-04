@@ -254,7 +254,7 @@ mod process_preflight {
     fn should_attach_expected_headers_when_origin_allowed_then_accept_preflight_request() {
         let cors = cors_with(CorsOptions {
             origin: Origin::any(),
-            max_age: Some("600".into()),
+            max_age: Some(600),
             ..CorsOptions::default()
         });
         let request = request("OPTIONS", "https://allowed.test", "GET", "X-Test");
@@ -368,7 +368,7 @@ mod process_simple {
     #[test]
     fn should_emit_timing_allow_origin_when_configuration_allows_then_return_wildcard_value() {
         let cors = Cors::new(CorsOptions {
-            timing_allow_origin: Some(TimingAllowOrigin::any()),
+            timing_allow_origin: Some(TimingAllowOrigin::Any),
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");

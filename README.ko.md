@@ -347,7 +347,7 @@ Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 
 쿠키, Authorization 헤더, TLS 클라이언트 인증서 등 자격증명을 포함한 요청을 허용할지 결정합니다.
 <br>
-> `true`로 설정시 `Origin::Any`,  `AllowedHeaders::Any`, `TimingAllowOrigin::any()` 옵션을 사용할 수 없습니다.
+> `true`로 설정시 `Origin::Any`,  `AllowedHeaders::Any`, `TimingAllowOrigin::Any` 옵션을 사용할 수 없습니다.
 
 ```rust
 let options = CorsOptions {
@@ -371,7 +371,7 @@ Vary: Origin
 ```rust
 let options = CorsOptions {
     origin: Origin::Any,
-    max_age: Some("3600".into()),
+    max_age: Some(3600),
     ..Default::default()
 };
 ```
@@ -438,7 +438,7 @@ Vary: Origin
 
 `Timing-Allow-Origin` 헤더를 설정하여, 특정 Origin이 리소스 타이밍 정보에 접근할 수 있도록 허용합니다. 성능 분석 도구나 모니터링 서비스에서 유용합니다.
 
-> **제약사항**: `credentials: true`인 경우 `TimingAllowOrigin::any()` 와일드카드를 사용할 수 없습니다.
+> **제약사항**: `credentials: true`인 경우 `TimingAllowOrigin::Any` 와일드카드를 사용할 수 없습니다.
 
 ```rust
 use bunner_cors_rs::TimingAllowOrigin;
@@ -471,10 +471,9 @@ Timing-Allow-Origin: https://analytics.example.com
 | `AllowedHeadersListCannotContainWildcard` | 허용 헤더 목록에 `"*"` 포함 불가 (대신 `AllowedHeaders::Any` 사용) |
 | `ExposeHeadersWildcardRequiresCredentialsDisabled` | 노출 헤더에 `"*"`를 쓰려면 `credentials: false` 필요 |
 | `ExposeHeadersWildcardCannotBeCombined` | 노출 헤더에 `"*"`와 다른 헤더를 함께 지정 불가 |
-| `InvalidMaxAge` | `max_age`가 유효한 숫자 형식이 아님 |
 | `PrivateNetworkRequiresCredentials` | `allow_private_network: true`일 때 `credentials: true` 필수 |
 | `PrivateNetworkRequiresSpecificOrigin` | `allow_private_network: true`일 때 `Origin::Any` 사용 불가 |
-| `TimingAllowOriginWildcardNotAllowedWithCredentials` | `credentials: true`일 때 `TimingAllowOrigin::any()` 사용 불가 |
+| `TimingAllowOriginWildcardNotAllowedWithCredentials` | `credentials: true`일 때 `TimingAllowOrigin::Any` 사용 불가 |
 | `AllowedMethodsCannotContainWildcard` | 허용 메서드 목록에 `"*"` 포함 불가 |
 | `AllowedMethodsListContainsInvalidToken` | 허용 메서드가 유효한 HTTP 메서드 토큰이 아님 |
 | `AllowedHeadersListContainsInvalidToken` | 허용 헤더가 유효한 HTTP 헤더 이름이 아님 |

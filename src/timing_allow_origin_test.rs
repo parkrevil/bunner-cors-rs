@@ -1,18 +1,5 @@
 use super::TimingAllowOrigin;
 
-mod any {
-    use super::*;
-
-    #[test]
-    fn should_return_wildcard_when_any_then_emit_star_header() {
-        let timing = TimingAllowOrigin::any();
-
-        let header = timing.header_value();
-
-        assert_eq!(header, Some("*".to_string()));
-    }
-}
-
 mod list {
     use super::*;
 
@@ -61,4 +48,13 @@ mod list {
             TimingAllowOrigin::List(vec![String::new(), "https://metrics.test".to_string()])
         );
     }
+}
+
+#[test]
+fn should_return_wildcard_when_any_variant_then_emit_star_header() {
+    let timing = TimingAllowOrigin::Any;
+
+    let header = timing.header_value();
+
+    assert_eq!(header, Some("*".to_string()));
 }

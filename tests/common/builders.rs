@@ -11,7 +11,7 @@ pub struct CorsBuilder {
     allowed_headers: Option<AllowedHeaders>,
     exposed_headers: Option<ExposedHeaders>,
     credentials: Option<bool>,
-    max_age: Option<String>,
+    max_age: Option<u64>,
     allow_null_origin: Option<bool>,
     private_network: Option<bool>,
     timing_allow_origin: Option<TimingAllowOrigin>,
@@ -60,8 +60,8 @@ impl CorsBuilder {
         self
     }
 
-    pub fn max_age(mut self, value: impl Into<String>) -> Self {
-        self.max_age = Some(value.into());
+    pub fn max_age(mut self, value: u64) -> Self {
+        self.max_age = Some(value);
         self
     }
 
