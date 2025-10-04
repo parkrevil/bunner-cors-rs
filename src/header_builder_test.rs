@@ -1,4 +1,5 @@
 use super::*;
+use crate::ExposedHeaders;
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
 use crate::constants::header;
@@ -412,7 +413,7 @@ mod build_exposed_headers {
     #[test]
     fn should_emit_comma_separated_header_when_values_present_then_include_exposed_headers() {
         let options = CorsOptions {
-            exposed_headers: Some(vec!["X-Trace".into(), "X-Auth".into()]),
+            exposed_headers: ExposedHeaders::list(["X-Trace", "X-Auth"]),
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
@@ -438,7 +439,7 @@ mod build_exposed_headers {
     #[test]
     fn should_return_empty_collection_when_configured_list_empty_then_skip_exposed_headers() {
         let options = CorsOptions {
-            exposed_headers: Some(Vec::new()),
+            exposed_headers: ExposedHeaders::list(std::iter::empty::<&str>()),
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
@@ -451,7 +452,7 @@ mod build_exposed_headers {
     #[test]
     fn should_emit_trimmed_value_when_values_have_whitespace_then_include_exposed_headers() {
         let options = CorsOptions {
-            exposed_headers: Some(vec!["  *  ".into()]),
+            exposed_headers: ExposedHeaders::list(["  *  "]),
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
@@ -467,7 +468,7 @@ mod build_exposed_headers {
     #[test]
     fn should_return_empty_collection_when_values_trim_to_empty_then_skip_exposed_headers() {
         let options = CorsOptions {
-            exposed_headers: Some(vec!["   ".into(), "\t".into()]),
+            exposed_headers: ExposedHeaders::list(["   ", "\t"]),
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);

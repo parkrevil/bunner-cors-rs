@@ -1,4 +1,5 @@
 use super::*;
+use crate::ExposedHeaders;
 use crate::Headers;
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
@@ -66,7 +67,7 @@ fn cors_with(options: CorsOptions) -> Cors {
     Cors::new(CorsOptions {
         methods: AllowedMethods::list(["GET"]),
         allowed_headers: AllowedHeaders::list(["X-Test"]),
-        exposed_headers: Some(vec!["X-Test".into()]),
+        exposed_headers: ExposedHeaders::list(["X-Test"]),
         ..options
     })
     .expect("valid CORS configuration")

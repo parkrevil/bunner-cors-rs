@@ -1,6 +1,7 @@
 use bunner_cors_rs::constants::method;
 use bunner_cors_rs::{
-    AllowedHeaders, AllowedMethods, Cors, CorsOptions, Origin, RequestContext, TimingAllowOrigin,
+    AllowedHeaders, AllowedMethods, Cors, CorsOptions, ExposedHeaders, Origin, RequestContext,
+    TimingAllowOrigin,
 };
 
 #[derive(Default)]
@@ -8,7 +9,7 @@ pub struct CorsBuilder {
     origin: Option<Origin>,
     methods: Option<AllowedMethods>,
     allowed_headers: Option<AllowedHeaders>,
-    exposed_headers: Option<Vec<String>>,
+    exposed_headers: Option<ExposedHeaders>,
     credentials: Option<bool>,
     max_age: Option<String>,
     allow_null_origin: Option<bool>,
@@ -45,7 +46,12 @@ impl CorsBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        self.exposed_headers = Some(headers.into_iter().map(Into::into).collect());
+        self.exposed_headers = Some(ExposedHeaders::list(headers));
+        self
+    }
+
+    pub fn exposed_headers_config(mut self, headers: ExposedHeaders) -> Self {
+        self.exposed_headers = Some(headers);
         self
     }
 
@@ -101,7 +107,7 @@ impl CorsBuilder {
             origin,
             methods: self.methods.unwrap_or(default_methods),
             allowed_headers: self.allowed_headers.unwrap_or(default_allowed_headers),
-            exposed_headers: self.exposed_headers.or(default_exposed_headers),
+            exposed_headers: self.exposed_headers.unwrap_or(default_exposed_headers),
             credentials,
             max_age: self.max_age.or(default_max_age),
             allow_null_origin: self.allow_null_origin.unwrap_or(default_allow_null_origin),

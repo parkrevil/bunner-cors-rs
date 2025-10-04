@@ -1,6 +1,7 @@
 use super::*;
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
+use crate::exposed_headers::ExposedHeaders;
 use crate::origin::Origin;
 use crate::timing_allow_origin::TimingAllowOrigin;
 
@@ -14,7 +15,7 @@ mod default {
         assert!(matches!(options.origin, Origin::Any));
         assert_eq!(options.methods, AllowedMethods::default());
         assert!(options.allowed_headers == AllowedHeaders::default());
-        assert_eq!(options.exposed_headers, None);
+        assert!(matches!(options.exposed_headers, ExposedHeaders::None));
         assert!(!options.credentials);
         assert!(options.max_age.is_none());
         assert!(!options.allow_null_origin);
@@ -247,7 +248,7 @@ mod validate {
     fn should_return_error_when_expose_headers_wildcard_with_credentials_then_require_credentials_disabled()
      {
         let options = CorsOptions {
-            exposed_headers: Some(vec!["*".to_string()]),
+            exposed_headers: ExposedHeaders::Any,
             credentials: true,
             origin: Origin::list(["https://api.test"]),
             ..CorsOptions::default()
@@ -264,7 +265,7 @@ mod validate {
     #[test]
     fn should_return_error_when_expose_headers_contains_invalid_token_then_reject_configuration() {
         let options = CorsOptions {
-            exposed_headers: Some(vec!["X-Trace".to_string(), "X Header".to_string()]),
+            exposed_headers: ExposedHeaders::list(["X-Trace", "X Header"]),
             ..CorsOptions::default()
         };
 
@@ -280,7 +281,7 @@ mod validate {
     fn should_return_ok_when_expose_headers_wildcard_without_credentials_then_accept_configuration()
     {
         let options = CorsOptions {
-            exposed_headers: Some(vec!["*".to_string()]),
+            exposed_headers: ExposedHeaders::Any,
             ..CorsOptions::default()
         };
 
@@ -293,7 +294,7 @@ mod validate {
     fn should_return_error_when_expose_headers_wildcard_combined_with_headers_then_reject_configuration()
      {
         let options = CorsOptions {
-            exposed_headers: Some(vec!["*".to_string(), "X-Test".to_string()]),
+            exposed_headers: ExposedHeaders::list(["*", "X-Test"]),
             ..CorsOptions::default()
         };
 
@@ -320,7 +321,7 @@ mod validate {
     #[test]
     fn should_return_error_when_expose_headers_contains_empty_value_then_reject_configuration() {
         let options = CorsOptions {
-            exposed_headers: Some(vec!["  ".to_string(), "X-Trace".to_string()]),
+            exposed_headers: ExposedHeaders::list(["  ", "X-Trace"]),
             ..CorsOptions::default()
         };
 
@@ -380,7 +381,7 @@ mod validate {
         let options = CorsOptions {
             origin: Origin::list(["https://api.test"]),
             allowed_headers: AllowedHeaders::list(["X-Test"]),
-            exposed_headers: Some(vec!["X-Expose".to_string()]),
+            exposed_headers: ExposedHeaders::list(["X-Expose"]),
             credentials: true,
             timing_allow_origin: Some(TimingAllowOrigin::list(["https://metrics.test"])),
             ..CorsOptions::default()

@@ -114,7 +114,7 @@ match cors.check(&request) {
 | `origin` | `Origin::Any` | 모든 Origin 허용 |
 | `methods` | `["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]` | 일반적인 HTTP 메서드 |
 | `allowed_headers` | `AllowedHeaders::List()` | 명시적으로 허용된 헤더만 |
-| `exposed_headers` | `None` | 노출 헤더 없음 |
+| `exposed_headers` | `ExposedHeaders::None` | 노출 헤더 없음 |
 | `credentials` | `false` | 자격증명 불허 |
 | `max_age` | `None` | Preflight 캐시 미설정 |
 | `allow_null_origin` | `false` | null Origin 불허 |
@@ -314,9 +314,11 @@ Access-Control-Allow-Headers: Content-Type,Authorization,X-Api-Key
 Simple 요청에서 클라이언트에게 노출할 응답 헤더를 지정합니다.
 
 ```rust
+use bunner_cors_rs::ExposedHeaders;
+
 let options = CorsOptions {
     origin: Origin::Any,
-    exposed_headers: Some(vec!["X-Total-Count".into(), "X-Page-Number".into()]),
+    exposed_headers: ExposedHeaders::list(["X-Total-Count", "X-Page-Number"]),
     ..Default::default()
 };
 ```
@@ -332,7 +334,7 @@ Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 > let options = CorsOptions {
 >     origin: Origin::Any,
 >     credentials: false,
->     exposed_headers: Some(vec!["*".into()]),
+>     exposed_headers: ExposedHeaders::Any,
 >     ..Default::default()
 > };
 > ```

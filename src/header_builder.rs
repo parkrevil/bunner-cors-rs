@@ -1,6 +1,7 @@
 use crate::allowed_headers::AllowedHeaders;
 use crate::constants::header;
 use crate::context::RequestContext;
+use crate::exposed_headers::ExposedHeaders;
 use crate::headers::HeaderCollection;
 use crate::options::CorsOptions;
 use crate::origin::OriginDecision;
@@ -143,23 +144,34 @@ impl<'a> HeaderBuilder<'a> {
     }
 
     pub(crate) fn build_exposed_headers(&self) -> HeaderCollection {
-        if let Some(values) = &self.options.exposed_headers
-            && !values.is_empty()
-        {
-            let entries = values
-                .iter()
-                .map(|entry| entry.trim())
-                .filter(|entry| !entry.is_empty())
-                .collect::<Vec<_>>();
-
-            if !entries.is_empty() {
-                let value = entries.join(",");
+        match &self.options.exposed_headers {
+            ExposedHeaders::None => HeaderCollection::new(),
+            ExposedHeaders::Any => {
                 let mut headers = HeaderCollection::with_estimate(1);
-                headers.push(header::ACCESS_CONTROL_EXPOSE_HEADERS.to_string(), value);
-                return headers;
+                headers.push(
+                    header::ACCESS_CONTROL_EXPOSE_HEADERS.to_string(),
+                    "*".to_string(),
+                );
+                headers
+            }
+            ExposedHeaders::List(values) if values.is_empty() => HeaderCollection::new(),
+            ExposedHeaders::List(values) => {
+                let entries = values
+                    .iter()
+                    .map(|entry| entry.trim())
+                    .filter(|entry| !entry.is_empty())
+                    .collect::<Vec<_>>();
+
+                if entries.is_empty() {
+                    HeaderCollection::new()
+                } else {
+                    let value = entries.join(",");
+                    let mut headers = HeaderCollection::with_estimate(1);
+                    headers.push(header::ACCESS_CONTROL_EXPOSE_HEADERS.to_string(), value);
+                    headers
+                }
             }
         }
-        HeaderCollection::new()
     }
 
     pub(crate) fn build_max_age_header(&self) -> HeaderCollection {

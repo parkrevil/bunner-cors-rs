@@ -1,7 +1,7 @@
 use bunner_cors_rs::{
-    AllowedHeaders, AllowedMethods, Cors, CorsDecision, CorsOptions, NormalizedRequest, Origin,
-    OriginDecision, OriginMatcher, RequestContext, TimingAllowOrigin, equals_ignore_case,
-    normalize_lower,
+    AllowedHeaders, AllowedMethods, Cors, CorsDecision, CorsOptions, ExposedHeaders,
+    NormalizedRequest, Origin, OriginDecision, OriginMatcher, RequestContext, TimingAllowOrigin,
+    equals_ignore_case, normalize_lower,
 };
 use criterion::{
     BenchmarkId, Criterion, SamplingMode, Throughput, black_box, criterion_group, criterion_main,
@@ -130,7 +130,7 @@ fn build_cors() -> Cors {
         ]),
         methods: AllowedMethods::list(["GET", "POST", "OPTIONS"]),
         allowed_headers: AllowedHeaders::list(["X-Custom-One", "X-Custom-Two", "Content-Type"]),
-        exposed_headers: Some(vec!["X-Expose-One".into(), "X-Expose-Two".into()]),
+        exposed_headers: ExposedHeaders::list(["X-Expose-One", "X-Expose-Two"]),
         credentials: true,
         max_age: Some("600".into()),
         allow_null_origin: false,
@@ -153,7 +153,7 @@ fn build_cors_options_base() -> CorsOptions {
             "Content-Type",
             "X-Profiling",
         ]),
-        exposed_headers: Some(vec!["X-Expose-One".into(), "X-Expose-Two".into()]),
+        exposed_headers: ExposedHeaders::list(["X-Expose-One", "X-Expose-Two"]),
         credentials: true,
         max_age: Some("600".into()),
         allow_null_origin: false,
@@ -170,7 +170,7 @@ fn build_cors_wildcard() -> Cors {
         origin: Origin::any(),
         methods: AllowedMethods::list(["GET", "POST", "OPTIONS"]),
         allowed_headers: AllowedHeaders::default(),
-        exposed_headers: None,
+        exposed_headers: ExposedHeaders::None,
         credentials: false,
         max_age: None,
         allow_null_origin: false,
@@ -213,7 +213,7 @@ fn build_cors_timing_enabled() -> Cors {
 
 fn build_cors_exposed_headers_disabled() -> Cors {
     Cors::new(CorsOptions {
-        exposed_headers: None,
+        exposed_headers: ExposedHeaders::None,
         ..build_cors_options_base()
     })
     .expect("valid exposed headers off configuration")
@@ -234,7 +234,7 @@ fn build_cors_with_large_lists(size: usize) -> Cors {
         origin: Origin::list(origin_matchers),
         methods: AllowedMethods::list(methods),
         allowed_headers: AllowedHeaders::list(headers),
-        exposed_headers: None,
+        exposed_headers: ExposedHeaders::None,
         credentials: true,
         max_age: Some("120".into()),
         allow_null_origin: false,

@@ -1,5 +1,6 @@
 use crate::allowed_headers::AllowedHeaders;
 use crate::allowed_methods::AllowedMethods;
+use crate::exposed_headers::ExposedHeaders;
 use crate::origin::Origin;
 use crate::timing_allow_origin::TimingAllowOrigin;
 use crate::util::is_http_token;
@@ -96,7 +97,7 @@ pub struct CorsOptions {
     pub origin: Origin,
     pub methods: AllowedMethods,
     pub allowed_headers: AllowedHeaders,
-    pub exposed_headers: Option<Vec<String>>,
+    pub exposed_headers: ExposedHeaders,
     pub credentials: bool,
     pub max_age: Option<String>,
     pub allow_null_origin: bool,
@@ -110,7 +111,7 @@ impl Default for CorsOptions {
             origin: Origin::Any,
             methods: AllowedMethods::default(),
             allowed_headers: AllowedHeaders::default(),
-            exposed_headers: None,
+            exposed_headers: ExposedHeaders::None,
             credentials: false,
             max_age: None,
             allow_null_origin: false,
@@ -169,27 +170,30 @@ impl CorsOptions {
             return Err(ValidationError::AllowedHeadersListContainsInvalidToken);
         }
 
-        if let Some(values) = &self.exposed_headers {
-            if values.iter().any(|value| value.trim().is_empty()) {
-                return Err(ValidationError::ExposeHeadersCannotContainEmptyValue);
-            }
-
-            if values.iter().any(|value| value.trim() == "*") {
+        match &self.exposed_headers {
+            ExposedHeaders::None => {}
+            ExposedHeaders::Any => {
                 if self.credentials {
                     return Err(ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled);
                 }
+            }
+            ExposedHeaders::List(values) => {
+                if values.values().iter().any(|value| value.trim().is_empty()) {
+                    return Err(ValidationError::ExposeHeadersCannotContainEmptyValue);
+                }
 
-                if values.len() > 1 {
+                if values
+                    .values()
+                    .iter()
+                    .map(|value| value.trim())
+                    .any(|value| !is_http_token(value))
+                {
+                    return Err(ValidationError::ExposeHeadersListContainsInvalidToken);
+                }
+
+                if values.values().iter().any(|value| value.trim() == "*") {
                     return Err(ValidationError::ExposeHeadersWildcardCannotBeCombined);
                 }
-            }
-
-            if values
-                .iter()
-                .map(|value| value.trim())
-                .any(|value| !is_http_token(value))
-            {
-                return Err(ValidationError::ExposeHeadersListContainsInvalidToken);
             }
         }
 
