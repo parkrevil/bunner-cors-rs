@@ -78,7 +78,6 @@ bunner_cors_rs = "0.1.0"
 
 가장 간단한 CORS 설정부터 시작해보겠습니다.
 
-> 💡 `Cors` 인스턴스는 애플리케이션 시작 시 한 번만 생성하고 요청마다 재사용하세요. 요청마다 새로 생성하면 불필요한 성능 부담이 생깁니다.
 
 ```rust
 use bunner_cors_rs::{Cors, CorsOptions, Origin, RequestContext};
@@ -102,6 +101,9 @@ match cors.check(&request) {
     Err(e) => eprintln!("CORS error: {}", e),
 }
 ```
+
+> [!TIP]
+> `Cors` 인스턴스는 애플리케이션 시작 시 한 번만 생성하고 요청마다 재사용하세요. 요청마다 새로 생성하면 불필요한 성능 부담이 생깁니다.
 
 ---
 
@@ -128,7 +130,6 @@ match cors.check(&request) {
 
 개발 환경이나 공개 API에서 사용합니다.
 
-> 제약: `credentials: true`일 때 `Origin::Any`는 사용할 수 없습니다.
 
 ```rust
 use bunner_cors_rs::{CorsOptions, Origin};
@@ -144,6 +145,10 @@ Access-Control-Allow-Origin: *
 Vary: Origin
 ```
 
+> [!IMPORTANT]
+> `credentials: true`일 때 `Origin::Any`는 사용할 수 없습니다.
+> 
+> [!NOTE]
 > 이 라이브러리는 상황에 따라 `Vary: Origin`을 자동으로 추가합니다. 응답 헤더는 그대로 사용하면 됩니다.
 
 #### `Origin::exact`
@@ -187,8 +192,6 @@ Vary: Origin
 
 정규식을 사용한 유연한 매칭입니다. 하위 도메인 전체를 허용할 때 유용합니다.
 
-> **제약사항**: 패턴 길이는 최대 50,000자, 컴파일 시간은 100ms로 제한됩니다. 초과 시 `PatternError`가 발생합니다.
-
 ```rust
 let options = CorsOptions {
     origin: Origin::list(vec![
@@ -203,7 +206,10 @@ Access-Control-Allow-Origin: https://api.example.com
 Vary: Origin
 ```
 
-> 모범사례:
+> [!CAUTION]
+> 패턴 길이는 최대 50,000자, 컴파일 시간은 100ms로 제한됩니다. 초과 시 `PatternError`가 발생합니다.
+>
+> [!TIP]
 > - 가능한 경우 `exact`/`list`를 우선 사용하고, 정규식은 최소화하세요.
 > - 앵커(`^`, `$`)를 사용해 과도한 매칭을 방지하세요.
 > - 점(`.`), 물음표(`?`) 등은 의도대로 이스케이프하세요.
@@ -211,8 +217,6 @@ Vary: Origin
 #### `Origin::predicate`
 
 사용자가 직접 검증 조건을 설정합니다. `true` 반환 시 요청 Origin을 그대로 반영하고, false 반환 시 거부합니다.
-<br>
-더 세밀한 제어가 필요하면 `Origin::custom`을 사용하여 `OriginDecision`을 직접 반환할 수 있습니다.
 
 ```rust
 let options = CorsOptions {
@@ -227,6 +231,9 @@ let options = CorsOptions {
 Access-Control-Allow-Origin: https://api.trusted.com
 Vary: Origin
 ```
+
+> [!TIP]
+> 더 세밀한 제어가 필요하면 `Origin::custom`을 사용하여 `OriginDecision`을 직접 반환할 수 있습니다.
 
 #### `Origin::custom`
 
@@ -255,6 +262,9 @@ let options = CorsOptions {
 };
 ```
 
+> [!WARNING]
+> `credentials: true`인 상황에서 사용자 콜백이 `OriginDecision::Any`를 반환하면 런타임 오류가 발생합니다. CORS 표준상 자격증명과 와일드카드 Origin은 함께 사용할 수 없습니다.
+
 ---
 
 ### `methods`
@@ -274,13 +284,15 @@ let options = CorsOptions {
 Access-Control-Allow-Methods: GET,POST,DELETE
 ```
 
+> [!TIP]
+> 유효한 HTTP 메서드 토큰만 허용됩니다. 표준에 맞춰 대문자 메서드명을 사용하는 것을 권장합니다.
+
 ---
 
 ### `allowed_headers`
 
 Preflight 요청에서 클라이언트가 보낼 수 있는 헤더를 지정합니다.
 
-> 제약: `credentials: true`일 때 `AllowedHeaders::Any`는 사용할 수 없습니다.
 
 ```rust
 use bunner_cors_rs::AllowedHeaders;
@@ -296,14 +308,15 @@ let options = CorsOptions {
 Access-Control-Allow-Headers: Content-Type,Authorization,X-Api-Key
 ```
 
+> [!IMPORTANT]
+> - `credentials: true`일 때 `AllowedHeaders::Any`는 사용할 수 없습니다.
+> - 허용 헤더 목록에 `"*"`를 포함할 수 없습니다. 와일드카드가 필요하다면 `AllowedHeaders::Any`를 사용하세요.
+
 
 ### `exposed_headers`
 
 Simple 요청에서 클라이언트에게 노출할 응답 헤더를 지정합니다.
 
-> 제약: `credentials: true`일 때 `ExposedHeaders::Any`는 사용할 수 없습니다.
-
-> 제약: `"*"`를 다른 헤더명과 혼합해 사용할 수 없습니다.
 
 ```rust
 use bunner_cors_rs::ExposedHeaders;
@@ -319,13 +332,16 @@ let options = CorsOptions {
 Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 ```
 
+> [!IMPORTANT]
+> - `credentials: true`일 때 `ExposedHeaders::Any`는 사용할 수 없습니다.
+> - `"*"`를 다른 헤더명과 혼합해 사용할 수 없습니다.
+
 ---
 
 ### `credentials`
 
 쿠키, Authorization 헤더, TLS 클라이언트 인증서 등 자격증명을 포함한 요청을 허용할지 결정합니다.
 
-> 제약: `credentials: true`일 때 `Origin::Any`, `AllowedHeaders::Any`, `ExposedHeaders::Any`, `TimingAllowOrigin::Any`는 사용할 수 없습니다.
 
 ```rust
 let options = CorsOptions {
@@ -339,6 +355,12 @@ Access-Control-Allow-Origin: https://app.example.com
 Access-Control-Allow-Credentials: true
 Vary: Origin
 ```
+
+> [!IMPORTANT]
+> `credentials: true`일 때 다음 설정은 사용할 수 없습니다: `Origin::Any`, `AllowedHeaders::Any`, `ExposedHeaders::Any`, `TimingAllowOrigin::Any`.
+
+> [!TIP]
+> 쿠키 기반 인증을 사용하는 경우, 크로스 사이트 요청에는 쿠키에 `SameSite=None; Secure` 속성을 설정해야 브라우저가 전송합니다.
 
 ---
 
@@ -358,13 +380,18 @@ let options = CorsOptions {
 Access-Control-Max-Age: 3600
 ```
 
+> [!NOTE]
+> `Some(0)`은 "캐시하지 않음"을 의미합니다. `None`과 달리 헤더가 `Access-Control-Max-Age: 0`으로 전송되어 브라우저에 캐시 금지를 명시합니다.
+
+> 일부 브라우저는 `Access-Control-Max-Age`에 자체 상한을 둘 수 있습니다. 너무 큰 값을 설정해도 실제 캐시 지속시간은 브라우저 정책에 의해 단축될 수 있습니다.
+
 
 
 ---
 
 ### `allow_null_origin`
 
-요청 헤더의 Origin이 문자열 `"null"`일 때 허용할지 여부를 결정합니다. 보안상 민감하므로 신뢰된 환경에서만 활성화하세요.
+요청 헤더의 Origin이 문자열 `"null"`일 때 허용할지 여부를 결정합니다.
 
 ```rust
 let options = CorsOptions {
@@ -378,15 +405,17 @@ Access-Control-Allow-Origin: null
 Vary: Origin
 ```
 
-> 참고: `Origin` 헤더가 아예 없는 경우와 값이 `"null"`인 경우는 다릅니다. 이 라이브러리는 두 경우를 구분하여 처리합니다.
+> [!WARNING]
+> 보안상 민감하므로 신뢰된 환경에서만 활성화하세요.
+
+> [!NOTE]
+> `Origin` 헤더가 아예 없는 경우와 값이 `"null"`인 경우는 다릅니다. 이 라이브러리는 두 경우를 구분하여 처리합니다.
 
 ---
 
 ### `allow_private_network`
 
-Private Network Access 요청을 허용합니다. 이 옵션을 사용하려면 `credentials: true`와 특정 Origin 설정이 필수입니다.
-
-> 이 라이브러리는 Preflight 응답에 `Access-Control-Allow-Private-Network: true` 헤더를 설정해 줍니다. 이 헤더의 해석과 실제 동작은 브라우저가 결정합니다.
+Private Network Access 요청을 허용합니다.
 
 ```rust
 let options = CorsOptions {
@@ -403,13 +432,19 @@ Access-Control-Allow-Private-Network: true
 Vary: Origin
 ```
 
+> [!IMPORTANT]
+> 이 옵션을 사용하려면 `credentials: true`와 특정 Origin 설정이 필수입니다.
+
+> [!NOTE]
+> 이 라이브러리는 Preflight 응답에 `Access-Control-Allow-Private-Network: true` 헤더를 설정해 줍니다. 이 헤더의 해석과 실제 동작은 브라우저가 결정합니다.
+
+> 브라우저 지원 범위가 제한적일 수 있습니다. 최신 지원 현황을 확인하고 폴백 전략을 고려하세요.
+
 ---
 
 ### `timing_allow_origin`
 
 `Timing-Allow-Origin` 헤더를 설정하여, 특정 Origin이 리소스 타이밍 정보에 접근할 수 있도록 허용합니다. 성능 분석 도구나 모니터링 서비스에서 유용합니다.
-
-> 제약: `credentials: true`일 때 `TimingAllowOrigin::Any`는 사용할 수 없습니다.
 
 ```rust
 use bunner_cors_rs::TimingAllowOrigin;
@@ -426,6 +461,12 @@ let options = CorsOptions {
 ```
 Timing-Allow-Origin: https://analytics.example.com
 ```
+
+> [!IMPORTANT]
+> `credentials: true`일 때 `TimingAllowOrigin::Any`는 사용할 수 없습니다.
+
+> [!CAUTION]
+> `Timing-Allow-Origin: *`는 리소스 타이밍 정보를 광범위하게 노출할 수 있습니다. 프라이버시와 정보 노출 위험을 검토하고 필요한 출처만 명시적으로 허용하세요.
 
 ---
 
@@ -488,7 +529,8 @@ let context = RequestContext {
 let decision = cors.check(&context)?;
 ```
 
-> **프레임워크별 매핑 팁**: HTTP 헤더명은 대소문자를 구분하지 않으므로, 대부분의 프레임워크에서 `headers.get("origin")`처럼 소문자로 접근합니다. Axum/Actix 모두 소문자 헤더명을 권장합니다.
+> [!TIP]
+> HTTP 헤더명은 대소문자를 구분하지 않으므로, 대부분의 프레임워크에서 `headers.get("origin")`처럼 소문자로 접근합니다. Axum/Actix 모두 소문자 헤더명을 권장합니다.
 
 ### 판정 결과 처리
 
@@ -529,6 +571,9 @@ CorsDecision::PreflightRejected(rejection) => {
     return Response::builder().status(403).body(().into()).unwrap();
 }
 ```
+
+> [!CAUTION]
+> 거부 사유는 서버 로그에서만 확인하고, 운영 환경에서는 상세 오류 정보를 클라이언트에 노출하지 않는 것이 좋습니다.
 
 #### `SimpleAccepted`
 
