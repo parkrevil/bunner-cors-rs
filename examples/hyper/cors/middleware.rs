@@ -2,13 +2,11 @@ use std::future::Future;
 use std::pin::Pin;
 
 use bunner_cors_rs::constants::header;
-use bunner_cors_rs::{
-    CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext,
-};
+use bunner_cors_rs::{CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext};
 use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
-use hyper::http::header::{HeaderMap, HeaderName, HeaderValue};
 use hyper::http::StatusCode;
+use hyper::http::header::{HeaderMap, HeaderName, HeaderValue};
 use hyper::service::Service;
 use hyper::{Request, Response};
 
@@ -54,9 +52,9 @@ where
             }
             Ok(CorsDecision::PreflightRejected(rejection)) => {
                 let message = rejection_message(&rejection.reason);
-                Box::pin(async move {
-                    Ok(preflight_rejection(rejection.headers, message.as_str()))
-                })
+                Box::pin(
+                    async move { Ok(preflight_rejection(rejection.headers, message.as_str())) },
+                )
             }
             Ok(CorsDecision::SimpleAccepted { headers }) => {
                 let inner = self.inner.clone();

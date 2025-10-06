@@ -23,7 +23,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         let io = TokioIo::new(stream);
 
         tokio::spawn(async move {
-            let service = cors::middleware::BunnerCors::new(state.cors.clone(), routes::router(state));
+            let service =
+                cors::middleware::BunnerCors::new(state.cors.clone(), routes::router(state));
 
             if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
                 eprintln!("connection error: {err}");

@@ -9,8 +9,8 @@ use hyper::http::{Method, StatusCode};
 use hyper::service::Service;
 use hyper::{Request, Response};
 
-use crate::cors::middleware::CorsBody;
 use crate::cors::SharedAppState;
+use crate::cors::middleware::CorsBody;
 
 type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send>>;
 
