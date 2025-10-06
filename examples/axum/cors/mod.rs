@@ -14,9 +14,7 @@ pub struct AppState {
 
 pub fn build_state() -> Result<AppState, ValidationError> {
     let options = CorsOptions {
-        origin: Origin::list([
-            "http://api.example.com",
-        ]),
+        origin: Origin::list(["http://api.example.com"]),
         methods: AllowedMethods::list(["GET", "POST", "OPTIONS"]),
         allowed_headers: AllowedHeaders::list([
             "Content-Type",
