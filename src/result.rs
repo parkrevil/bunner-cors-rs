@@ -2,6 +2,17 @@ use crate::headers::Headers;
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SimpleRejectionReason {
+    OriginNotAllowed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SimpleRejection {
+    pub headers: Headers,
+    pub reason: SimpleRejectionReason,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreflightRejectionReason {
     OriginNotAllowed,
     MethodNotAllowed { requested_method: String },
@@ -20,6 +31,7 @@ pub enum CorsDecision {
     PreflightAccepted { headers: Headers },
     PreflightRejected(PreflightRejection),
     SimpleAccepted { headers: Headers },
+    SimpleRejected(SimpleRejection),
     NotApplicable,
 }
 

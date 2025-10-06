@@ -1,8 +1,8 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{CorsDecision, Origin};
-use common::asserts::assert_simple;
+use bunner_cors_rs::{CorsDecision, Origin, SimpleRejectionReason};
+use common::asserts::{assert_simple, assert_simple_rejected};
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value};
 
@@ -74,15 +74,18 @@ mod check {
     }
 
     #[test]
-    fn should_omit_sensitive_headers_when_simple_request_origin_disallowed_then_exclude_sensitive()
-    {
+    fn should_reject_simple_request_when_origin_disallowed_then_exclude_sensitive_headers() {
         let cors = cors()
             .origin(Origin::list(["https://allowed.example"]))
             .credentials(true)
             .exposed_headers(["X-Trace"])
             .build();
 
-        let headers = assert_simple(simple_request().origin("https://deny.example").check(&cors));
+        let rejection =
+            assert_simple_rejected(simple_request().origin("https://deny.example").check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let headers = rejection.headers;
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert!(!has_header(

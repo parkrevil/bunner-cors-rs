@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use bunner_cors_rs::{CorsDecision, Headers};
+use bunner_cors_rs::{CorsDecision, Headers, SimpleRejection};
 
 use super::headers::{header_value, vary_values};
 
@@ -8,6 +8,13 @@ pub fn assert_simple(decision: CorsDecision) -> Headers {
     match decision {
         CorsDecision::SimpleAccepted { headers } => headers,
         other => panic!("expected simple acceptance, got {:?}", other),
+    }
+}
+
+pub fn assert_simple_rejected(decision: CorsDecision) -> SimpleRejection {
+    match decision {
+        CorsDecision::SimpleRejected(rejection) => rejection,
+        other => panic!("expected simple rejection, got {:?}", other),
     }
 }
 

@@ -6,7 +6,8 @@ use axum::{
     response::Response,
 };
 use bunner_cors_rs::{
-    CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext, constants::header,
+    CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext, SimpleRejection,
+    SimpleRejectionReason, constants::header,
 };
 
 use super::{AppState, SharedCors};
@@ -36,6 +37,7 @@ pub async fn cors_middleware(
             apply_headers(response.headers_mut(), &headers);
             response
         }
+        Ok(CorsDecision::SimpleRejected(rejection)) => simple_rejection_response(rejection),
         Ok(CorsDecision::NotApplicable) => next.run(request).await,
         Err(err) => middleware_error_response(err),
     }
@@ -58,6 +60,17 @@ fn preflight_response(status: StatusCode, headers: Headers) -> Response {
         .unwrap();
 
     apply_headers(response.headers_mut(), &headers);
+    response
+}
+
+fn simple_rejection_response(rejection: SimpleRejection) -> Response {
+    let mut response = Response::builder()
+        .status(StatusCode::FORBIDDEN)
+        .body(Body::empty())
+        .unwrap();
+
+    apply_headers(response.headers_mut(), &rejection.headers);
+    *response.body_mut() = Body::from(simple_rejection_message(&rejection.reason));
     response
 }
 
@@ -86,6 +99,12 @@ fn rejection_message(reason: &PreflightRejectionReason) -> String {
         PreflightRejectionReason::MissingAccessControlRequestMethod => {
             "Preflight rejected: Access-Control-Request-Method header missing".into()
         }
+    }
+}
+
+fn simple_rejection_message(reason: &SimpleRejectionReason) -> &'static str {
+    match reason {
+        SimpleRejectionReason::OriginNotAllowed => "Simple request rejected: origin not allowed",
     }
 }
 

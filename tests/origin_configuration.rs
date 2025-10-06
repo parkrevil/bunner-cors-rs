@@ -1,8 +1,12 @@
 mod common;
 
 use bunner_cors_rs::constants::{header, method};
-use bunner_cors_rs::{CorsDecision, Origin, OriginDecision, OriginMatcher, PatternError};
-use common::asserts::{assert_simple, assert_vary_eq, assert_vary_is_empty};
+use bunner_cors_rs::{
+    CorsDecision, Origin, OriginDecision, OriginMatcher, PatternError, SimpleRejectionReason,
+};
+use common::asserts::{
+    assert_simple, assert_simple_rejected, assert_vary_eq, assert_vary_is_empty,
+};
 use common::builders::{cors, simple_request};
 use common::headers::{has_header, header_value};
 
@@ -49,8 +53,11 @@ mod check {
         );
         assert_vary_eq(&allowed_headers, [header::ORIGIN]);
 
-        let denied_headers =
-            assert_simple(simple_request().origin("https://deny.dev").check(&cors));
+        let rejection =
+            assert_simple_rejected(simple_request().origin("https://deny.dev").check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let denied_headers = rejection.headers;
 
         assert!(!has_header(
             &denied_headers,
@@ -119,7 +126,11 @@ mod check {
     fn should_disallow_origin_when_exact_origin_mismatch_then_omit_allow_origin() {
         let cors = cors().origin(Origin::exact("https://allowed.dev")).build();
 
-        let headers = assert_simple(simple_request().origin("https://denied.dev").check(&cors));
+        let rejection =
+            assert_simple_rejected(simple_request().origin("https://denied.dev").check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let headers = rejection.headers;
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_vary_eq(&headers, [header::ORIGIN]);
@@ -129,7 +140,10 @@ mod check {
     fn should_reject_origin_when_null_by_default_then_emit_vary() {
         let cors = cors().build();
 
-        let headers = assert_simple(simple_request().origin("null").check(&cors));
+        let rejection = assert_simple_rejected(simple_request().origin("null").check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let headers = rejection.headers;
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_vary_eq(&headers, [header::ORIGIN]);
@@ -181,8 +195,11 @@ mod check {
             Some("https://explicit.hybrid"),
         );
 
-        let denied_headers =
-            assert_simple(simple_request().origin("https://deny.hybrid").check(&cors));
+        let rejection =
+            assert_simple_rejected(simple_request().origin("https://deny.hybrid").check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let denied_headers = rejection.headers;
 
         assert!(!has_header(
             &denied_headers,
@@ -207,7 +224,11 @@ mod check {
     fn should_disallow_origin_when_boolean_list_false_then_emit_vary() {
         let cors = cors().origin(Origin::list([false])).build();
 
-        let headers = assert_simple(simple_request().origin("https://deny.boole").check(&cors));
+        let rejection =
+            assert_simple_rejected(simple_request().origin("https://deny.boole").check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let headers = rejection.headers;
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_vary_eq(&headers, [header::ORIGIN]);
@@ -232,11 +253,14 @@ mod check {
             Some("https://service.trusted"),
         );
 
-        let denied_headers = assert_simple(
+        let rejection = assert_simple_rejected(
             simple_request()
                 .origin("https://service.untrusted")
                 .check(&cors),
         );
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let denied_headers = rejection.headers;
 
         assert!(!has_header(
             &denied_headers,
@@ -264,12 +288,15 @@ mod check {
             Some("https://method.dev"),
         );
 
-        let get_headers = assert_simple(
+        let rejection = assert_simple_rejected(
             simple_request()
                 .origin("https://method.dev")
                 .method(method::GET)
                 .check(&cors),
         );
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let get_headers = rejection.headers;
 
         assert!(!has_header(
             &get_headers,
@@ -330,7 +357,11 @@ mod check {
             }))
             .build();
 
-        let headers = assert_simple(simple_request().origin("https://deny.me").check(&cors));
+        let rejection =
+            assert_simple_rejected(simple_request().origin("https://deny.me").check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let headers = rejection.headers;
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_vary_eq(&headers, [header::ORIGIN]);
@@ -375,7 +406,11 @@ mod check {
             .origin(Origin::list([OriginMatcher::exact("https://allow.one")]))
             .build();
 
-        let headers = assert_simple(simple_request().origin("https://deny.one").check(&cors));
+        let rejection =
+            assert_simple_rejected(simple_request().origin("https://deny.one").check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let headers = rejection.headers;
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_vary_eq(&headers, [header::ORIGIN]);
@@ -408,7 +443,10 @@ mod check {
             .origin(Origin::custom(|_, _| OriginDecision::Mirror))
             .build();
 
-        let headers = assert_simple(simple_request().check(&cors));
+        let rejection = assert_simple_rejected(simple_request().check(&cors));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let headers = rejection.headers;
 
         assert!(!has_header(&headers, header::ACCESS_CONTROL_ALLOW_ORIGIN));
         assert_vary_eq(&headers, [header::ORIGIN]);

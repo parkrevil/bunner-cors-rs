@@ -121,6 +121,14 @@ fn handle_request(cors: &Cors, ctx: RequestContext<'_>) -> Result<Response<Strin
             apply_headers(response.headers_mut(), headers);
             Ok(response)
         }
+        CorsDecision::SimpleRejected(rejection) => {
+            let mut response = Response::builder()
+                .status(StatusCode::FORBIDDEN)
+                .body(String::new())
+                .unwrap();
+            apply_headers(response.headers_mut(), rejection.headers);
+            Ok(response)
+        }
         CorsDecision::NotApplicable => Ok(Response::builder()
             .status(StatusCode::OK)
             .body("non-CORS response".into())
@@ -151,9 +159,6 @@ match handle_request(&cors, request) {
     }
 }
 ```
-
-> [!NOTE]
-> `SimpleAccepted`는 Origin이 거부된 경우에도 반환될 수 있습니다. 이때 `Access-Control-Allow-Origin` 헤더가 포함되지 않습니다.
 
 > [!TIP]
 > `Cors` 인스턴스는 애플리케이션 시작 시 한 번 생성하고 재사용하세요.
@@ -586,10 +591,11 @@ let decision = cors.check(&context)?;
 
 | 변형 | 반환 조건 | 추가 설명 |
 |------|-----------|-----------|
-| `PreflightAccepted` | `OPTIONS` 요청이며 Origin, 메서드, 헤더가 모두 허용될 때 | Preflight 응답에 필요한 모든 CORS 헤더가 포함됩니다. |
-| `PreflightRejected` | `OPTIONS` 요청이지만 Origin 또는 요청된 메서드/헤더가 허용되지 않을 때 | `PreflightRejectionReason`으로 거부 원인을 확인할 수 있습니다. |
-| `SimpleAccepted` | 비-`OPTIONS` 요청이며 Origin 검사가 Disallow/Skip이 아니고 허용 메서드에 포함될 때 | Origin 허용 시 ACAO 헤더가 포함됩니다. Origin이 거부된 경우 `Access-Control-Allow-Origin` 없이 `Vary`만 포함될 수 있습니다. |
-| `NotApplicable` | CORS 처리가 필요 없거나 판단을 건너뛰어야 할 때 | Origin 헤더가 없거나, 허용 메서드 목록에 포함되지 않거나, `Origin::disabled()`을 사용한 경우 등입니다. |
+| `PreflightAccepted` | `OPTIONS` 요청이며 Origin, 메서드, 헤더가 모두 허용될 때 | Preflight 응답에 필요한 모든 CORS 헤더가 포함 |
+| `PreflightRejected` | `OPTIONS` 요청이지만 Origin 또는 요청된 메서드/헤더가 허용되지 않을 때 | `PreflightRejectionReason`으로 거부 원인을 확인 |
+| `SimpleAccepted` | 비-`OPTIONS` 요청이며 Origin 검사가 허용되고 요청 메서드가 허용 목록에 포함될 때 | Origin 허용 시 `Access-Control-Allow-Origin` 등 필요한 헤더가 포함 |
+| `SimpleRejected` | 비-`OPTIONS` 요청이며 Origin 검사가 Disallow일 때 | `Vary` 헤더 등이 포함된 거부용 헤더 반환 |
+| `NotApplicable` | CORS 처리가 필요 없거나 판단을 건너뛰어야 할 때 | Origin 헤더가 없거나, 허용 메서드 목록에 포함되지 않거나, `Origin::disabled()`을 사용한 경우 |
 
 #### `PreflightAccepted`
 
@@ -629,7 +635,7 @@ CorsDecision::PreflightRejected(rejection) => {
 
 #### `SimpleAccepted`
 
-비-OPTIONS 요청입니다. 반환된 헤더를 응답에 추가하세요.
+단순 요청입니다. 반환된 헤더를 응답에 그대로 추가하세요.
 
 ```rust
 CorsDecision::SimpleAccepted { headers } => {
@@ -640,6 +646,22 @@ CorsDecision::SimpleAccepted { headers } => {
     }
 
     return response.body(your_content);
+}
+```
+
+#### `SimpleRejected`
+
+Origin이 허용되지 않은 단순 요청입니다. 반환된 헤더(예: `Vary: Origin`)를 거부 응답과 함께 사용하세요.
+
+```rust
+CorsDecision::SimpleRejected(rejection) => {
+    let mut response = HttpResponse::Forbidden();
+
+    for (name, value) in rejection.headers {
+        response.append_header((name, value));
+    }
+
+    return response.finish();
 }
 ```
 

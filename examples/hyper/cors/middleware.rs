@@ -2,7 +2,10 @@ use std::future::Future;
 use std::pin::Pin;
 
 use bunner_cors_rs::constants::header;
-use bunner_cors_rs::{CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext};
+use bunner_cors_rs::{
+    CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext, SimpleRejection,
+    SimpleRejectionReason,
+};
 use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
 use hyper::http::StatusCode;
@@ -64,6 +67,9 @@ where
                     Ok(response)
                 })
             }
+            Ok(CorsDecision::SimpleRejected(rejection)) => {
+                Box::pin(async move { Ok(simple_rejection_response(rejection)) })
+            }
             Ok(CorsDecision::NotApplicable) => {
                 let inner = self.inner.clone();
                 Box::pin(async move { inner.call(req).await })
@@ -91,6 +97,17 @@ fn preflight_rejection(headers: Headers, message: &str) -> Response<CorsBody> {
     builder
         .body(Full::new(Bytes::from(message.to_string())))
         .expect("failed to build rejection response")
+}
+
+fn simple_rejection_response(rejection: SimpleRejection) -> Response<CorsBody> {
+    let mut builder = Response::builder().status(StatusCode::FORBIDDEN);
+    if let Some(map) = builder.headers_mut() {
+        insert_headers(map, &rejection.headers);
+    }
+    let message = simple_rejection_message(&rejection.reason);
+    builder
+        .body(Full::new(Bytes::from(message.to_string())))
+        .expect("failed to build simple rejection response")
 }
 
 fn internal_error(err: CorsError) -> Response<CorsBody> {
@@ -138,6 +155,12 @@ fn rejection_message(reason: &PreflightRejectionReason) -> String {
         PreflightRejectionReason::MissingAccessControlRequestMethod => {
             "Preflight rejected: Access-Control-Request-Method header missing".into()
         }
+    }
+}
+
+fn simple_rejection_message(reason: &SimpleRejectionReason) -> &'static str {
+    match reason {
+        SimpleRejectionReason::OriginNotAllowed => "Simple request rejected: origin not allowed",
     }
 }
 

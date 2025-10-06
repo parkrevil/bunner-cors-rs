@@ -8,7 +8,10 @@ use crate::context::RequestContext;
 use crate::normalized_request::NormalizedRequest;
 use crate::options::{CorsOptions, ValidationError};
 use crate::origin::{Origin, OriginDecision};
-use crate::result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
+use crate::result::{
+    CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason, SimpleRejection,
+    SimpleRejectionReason,
+};
 use crate::timing_allow_origin::TimingAllowOrigin;
 
 fn build_request(
@@ -94,6 +97,13 @@ fn expect_simple_accepted(result: Result<CorsDecision, CorsError>) -> Headers {
     }
 }
 
+fn expect_simple_rejected(result: Result<CorsDecision, CorsError>) -> SimpleRejection {
+    match result.expect("simple evaluation should succeed") {
+        CorsDecision::SimpleRejected(rejection) => rejection,
+        other => panic!("expected simple rejection, got {:?}", other),
+    }
+}
+
 fn expect_not_applicable(result: Result<CorsDecision, CorsError>) {
     match result.expect("evaluation should succeed") {
         CorsDecision::NotApplicable => {}
@@ -161,6 +171,21 @@ mod check {
             .expect("cors evaluation should succeed");
 
         assert!(matches!(decision, CorsDecision::SimpleAccepted { .. }));
+    }
+
+    #[test]
+    fn should_return_simple_rejection_when_origin_disallowed_then_emit_rejection_variant() {
+        let cors = cors_with(CorsOptions {
+            origin: Origin::list(["https://allowed.test"]),
+            ..CorsOptions::default()
+        });
+        let request = request("GET", "https://denied.test", None, None);
+
+        let decision = cors
+            .check(&request)
+            .expect("cors evaluation should succeed");
+
+        assert!(matches!(decision, CorsDecision::SimpleRejected(_)));
     }
 
     #[test]
@@ -366,7 +391,10 @@ mod process_simple {
         .expect("valid CORS configuration");
         let request = request("GET", "https://denied.test", None, None);
 
-        let headers = expect_simple_accepted(simple_decision(&cors, &request));
+        let rejection = expect_simple_rejected(simple_decision(&cors, &request));
+
+        assert_eq!(rejection.reason, SimpleRejectionReason::OriginNotAllowed);
+        let headers = rejection.headers;
 
         assert_eq!(headers.get(header::VARY), Some(&"Origin".to_string()));
         assert!(!headers.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));

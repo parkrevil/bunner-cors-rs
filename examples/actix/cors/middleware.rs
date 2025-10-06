@@ -10,7 +10,8 @@ use actix_web::http::{
 };
 use actix_web::{Error, HttpRequest, HttpResponse, HttpResponseBuilder};
 use bunner_cors_rs::{
-    CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext, constants::header,
+    CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext, SimpleRejection,
+    SimpleRejectionReason, constants::header,
 };
 
 use super::SharedCors;
@@ -87,6 +88,9 @@ where
                     Ok(res)
                 })
             }
+            Ok(CorsDecision::SimpleRejected(rejection)) => {
+                Box::pin(async move { Ok(simple_rejection(req, rejection)) })
+            }
             Ok(CorsDecision::NotApplicable) => {
                 let fut = self.service.call(req);
                 Box::pin(async move { Ok(fut.await?.map_into_left_body()) })
@@ -114,6 +118,17 @@ fn preflight_rejection<B>(
 ) -> ServiceResponse<EitherBody<B>> {
     let mut builder = HttpResponse::Forbidden();
     insert_headers(&mut builder, &headers);
+    let response = builder.body(message.to_string()).map_into_right_body();
+    req.into_response(response)
+}
+
+fn simple_rejection<B>(
+    req: ServiceRequest,
+    rejection: SimpleRejection,
+) -> ServiceResponse<EitherBody<B>> {
+    let mut builder = HttpResponse::Forbidden();
+    insert_headers(&mut builder, &rejection.headers);
+    let message = simple_rejection_message(&rejection.reason);
     let response = builder.body(message.to_string()).map_into_right_body();
     req.into_response(response)
 }
@@ -161,6 +176,12 @@ fn rejection_message(reason: &PreflightRejectionReason) -> String {
         PreflightRejectionReason::MissingAccessControlRequestMethod => {
             "Preflight rejected: Access-Control-Request-Method header missing".into()
         }
+    }
+}
+
+fn simple_rejection_message(reason: &SimpleRejectionReason) -> &'static str {
+    match reason {
+        SimpleRejectionReason::OriginNotAllowed => "Simple request rejected: origin not allowed",
     }
 }
 

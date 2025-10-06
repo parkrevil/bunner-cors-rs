@@ -3,7 +3,10 @@ use crate::header_builder::HeaderBuilder;
 use crate::normalized_request::NormalizedRequest;
 use crate::options::{CorsOptions, ValidationError};
 use crate::origin::OriginDecision;
-use crate::result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
+use crate::result::{
+    CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason, SimpleRejection,
+    SimpleRejectionReason,
+};
 
 pub struct Cors {
     options: CorsOptions,
@@ -94,9 +97,10 @@ impl Cors {
         match decision {
             OriginDecision::Skip => return Ok(CorsDecision::NotApplicable),
             OriginDecision::Disallow => {
-                return Ok(CorsDecision::SimpleAccepted {
+                return Ok(CorsDecision::SimpleRejected(SimpleRejection {
                     headers: headers.into_headers(),
-                });
+                    reason: SimpleRejectionReason::OriginNotAllowed,
+                }));
             }
             OriginDecision::Any | OriginDecision::Mirror | OriginDecision::Exact(_) => {}
         }

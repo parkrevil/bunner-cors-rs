@@ -23,7 +23,10 @@ pub use options::{CorsOptions, ValidationError};
 pub use origin::{
     Origin, OriginCallbackFn, OriginDecision, OriginMatcher, OriginPredicateFn, PatternError,
 };
-pub use result::{CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason};
+pub use result::{
+    CorsDecision, CorsError, PreflightRejection, PreflightRejectionReason, SimpleRejection,
+    SimpleRejectionReason,
+};
 pub use timing_allow_origin::TimingAllowOrigin;
 
 #[doc(hidden)]
