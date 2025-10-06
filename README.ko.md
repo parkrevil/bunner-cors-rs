@@ -16,15 +16,14 @@
 <a id="소개"></a>
 ## ✨ 소개
 
-`bunner-cors-rs`는 요청에 대한 CORS 판정과 헤더 생성 로직에 집중한 라이브러리로써 어떤 HTTP 프레임워크와도 쉽게 통합할 수 있도록 설계되었습니다.
+`bunner-cors-rs`는 CORS 판정과 헤더 생성을 제공하는 라이브러리입니다.
 
-- ✅ **WHATWG Fetch 표준 준수**: 최신 CORS 명세를 정확히 따릅니다
-- 🔒 **안전한 설정 검증**: 잘못된 설정 조합을 생성 시점에 차단합니다
-- 🌐 **유연한 Origin 매칭**: 정확한 문자열, 패턴, 커스텀 로직 등 다양한 방식 지원
-- 🎯 **Private Network Access 지원**: 사설 네트워크 요청 처리
-- 🧵 **Thread-safe**: 동시성 환경에서 안전하게 사용 가능
-- 🪶 **경량**: 순수 CORS 로직만 제공, 프레임워크 독립적
-- 📦 **프레임워크 중립**: Axum, Actix-web, Hyper 등 어디서나 사용 가능
+- **표준 준수**: WHATWG Fetch 표준 및 CORS 명세 준수
+- **설정 검증**: 생성 시점에 잘못된 옵션 조합 차단
+- **Origin 매칭**: 정확한 문자열, 목록, 정규식, 사용자 정의 로직 지원
+- **Private Network Access**: Preflight 요청에 대한 PNA 헤더 지원
+- **Thread-safe**: `Cors` 인스턴스 공유 가능
+- **프레임워크 중립**: HTTP 요청/응답 타입에 의존하지 않음
 
 
 > [!IMPORTANT]
@@ -81,11 +80,53 @@ bunner_cors_rs = "0.1.0"
 <a id="빠른-시작"></a>
 ### 빠른 시작
 
-가장 간단한 CORS 설정부터 시작해보겠습니다.
+아래 예제는 [`http`](https://docs.rs/http/latest/http/) 크레이트를 사용해 응답을 구성하며, `Cors::check()`에서 반환되는 결과를 실제 HTTP 응답으로 변환하는 흐름을 보여 줍니다.
 
 
 ```rust
-use bunner_cors_rs::{Cors, CorsOptions, Origin, RequestContext};
+use bunner_cors_rs::{Cors, CorsDecision, CorsError, CorsOptions, Headers, Origin, RequestContext};
+use http::{header::HeaderName, HeaderValue, Response, StatusCode};
+
+fn apply_headers(target: &mut http::HeaderMap, headers: Headers) {
+    for (name, value) in headers {
+        let name = HeaderName::from_bytes(name.as_bytes()).expect("valid header name");
+        let value = HeaderValue::from_str(&value).expect("valid header value");
+        target.insert(name, value);
+    }
+}
+
+fn handle_request(cors: &Cors, ctx: RequestContext<'_>) -> Result<Response<String>, CorsError> {
+    match cors.check(&ctx)? {
+        CorsDecision::PreflightAccepted { headers } => {
+            let mut response = Response::builder()
+                .status(StatusCode::NO_CONTENT)
+                .body(String::new())
+                .unwrap();
+            apply_headers(response.headers_mut(), headers);
+            Ok(response)
+        }
+        CorsDecision::PreflightRejected(rejection) => {
+            let mut response = Response::builder()
+                .status(StatusCode::FORBIDDEN)
+                .body(String::new())
+                .unwrap();
+            apply_headers(response.headers_mut(), rejection.headers);
+            Ok(response)
+        }
+        CorsDecision::SimpleAccepted { headers } => {
+            let mut response = Response::builder()
+                .status(StatusCode::OK)
+                .body("application response".into())
+                .unwrap();
+            apply_headers(response.headers_mut(), headers);
+            Ok(response)
+        }
+        CorsDecision::NotApplicable => Ok(Response::builder()
+            .status(StatusCode::OK)
+            .body("non-CORS response".into())
+            .unwrap()),
+    }
+}
 
 let cors = Cors::new(CorsOptions {
     origin: Origin::Any,
@@ -101,14 +142,21 @@ let request = RequestContext {
     access_control_request_private_network: false,
 };
 
-match cors.check(&request) {
-    Ok(decision) => println!("CORS decision: {:?}", decision),
-    Err(e) => eprintln!("CORS error: {}", e),
+match handle_request(&cors, request) {
+    Ok(response) => {
+        println!("status: {}", response.status());
+    }
+    Err(error) => {
+        eprintln!("CORS error: {error}");
+    }
 }
 ```
 
+> [!NOTE]
+> `SimpleAccepted`는 Origin이 거부된 경우에도 반환될 수 있습니다. 이때 `Access-Control-Allow-Origin` 헤더가 포함되지 않습니다.
+
 > [!TIP]
-> `Cors` 인스턴스는 애플리케이션 시작 시 한 번만 생성하고 요청마다 재사용하세요. 요청마다 새로 생성하면 불필요한 성능 부담이 생깁니다.
+> `Cors` 인스턴스는 애플리케이션 시작 시 한 번 생성하고 재사용하세요.
 
 ---
 
@@ -131,11 +179,11 @@ match cors.check(&request) {
 
 <a id="origin"></a>
 ### `origin`
-어떤 출처의 요청을 허용할지 결정합니다. CORS의 가장 핵심적인 설정으로, 다양한 매칭 전략을 제공합니다.
+허용할 출처를 지정합니다.
 
 #### `Origin::Any`
 
-개발 환경이나 공개 API에서 사용합니다.
+모든 출처를 허용합니다.
 
 
 ```rust
@@ -154,13 +202,10 @@ Vary: Origin
 
 > [!IMPORTANT]
 > `credentials: true`일 때 `Origin::Any`는 사용할 수 없습니다.
-> 
-> [!NOTE]
-> 이 라이브러리는 상황에 따라 `Vary: Origin`을 자동으로 추가합니다. 응답 헤더는 그대로 사용하면 됩니다.
 
 #### `Origin::exact`
 
-단일 도메인만 허용할 때 사용합니다. 자격증명과 함께 사용 가능합니다.
+단일 도메인만 허용할 때 사용합니다.
 
 ```rust
 let options = CorsOptions {
@@ -197,7 +242,7 @@ Vary: Origin
 
 #### `OriginMatcher::pattern_str`
 
-정규식을 사용한 유연한 매칭입니다. 하위 도메인 전체를 허용할 때 유용합니다.
+정규식을 사용한 유연한 매칭입니다.
 
 ```rust
 let options = CorsOptions {
@@ -215,11 +260,6 @@ Vary: Origin
 
 > [!CAUTION]
 > 패턴 길이는 최대 50,000자, 컴파일 시간은 100ms로 제한됩니다. 초과 시 `PatternError`가 발생합니다.
->
-> [!TIP]
-> - 가능한 경우 `exact`/`list`를 우선 사용하고, 정규식은 최소화하세요.
-> - 앵커(`^`, `$`)를 사용해 과도한 매칭을 방지하세요.
-> - 점(`.`), 물음표(`?`) 등은 의도대로 이스케이프하세요.
 
 #### `Origin::predicate`
 
@@ -239,8 +279,19 @@ Access-Control-Allow-Origin: https://api.trusted.com
 Vary: Origin
 ```
 
-> [!TIP]
-> 더 세밀한 제어가 필요하면 `Origin::custom`을 사용하여 `OriginDecision`을 직접 반환할 수 있습니다.
+#### `Origin::disabled`
+
+CORS 판정을 비활성화합니다. `OriginDecision::Skip`을 반환하므로 `CorsDecision::NotApplicable`이 반환되고 CORS 헤더가 생성되지 않습니다.
+
+```rust
+let options = CorsOptions {
+    origin: Origin::disabled(),
+    ..Default::default()
+};
+
+let decision = cors.check(&request_context)?;
+assert!(matches!(decision, CorsDecision::NotApplicable));
+```
 
 #### `Origin::custom`
 
@@ -254,15 +305,15 @@ let options = CorsOptions {
         match maybe_origin {
             Some(origin) if origin.starts_with("https://") => {
                 if origin.ends_with(".trusted.com") {
-                    OriginDecision::Mirror  // Request origin reflected
+                    OriginDecision::Mirror
                 } else if origin == "https://special.partner.io" {
-                    OriginDecision::Exact("https://partner.io".into())  // Override origin
+                    OriginDecision::Exact("https://partner.io".into())
                 } else {
-                    OriginDecision::Disallow  // Reject
+                    OriginDecision::Disallow
                 }
             }
-            Some(_) => OriginDecision::Disallow,  // Non-HTTPS rejected
-            None => OriginDecision::Skip,  // No origin header, skip CORS
+            Some(_) => OriginDecision::Disallow,
+            None => OriginDecision::Skip,
         }
     }),
     ..Default::default()
@@ -291,9 +342,6 @@ let options = CorsOptions {
 ```http
 Access-Control-Allow-Methods: GET,POST,DELETE
 ```
-
-> [!TIP]
-> 유효한 HTTP 메서드 토큰만 허용됩니다. 표준에 맞춰 대문자 메서드명을 사용하는 것을 권장합니다.
 
 ---
 
@@ -351,7 +399,7 @@ Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 <a id="credentials"></a>
 ### `credentials`
 
-쿠키, Authorization 헤더, TLS 클라이언트 인증서 등 자격증명을 포함한 요청을 허용할지 결정합니다.
+자격증명을 포함한 요청 허용 여부를 지정합니다.
 
 
 ```rust
@@ -370,15 +418,12 @@ Vary: Origin
 > [!IMPORTANT]
 > `credentials: true`일 때 다음 설정은 사용할 수 없습니다: `Origin::Any`, `AllowedHeaders::Any`, `ExposedHeaders::Any`, `TimingAllowOrigin::Any`.
 
-> [!TIP]
-> 쿠키 기반 인증을 사용하는 경우, 크로스 사이트 요청에는 쿠키에 `SameSite=None; Secure` 속성을 설정해야 브라우저가 전송합니다.
-
 ---
 
 <a id="max_age"></a>
 ### `max_age`
 
-브라우저가 Preflight 응답을 캐시할 시간(초)을 지정합니다. 이를 통해 반복적인 Preflight 요청을 줄여 성능을 향상시킬 수 있습니다.
+Preflight 응답 캐시 시간(초)을 지정합니다.
 
 ```rust
 let options = CorsOptions {
@@ -393,18 +438,14 @@ Access-Control-Max-Age: 3600
 ```
 
 > [!NOTE]
-> `Some(0)`은 "캐시하지 않음"을 의미합니다. `None`과 달리 헤더가 `Access-Control-Max-Age: 0`으로 전송되어 브라우저에 캐시 금지를 명시합니다.
-
-> 일부 브라우저는 `Access-Control-Max-Age`에 자체 상한을 둘 수 있습니다. 너무 큰 값을 설정해도 실제 캐시 지속시간은 브라우저 정책에 의해 단축될 수 있습니다.
-
-
+> `Some(0)`은 `Access-Control-Max-Age: 0` 헤더를 전송합니다. `None`은 헤더를 전송하지 않습니다.
 
 ---
 
 <a id="allow_null_origin"></a>
 ### `allow_null_origin`
 
-요청 헤더의 Origin이 문자열 `"null"`일 때 허용할지 여부를 결정합니다.
+Origin 헤더 값이 `"null"`인 요청 허용 여부를 지정합니다.
 
 ```rust
 let options = CorsOptions {
@@ -417,12 +458,6 @@ let options = CorsOptions {
 Access-Control-Allow-Origin: null
 Vary: Origin
 ```
-
-> [!WARNING]
-> 보안상 민감하므로 신뢰된 환경에서만 활성화하세요.
-
-> [!NOTE]
-> `Origin` 헤더가 아예 없는 경우와 값이 `"null"`인 경우는 다릅니다. 이 라이브러리는 두 경우를 구분하여 처리합니다.
 
 ---
 
@@ -449,17 +484,12 @@ Vary: Origin
 > [!IMPORTANT]
 > 이 옵션을 사용하려면 `credentials: true`와 특정 Origin 설정이 필수입니다.
 
-> [!NOTE]
-> 이 라이브러리는 Preflight 응답에 `Access-Control-Allow-Private-Network: true` 헤더를 설정해 줍니다. 이 헤더의 해석과 실제 동작은 브라우저가 결정합니다.
-
-> 브라우저 지원 범위가 제한적일 수 있습니다. 최신 지원 현황을 확인하고 폴백 전략을 고려하세요.
-
 ---
 
 <a id="timing_allow_origin"></a>
 ### `timing_allow_origin`
 
-`Timing-Allow-Origin` 헤더를 설정하여, 특정 Origin이 리소스 타이밍 정보에 접근할 수 있도록 허용합니다. 성능 분석 도구나 모니터링 서비스에서 유용합니다.
+`Timing-Allow-Origin` 헤더를 지정합니다.
 
 ```rust
 use bunner_cors_rs::TimingAllowOrigin;
@@ -479,9 +509,6 @@ Timing-Allow-Origin: https://analytics.example.com
 
 > [!IMPORTANT]
 > `credentials: true`일 때 `TimingAllowOrigin::Any`는 사용할 수 없습니다.
-
-> [!CAUTION]
-> `Timing-Allow-Origin: *`는 리소스 타이밍 정보를 광범위하게 노출할 수 있습니다. 프라이버시와 정보 노출 위험을 검토하고 필요한 출처만 명시적으로 허용하세요.
 
 ---
 
@@ -527,13 +554,16 @@ Timing-Allow-Origin: https://analytics.example.com
 
 CORS 판정을 위해 HTTP 요청 정보를 `RequestContext`로 변환해야 합니다.
 
-| 필드 | HTTP 헤더 | 설명 |
-|------|-----------|------|
-| `method` | 요청 메서드 | `"GET"`, `"POST"`, `"OPTIONS"` 등 실제 HTTP 메서드 |
-| `origin` | `Origin` | 요청의 출처. 없으면 빈 문자열 `""` |
-| `access_control_request_method` | `Access-Control-Request-Method` | Preflight 요청에서 실제로 사용할 메서드. 없으면 `None` |
-| `access_control_request_headers` | `Access-Control-Request-Headers` | Preflight 요청에서 사용할 헤더 목록 (쉼표 구분). 없으면 `None` |
-| `access_control_request_private_network` | `Access-Control-Request-Private-Network` | PNA 헤더 존재 여부 (`true`/`false`) |
+| 필드 | 타입 | HTTP 헤더 | 설명 |
+|------|------|-----------|------|
+| `method` | `&'a str` | 요청 메서드 | 실제 HTTP 메서드 문자열 (`"GET"`, `"POST"`, `"OPTIONS"` 등) |
+| `origin` | `&'a str` | `Origin` | 요청의 출처. 헤더가 없으면 빈 문자열 `""`로 전달하세요. |
+| `access_control_request_method` | `Option<&'a str>` | `Access-Control-Request-Method` | Preflight 요청에서 실행할 메서드. 값이 없으면 `None` |
+| `access_control_request_headers` | `Option<&'a str>` | `Access-Control-Request-Headers` | Preflight 요청에서 사용할 헤더 목록(쉼표 구분). 값이 없으면 `None` |
+| `access_control_request_private_network` | `bool` | `Access-Control-Request-Private-Network` | 헤더 존재 여부 (`true`/`false`). |
+
+> [!NOTE]
+> `origin`은 `Option`이 아닌 `&str` 필드이므로, Origin 헤더가 없을 때는 반드시 빈 문자열 `""`을 전달해야 합니다. 빈 문자열은 라이브러리에서 Origin 헤더가 없는 요청으로 처리됩니다.
 
 ```rust
 use bunner_cors_rs::RequestContext;
@@ -549,17 +579,21 @@ let context = RequestContext {
 let decision = cors.check(&context)?;
 ```
 
-> [!TIP]
-> HTTP 헤더명은 대소문자를 구분하지 않으므로, 대부분의 프레임워크에서 `headers.get("origin")`처럼 소문자로 접근합니다. Axum/Actix 모두 소문자 헤더명을 권장합니다.
-
 <a id="판정-결과-처리"></a>
 ### 판정 결과 처리
 
-`cors.check()`는 `CorsDecision`을 반환하며 4가지 결과로 나뉩니다.
+`cors.check()`는 요청 유형과 옵션 조합에 따라 다음 네 가지 결과 중 하나를 반환합니다.
+
+| 변형 | 반환 조건 | 추가 설명 |
+|------|-----------|-----------|
+| `PreflightAccepted` | `OPTIONS` 요청이며 Origin, 메서드, 헤더가 모두 허용될 때 | Preflight 응답에 필요한 모든 CORS 헤더가 포함됩니다. |
+| `PreflightRejected` | `OPTIONS` 요청이지만 Origin 또는 요청된 메서드/헤더가 허용되지 않을 때 | `PreflightRejectionReason`으로 거부 원인을 확인할 수 있습니다. |
+| `SimpleAccepted` | 비-`OPTIONS` 요청이며 Origin 검사가 Disallow/Skip이 아니고 허용 메서드에 포함될 때 | Origin 허용 시 ACAO 헤더가 포함됩니다. Origin이 거부된 경우 `Access-Control-Allow-Origin` 없이 `Vary`만 포함될 수 있습니다. |
+| `NotApplicable` | CORS 처리가 필요 없거나 판단을 건너뛰어야 할 때 | Origin 헤더가 없거나, 허용 메서드 목록에 포함되지 않거나, `Origin::disabled()`을 사용한 경우 등입니다. |
 
 #### `PreflightAccepted`
 
-OPTIONS 요청이 성공한 경우입니다. 반환된 헤더를 응답에 추가하세요. `204 No Content` 응답을 반환하는 것이 좋습니다.
+OPTIONS 요청이 성공한 경우입니다. 반환된 헤더를 응답에 추가하세요.
 
 ```rust
 use bunner_cors_rs::CorsDecision;
@@ -583,7 +617,7 @@ match cors.check(&context)? {
 
 #### `PreflightRejected`
 
-Origin, 메서드 또는 헤더가 허용되지 않은 경우입니다. 보안을 위해 `403 Forbidden` 응답을 반환하는 것이 좋습니다. 거부 이유는 디버깅 목적으로 확인할 수 있습니다.
+Origin이 허용되지 않거나 요청된 메서드/헤더가 정책을 위반하면 이 변형을 반환합니다. `PreflightRejection.reason`에는 `OriginNotAllowed`, `MethodNotAllowed`, `HeadersNotAllowed`, `MissingAccessControlRequestMethod` 중 하나가 포함됩니다.
 
 ```rust
 CorsDecision::PreflightRejected(rejection) => {
@@ -593,12 +627,9 @@ CorsDecision::PreflightRejected(rejection) => {
 }
 ```
 
-> [!CAUTION]
-> 거부 사유는 서버 로그에서만 확인하고, 운영 환경에서는 상세 오류 정보를 클라이언트에 노출하지 않는 것이 좋습니다.
-
 #### `SimpleAccepted`
 
-일반적인 GET/POST 등의 요청입니다. 반환된 헤더를 실제 응답에 추가하세요.
+비-OPTIONS 요청입니다. 반환된 헤더를 응답에 추가하세요.
 
 ```rust
 CorsDecision::SimpleAccepted { headers } => {
@@ -614,7 +645,7 @@ CorsDecision::SimpleAccepted { headers } => {
 
 #### `NotApplicable`
 
-Origin 헤더가 없거나 CORS가 필요하지 않은 요청입니다. 응답에 CORS 헤더를 추가하지 말고 요청을 처리하시면 됩니다.
+CORS 처리가 필요하지 않습니다. CORS 헤더를 추가하지 마세요.
 
 <a id="예제"></a>
 ## 📝 예제
