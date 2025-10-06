@@ -31,9 +31,12 @@ impl Cors {
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
     ) -> Result<CorsDecision, CorsError> {
-        if normalized.access_control_request_method.trim().is_empty() {
+        let Some(requested_method) = normalized
+            .access_control_request_method
+            .filter(|method| !method.trim().is_empty())
+        else {
             return Ok(CorsDecision::NotApplicable);
-        }
+        };
         let builder = HeaderBuilder::new(&self.options);
         let (mut headers, decision) = builder.build_origin_headers(original, normalized)?;
 
@@ -48,27 +51,24 @@ impl Cors {
             OriginDecision::Any | OriginDecision::Mirror | OriginDecision::Exact(_) => {}
         }
 
-        if !self
-            .options
-            .methods
-            .allows_method(normalized.access_control_request_method)
-        {
+        if !self.options.methods.allows_method(requested_method) {
             return Ok(CorsDecision::PreflightRejected(PreflightRejection {
                 headers: headers.into_headers(),
                 reason: PreflightRejectionReason::MethodNotAllowed {
-                    requested_method: normalized.access_control_request_method.to_string(),
+                    requested_method: requested_method.to_string(),
                 },
             }));
         }
-        if !self
-            .options
-            .allowed_headers
-            .allows_headers(normalized.access_control_request_headers)
+        if let Some(requested_headers) = normalized.access_control_request_headers
+            && !self
+                .options
+                .allowed_headers
+                .allows_headers(requested_headers)
         {
             return Ok(CorsDecision::PreflightRejected(PreflightRejection {
                 headers: headers.into_headers(),
                 reason: PreflightRejectionReason::HeadersNotAllowed {
-                    requested_headers: normalized.access_control_request_headers.to_string(),
+                    requested_headers: requested_headers.to_string(),
                 },
             }));
         }

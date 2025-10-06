@@ -5,8 +5,8 @@ use std::borrow::Cow;
 fn request(
     method: &'static str,
     origin: &'static str,
-    acrm: &'static str,
-    acrh: &'static str,
+    acrm: Option<&'static str>,
+    acrh: Option<&'static str>,
 ) -> RequestContext<'static> {
     RequestContext {
         method,
@@ -22,19 +22,30 @@ mod new {
 
     #[test]
     fn should_store_lowercase_when_components_have_uppercase_then_normalize_fields() {
-        let ctx = request("OPTIONS", "HTTPS://API.TEST", "POST", "X-CUSTOM");
+        let ctx = request(
+            "OPTIONS",
+            "HTTPS://API.TEST",
+            Some("POST"),
+            Some("X-CUSTOM"),
+        );
 
         let normalized = NormalizedRequest::new(&ctx);
 
         assert_eq!(normalized.method, "options");
         assert_eq!(normalized.origin, "https://api.test");
-        assert_eq!(normalized.access_control_request_method, "post");
-        assert_eq!(normalized.access_control_request_headers, "x-custom");
+        assert_eq!(
+            normalized.access_control_request_method.as_deref(),
+            Some("post")
+        );
+        assert_eq!(
+            normalized.access_control_request_headers.as_deref(),
+            Some("x-custom")
+        );
     }
 
     #[test]
     fn should_borrow_original_when_components_are_lowercase_then_avoid_allocation() {
-        let ctx = request("get", "https://api.test", "post", "x-custom");
+        let ctx = request("get", "https://api.test", Some("post"), Some("x-custom"));
 
         let normalized = NormalizedRequest::new(&ctx);
 
@@ -47,19 +58,25 @@ mod new {
 
     #[test]
     fn should_lowercase_unicode_uppercase_origin_then_normalize_non_ascii() {
-        let ctx = request("GET", "https://DÉV.TEST", "POST", "X-CUSTOM");
+        let ctx = request("GET", "https://DÉV.TEST", Some("POST"), Some("X-CUSTOM"));
 
         let normalized = NormalizedRequest::new(&ctx);
 
         assert_eq!(normalized.origin, "https://dév.test");
         assert_eq!(normalized.method, "get");
-        assert_eq!(normalized.access_control_request_method, "post");
-        assert_eq!(normalized.access_control_request_headers, "x-custom");
+        assert_eq!(
+            normalized.access_control_request_method.as_deref(),
+            Some("post")
+        );
+        assert_eq!(
+            normalized.access_control_request_headers.as_deref(),
+            Some("x-custom")
+        );
     }
 
     #[test]
     fn should_release_unicode_buffer_when_no_uppercase_then_preserve_borrowed_origin() {
-        let ctx = request("get", "https://mañana.test", "post", "x-custom");
+        let ctx = request("get", "https://mañana.test", Some("post"), Some("x-custom"));
 
         let normalized = NormalizedRequest::new(&ctx);
 
@@ -72,7 +89,7 @@ mod new {
 
     #[test]
     fn should_remain_empty_without_allocation_when_origin_is_empty_then_preserve_borrowed_slice() {
-        let ctx = request("get", "", "post", "x-custom");
+        let ctx = request("get", "", Some("post"), Some("x-custom"));
 
         let normalized = NormalizedRequest::new(&ctx);
 
@@ -81,20 +98,58 @@ mod new {
     }
 }
 
+mod normalize_optional_component {
+    use super::*;
+
+    #[test]
+    fn should_return_none_when_input_is_none_then_skip_normalization() {
+        let normalized = NormalizedRequest::normalize_optional_component(None);
+
+        assert!(normalized.is_none());
+    }
+
+    #[test]
+    fn should_return_none_when_trimmed_value_is_empty_then_filter_out() {
+        let normalized = NormalizedRequest::normalize_optional_component(Some("   \t  "));
+
+        assert!(normalized.is_none());
+    }
+
+    #[test]
+    fn should_borrow_when_value_is_already_lowercase_then_avoid_allocation() {
+        let normalized = NormalizedRequest::normalize_optional_component(Some("x-custom"));
+
+        assert!(matches!(normalized, Some(Cow::Borrowed("x-custom"))));
+    }
+
+    #[test]
+    fn should_trim_and_lowercase_when_value_has_whitespace_and_uppercase_then_allocate_owned() {
+        let normalized = NormalizedRequest::normalize_optional_component(Some("  X-CUSTOM  "));
+
+        assert_eq!(normalized.as_deref(), Some("x-custom"));
+        assert!(matches!(normalized, Some(Cow::Owned(_))));
+    }
+}
+
 mod as_context {
     use super::*;
 
     #[test]
     fn should_return_normalized_view_when_context_requested_then_expose_lowercase_fields() {
-        let ctx = request("OPTIONS", "https://API.TEST", "POST", "X-CUSTOM");
+        let ctx = request(
+            "OPTIONS",
+            "https://API.TEST",
+            Some("POST"),
+            Some("X-CUSTOM"),
+        );
         let normalized = NormalizedRequest::new(&ctx);
 
         let view = normalized.as_context();
 
         assert_eq!(view.method, "options");
         assert_eq!(view.origin, "https://api.test");
-        assert_eq!(view.access_control_request_method, "post");
-        assert_eq!(view.access_control_request_headers, "x-custom");
+        assert_eq!(view.access_control_request_method, Some("post"));
+        assert_eq!(view.access_control_request_headers, Some("x-custom"));
         assert!(!view.access_control_request_private_network);
     }
 
@@ -103,8 +158,8 @@ mod as_context {
         let ctx = RequestContext {
             method: "OPTIONS",
             origin: "https://api.test",
-            access_control_request_method: "POST",
-            access_control_request_headers: "X-CUSTOM",
+            access_control_request_method: Some("POST"),
+            access_control_request_headers: Some("X-CUSTOM"),
             access_control_request_private_network: true,
         };
         let normalized = NormalizedRequest::new(&ctx);
@@ -120,7 +175,7 @@ mod is_options {
 
     #[test]
     fn should_return_true_when_method_is_options_then_detect_preflight() {
-        let ctx = request("OPTIONS", "https://api.test", "", "");
+        let ctx = request("OPTIONS", "https://api.test", None, None);
         let normalized = NormalizedRequest::new(&ctx);
 
         let result = normalized.is_options();
@@ -130,7 +185,7 @@ mod is_options {
 
     #[test]
     fn should_return_false_when_method_is_not_options_then_skip_preflight_detection() {
-        let ctx = request("GET", "https://api.test", "", "");
+        let ctx = request("GET", "https://api.test", None, None);
         let normalized = NormalizedRequest::new(&ctx);
 
         let result = normalized.is_options();
@@ -148,7 +203,12 @@ mod pool_instrumentation {
         super::normalization_pool_reset();
 
         {
-            let ctx = request("OPTIONS", "HTTPS://POOL.TEST", "POST", "X-CUSTOM");
+            let ctx = request(
+                "OPTIONS",
+                "HTTPS://POOL.TEST",
+                Some("POST"),
+                Some("X-CUSTOM"),
+            );
             let normalized = NormalizedRequest::new(&ctx);
             assert!(matches!(normalized.method, Cow::Owned(_)));
         }
@@ -164,7 +224,12 @@ mod pool_instrumentation {
         super::normalization_pool_reset();
         super::NORMALIZATION_BUFFER_POOL.with(|pool| pool.borrow_mut().clear());
 
-        let ctx = request("OPTIONS", "HTTPS://FILL.TEST", "POST", "X-CUSTOM");
+        let ctx = request(
+            "OPTIONS",
+            "HTTPS://FILL.TEST",
+            Some("POST"),
+            Some("X-CUSTOM"),
+        );
         let mut held = Vec::with_capacity(super::NORMALIZATION_BUFFER_POOL_LIMIT);
         for _ in 0..super::NORMALIZATION_BUFFER_POOL_LIMIT {
             let normalized = NormalizedRequest::new(&ctx);
@@ -180,7 +245,12 @@ mod pool_instrumentation {
         });
 
         {
-            let ctx = request("OPTIONS", "HTTPS://OVERFLOW.TEST", "POST", "X-CUSTOM");
+            let ctx = request(
+                "OPTIONS",
+                "HTTPS://OVERFLOW.TEST",
+                Some("POST"),
+                Some("X-CUSTOM"),
+            );
             let normalized = NormalizedRequest::new(&ctx);
             assert!(matches!(normalized.method, Cow::Owned(_)));
         }

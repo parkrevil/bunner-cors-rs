@@ -92,8 +92,8 @@ fn rejection_message(reason: &PreflightRejectionReason) -> String {
 struct OwnedRequestContext {
     method: String,
     origin: String,
-    access_control_request_method: String,
-    access_control_request_headers: String,
+    access_control_request_method: Option<String>,
+    access_control_request_headers: Option<String>,
     access_control_request_private_network: bool,
 }
 
@@ -103,7 +103,7 @@ impl OwnedRequestContext {
 
         Self {
             method: request.method().as_str().to_string(),
-            origin: header_value(headers, header::ORIGIN),
+            origin: header_value(headers, header::ORIGIN).unwrap_or_default(),
             access_control_request_method: header_value(
                 headers,
                 header::ACCESS_CONTROL_REQUEST_METHOD,
@@ -124,17 +124,16 @@ impl OwnedRequestContext {
         RequestContext {
             method: &self.method,
             origin: &self.origin,
-            access_control_request_method: &self.access_control_request_method,
-            access_control_request_headers: &self.access_control_request_headers,
+            access_control_request_method: self.access_control_request_method.as_deref(),
+            access_control_request_headers: self.access_control_request_headers.as_deref(),
             access_control_request_private_network: self.access_control_request_private_network,
         }
     }
 }
 
-fn header_value(headers: &HeaderMap, name: &str) -> String {
+fn header_value(headers: &HeaderMap, name: &str) -> Option<String> {
     headers
         .get(name)
         .and_then(|value| value.to_str().ok())
         .map(|value| value.to_string())
-        .unwrap_or_default()
 }

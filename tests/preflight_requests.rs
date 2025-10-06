@@ -210,7 +210,10 @@ mod check {
     fn should_require_request_method_when_custom_origin_validates_then_enforce_requirement() {
         let cors = cors()
             .origin(Origin::custom(|_, ctx| {
-                if !ctx.access_control_request_method.is_empty() {
+                if ctx
+                    .access_control_request_method
+                    .is_some_and(|value| !value.is_empty())
+                {
                     OriginDecision::Any
                 } else {
                     OriginDecision::Skip
@@ -238,8 +241,7 @@ mod check {
             .origin(Origin::custom(|_, ctx| {
                 if ctx
                     .access_control_request_headers
-                    .to_ascii_lowercase()
-                    .contains("x-allow")
+                    .is_some_and(|value| value.to_ascii_lowercase().contains("x-allow"))
                 {
                     OriginDecision::Mirror
                 } else {
@@ -324,7 +326,7 @@ mod check {
             .origin(Origin::predicate(|origin, ctx| {
                 origin == "https://predicate.dev"
                     && ctx.method == "options"
-                    && ctx.access_control_request_method == "post"
+                    && ctx.access_control_request_method == Some("post")
             }))
             .build();
 
@@ -401,8 +403,8 @@ mod check {
         let ctx = RequestContext {
             method: &method,
             origin: "https://case.dev",
-            access_control_request_method: &requested_method,
-            access_control_request_headers: &requested_headers,
+            access_control_request_method: Some(&requested_method),
+            access_control_request_headers: Some(&requested_headers),
             access_control_request_private_network: false,
         };
 

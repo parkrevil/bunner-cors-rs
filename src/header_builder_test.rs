@@ -19,8 +19,8 @@ fn build_request(
     RequestContext {
         method,
         origin,
-        access_control_request_method: acrm,
-        access_control_request_headers: acrh,
+        access_control_request_method: optional(acrm),
+        access_control_request_headers: optional(acrh),
         access_control_request_private_network: private_network,
     }
 }
@@ -41,6 +41,15 @@ fn request_with_private_network(
     acrh: &'static str,
 ) -> RequestContext<'static> {
     build_request(method, origin, acrm, acrh, true)
+}
+
+fn optional(value: &'static str) -> Option<&'static str> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed)
+    }
 }
 
 fn options_with_origin(origin: Origin) -> CorsOptions {

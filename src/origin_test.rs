@@ -5,8 +5,8 @@ fn request_context(method: &'static str, origin: &'static str) -> RequestContext
     RequestContext {
         method,
         origin,
-        access_control_request_method: "GET",
-        access_control_request_headers: "X-Test",
+        access_control_request_method: Some("GET"),
+        access_control_request_headers: Some("X-Test"),
         access_control_request_private_network: false,
     }
 }

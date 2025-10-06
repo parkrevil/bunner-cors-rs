@@ -96,8 +96,8 @@ let cors = Cors::new(CorsOptions {
 let request = RequestContext {
     method: "GET",
     origin: "https://example.com",
-    access_control_request_method: "",
-    access_control_request_headers: "",
+    access_control_request_method: None,
+    access_control_request_headers: None,
     access_control_request_private_network: false,
 };
 
@@ -531,8 +531,8 @@ CORS 판정을 위해 HTTP 요청 정보를 `RequestContext`로 변환해야 합
 |------|-----------|------|
 | `method` | 요청 메서드 | `"GET"`, `"POST"`, `"OPTIONS"` 등 실제 HTTP 메서드 |
 | `origin` | `Origin` | 요청의 출처. 없으면 빈 문자열 `""` |
-| `access_control_request_method` | `Access-Control-Request-Method` | Preflight 요청에서 실제로 사용할 메서드. 없으면 `""` |
-| `access_control_request_headers` | `Access-Control-Request-Headers` | Preflight 요청에서 사용할 헤더 목록 (쉼표 구분). 없으면 `""` |
+| `access_control_request_method` | `Access-Control-Request-Method` | Preflight 요청에서 실제로 사용할 메서드. 없으면 `None` |
+| `access_control_request_headers` | `Access-Control-Request-Headers` | Preflight 요청에서 사용할 헤더 목록 (쉼표 구분). 없으면 `None` |
 | `access_control_request_private_network` | `Access-Control-Request-Private-Network` | PNA 헤더 존재 여부 (`true`/`false`) |
 
 ```rust
@@ -541,8 +541,8 @@ use bunner_cors_rs::RequestContext;
 let context = RequestContext {
     method: "POST",
     origin: "https://app.example.com",
-    access_control_request_method: "POST",
-    access_control_request_headers: "content-type",
+    access_control_request_method: Some("POST"),
+    access_control_request_headers: Some("content-type"),
     access_control_request_private_network: false,
 };
 

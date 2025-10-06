@@ -89,8 +89,8 @@ fn release_buffer(mut buffer: String) {
 pub struct NormalizedRequest<'a> {
     method: Cow<'a, str>,
     origin: Cow<'a, str>,
-    access_control_request_method: Cow<'a, str>,
-    access_control_request_headers: Cow<'a, str>,
+    access_control_request_method: Option<Cow<'a, str>>,
+    access_control_request_headers: Option<Cow<'a, str>>,
     access_control_request_private_network: bool,
 }
 
@@ -100,14 +100,21 @@ impl<'a> NormalizedRequest<'a> {
         Self {
             method: Self::normalize_component(request.method),
             origin: Self::normalize_component(request.origin),
-            access_control_request_method: Self::normalize_component(
+            access_control_request_method: Self::normalize_optional_component(
                 request.access_control_request_method,
             ),
-            access_control_request_headers: Self::normalize_component(
+            access_control_request_headers: Self::normalize_optional_component(
                 request.access_control_request_headers,
             ),
             access_control_request_private_network: request.access_control_request_private_network,
         }
+    }
+
+    fn normalize_optional_component(value: Option<&'a str>) -> Option<Cow<'a, str>> {
+        value
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(Self::normalize_component)
     }
 
     fn normalize_component(value: &'a str) -> Cow<'a, str> {
@@ -146,8 +153,14 @@ impl<'a> NormalizedRequest<'a> {
         RequestContext {
             method: self.method.as_ref(),
             origin: self.origin.as_ref(),
-            access_control_request_method: self.access_control_request_method.as_ref(),
-            access_control_request_headers: self.access_control_request_headers.as_ref(),
+            access_control_request_method: self
+                .access_control_request_method
+                .as_ref()
+                .map(|value| value.as_ref()),
+            access_control_request_headers: self
+                .access_control_request_headers
+                .as_ref()
+                .map(|value| value.as_ref()),
             access_control_request_private_network: self.access_control_request_private_network,
         }
     }
@@ -166,10 +179,16 @@ impl<'a> Drop for NormalizedRequest<'a> {
             }
         }
 
+        fn release_optional<'a>(target: &mut Option<Cow<'a, str>>) {
+            if let Some(Cow::Owned(buffer)) = target.take() {
+                release_buffer(buffer);
+            }
+        }
+
         release(&mut self.method);
         release(&mut self.origin);
-        release(&mut self.access_control_request_method);
-        release(&mut self.access_control_request_headers);
+        release_optional(&mut self.access_control_request_method);
+        release_optional(&mut self.access_control_request_headers);
     }
 }
 
