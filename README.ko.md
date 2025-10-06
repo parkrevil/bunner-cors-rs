@@ -619,7 +619,18 @@ Origin 헤더가 없거나 CORS가 필요하지 않은 요청입니다. 응답�
 <a id="예제"></a>
 ## 📝 예제
 
-`/examples/frameworks` 디렉토리에 프레임워크별 통합 예제가 제공됩니다. 인스턴스는 애플리케이션 시작 시 한 번 생성하여 상태로 공유하세요.
+프레임워크별 적용 예제는 `/examples` 디렉토리에 있습니다.
+
+### axum
+실행
+```bash
+cargo run --example axum
+```
+
+요청
+```bash
+curl -X GET -H "Origin: http://api.example.com" -I http://127.0.0.1:5001/greet
+```
 
 ### 테스트
 

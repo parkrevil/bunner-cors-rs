@@ -24,6 +24,8 @@ insta = { version = "1", features = ["yaml"] }
 serde = { version = "1", features = ["derive"] }
 criterion = { version = "0.5", features = ["html_reports"] }
 pprof = { version = "0.13", features = ["flamegraph", "criterion"] }
+axum = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies.cargo-husky]
 version = "1"
