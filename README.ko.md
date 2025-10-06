@@ -13,7 +13,26 @@
 
 ---
 
-`bunner-cors-rs`는 요청에 대한 CORS 검증과 헤더 생성 로직에 집중한 라이브러리로써 어떤 HTTP 프레임워크와도 쉽게 통합할 수 있도록 설계되었습니다.
+<a id="소개"></a>
+## ✨ 소개
+
+`bunner-cors-rs`는 요청에 대한 CORS 판정과 헤더 생성 로직에 집중한 라이브러리로써 어떤 HTTP 프레임워크와도 쉽게 통합할 수 있도록 설계되었습니다.
+
+### 특징
+
+- ✅ **WHATWG Fetch 표준 준수**: 최신 CORS 명세를 정확히 따릅니다
+- 🔒 **안전한 설정 검증**: 잘못된 설정 조합을 생성 시점에 차단합니다
+- 🌐 **유연한 Origin 매칭**: 정확한 문자열, 패턴, 커스텀 로직 등 다양한 방식 지원
+- 🎯 **Private Network Access 지원**: 사설 네트워크 요청 처리
+- 🧵 **Thread-safe**: 동시성 환경에서 안전하게 사용 가능
+- 🪶 **경량**: 순수 CORS 로직만 제공, 프레임워크 독립적
+- 📦 **프레임워크 중립**: Axum, Actix-web, Hyper 등 어디서나 사용 가능
+
+
+> [!IMPORTANT]
+> 이 라이브러리는 HTTP 서버나 미들웨어 기능은 제공하지 않으므로 사용 중인 프레임워크에 맞춰 통합 코드를 작성해야 합니다.
+
+---
 
 ## 📚 목차
 *   [**소개**](#소개)
@@ -33,32 +52,19 @@
 *   [**오류**](#오류)
     *   [검증 오류](#검증-오류)
     *   [런타임 오류](#런타임-오류)
-*   [**검증 및 결과 사용법**](#검증-및-결과-사용법)
-    *   [요청 검증 준비](#요청-검증-준비)
+*   [**요청 판정 및 결과 처리**](#요청-판정-및-결과-처리)
+    *   [요청 컨텍스트 준비](#요청-컨텍스트-준비)
     *   [판정 결과 처리](#판정-결과-처리)
 *   [**예제**](#예제)
 *   [**기여하기**](#기여하기)
 *   [**라이선스**](#라이선스)
 
 ---
-## 소개
 
-### 특징
+<a id="시작하기"></a>
+## 🚀 시작하기
 
-- ✅ **WHATWG Fetch 표준 준수**: 최신 CORS 명세를 정확히 따릅니다
-- 🔒 **안전한 검증**: 잘못된 설정 조합을 생성 시점에 차단합니다
-- 🌐 **유연한 Origin 매칭**: 정확한 문자열, 패턴, 커스텀 로직 등 다양한 방식 지원
-- 🎯 **Private Network Access 지원**: 사설 네트워크 요청 처리
-- 🧵 **Thread-safe**: 동시성 환경에서 안전하게 사용 가능
-- 🪶 **경량**: 순수 CORS 로직만 제공, 프레임워크 독립적
-- 📦 **프레임워크 중립**: Axum, Actix-web, Hyper 등 어디서나 사용 가능
-
-### 주의사항
-
-이 라이브러리는 **CORS 판정 로직**에만 집중합니다. HTTP 서버나 미들웨어 기능은 제공하지 않으므로, 사용 중인 프레임워크에 맞춰 통합 코드를 작성해야 합니다.
-
-## 시작하기
-
+<a id="설치"></a>
 ### 설치
 
 `cargo add`를 사용하여 라이브러리를 추가하세요:
@@ -74,6 +80,7 @@ cargo add bunner_cors_rs
 bunner_cors_rs = "0.1.0"
 ```
 
+<a id="빠른-시작"></a>
 ### 빠른 시작
 
 가장 간단한 CORS 설정부터 시작해보겠습니다.
@@ -107,7 +114,8 @@ match cors.check(&request) {
 
 ---
 
-## CorsOptions
+<a id="corsoptions"></a>
+## ⚙️ CorsOptions
 
 애플리케이션 사양에 맞게 CorsOptions 을 설정하세요. 다음은 `CorsOptions`과 `CorsOptions::default()`를 사용시 설정되는 기본값입니다.
 
@@ -123,6 +131,7 @@ match cors.check(&request) {
 | `allow_private_network` | `false` | 사설망 접근 불허 |
 | `timing_allow_origin` | `None` | 타이밍 정보 미노출 |
 
+<a id="origin"></a>
 ### `origin`
 어떤 출처의 요청을 허용할지 결정합니다. CORS의 가장 핵심적인 설정으로, 다양한 매칭 전략을 제공합니다.
 
@@ -140,7 +149,7 @@ let options = CorsOptions {
     ..Default::default()
 };
 ```
-```
+```http
 Access-Control-Allow-Origin: *
 Vary: Origin
 ```
@@ -162,7 +171,7 @@ let options = CorsOptions {
     ..Default::default()
 };
 ```
-```
+```http
 Access-Control-Allow-Origin: https://app.example.com
 Access-Control-Allow-Credentials: true
 Vary: Origin
@@ -183,7 +192,7 @@ let options = CorsOptions {
     ..Default::default()
 };
 ```
-```
+```http
 Access-Control-Allow-Origin: https://app.example.com
 Vary: Origin
 ```
@@ -201,7 +210,7 @@ let options = CorsOptions {
     ..Default::default()
 };
 ```
-```
+```http
 Access-Control-Allow-Origin: https://api.example.com
 Vary: Origin
 ```
@@ -216,7 +225,7 @@ Vary: Origin
 
 #### `Origin::predicate`
 
-사용자가 직접 검증 조건을 설정합니다. `true` 반환 시 요청 Origin을 그대로 반영하고, false 반환 시 거부합니다.
+사용자가 직접 판정 조건을 설정합니다. `true` 반환 시 요청 Origin을 그대로 반영하고, false 반환 시 거부합니다.
 
 ```rust
 let options = CorsOptions {
@@ -227,7 +236,7 @@ let options = CorsOptions {
 };
 ```
 
-```
+```http
 Access-Control-Allow-Origin: https://api.trusted.com
 Vary: Origin
 ```
@@ -267,6 +276,7 @@ let options = CorsOptions {
 
 ---
 
+<a id="methods"></a>
 ### `methods`
 
 Preflight 요청과 Simple 요청에서 허용할 HTTP 메서드를 지정합니다.
@@ -280,7 +290,7 @@ let options = CorsOptions {
     ..Default::default()
 };
 ```
-```
+```http
 Access-Control-Allow-Methods: GET,POST,DELETE
 ```
 
@@ -289,6 +299,7 @@ Access-Control-Allow-Methods: GET,POST,DELETE
 
 ---
 
+<a id="allowed_headers"></a>
 ### `allowed_headers`
 
 Preflight 요청에서 클라이언트가 보낼 수 있는 헤더를 지정합니다.
@@ -304,7 +315,7 @@ let options = CorsOptions {
 };
 ```
 
-```
+```http
 Access-Control-Allow-Headers: Content-Type,Authorization,X-Api-Key
 ```
 
@@ -313,6 +324,7 @@ Access-Control-Allow-Headers: Content-Type,Authorization,X-Api-Key
 > - 허용 헤더 목록에 `"*"`를 포함할 수 없습니다. 와일드카드가 필요하다면 `AllowedHeaders::Any`를 사용하세요.
 
 
+<a id="exposed_headers"></a>
 ### `exposed_headers`
 
 Simple 요청에서 클라이언트에게 노출할 응답 헤더를 지정합니다.
@@ -328,7 +340,7 @@ let options = CorsOptions {
 };
 ```
 
-```
+```http
 Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 ```
 
@@ -338,6 +350,7 @@ Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 
 ---
 
+<a id="credentials"></a>
 ### `credentials`
 
 쿠키, Authorization 헤더, TLS 클라이언트 인증서 등 자격증명을 포함한 요청을 허용할지 결정합니다.
@@ -350,7 +363,7 @@ let options = CorsOptions {
     ..Default::default()
 };
 ```
-```
+```http
 Access-Control-Allow-Origin: https://app.example.com
 Access-Control-Allow-Credentials: true
 Vary: Origin
@@ -364,6 +377,7 @@ Vary: Origin
 
 ---
 
+<a id="max_age"></a>
 ### `max_age`
 
 브라우저가 Preflight 응답을 캐시할 시간(초)을 지정합니다. 이를 통해 반복적인 Preflight 요청을 줄여 성능을 향상시킬 수 있습니다.
@@ -376,7 +390,7 @@ let options = CorsOptions {
 };
 ```
 
-```
+```http
 Access-Control-Max-Age: 3600
 ```
 
@@ -389,6 +403,7 @@ Access-Control-Max-Age: 3600
 
 ---
 
+<a id="allow_null_origin"></a>
 ### `allow_null_origin`
 
 요청 헤더의 Origin이 문자열 `"null"`일 때 허용할지 여부를 결정합니다.
@@ -400,7 +415,7 @@ let options = CorsOptions {
     ..Default::default()
 };
 ```
-```
+```http
 Access-Control-Allow-Origin: null
 Vary: Origin
 ```
@@ -413,6 +428,7 @@ Vary: Origin
 
 ---
 
+<a id="allow_private_network"></a>
 ### `allow_private_network`
 
 Private Network Access 요청을 허용합니다.
@@ -425,7 +441,7 @@ let options = CorsOptions {
     ..Default::default()
 };
 ```
-```
+```http
 Access-Control-Allow-Origin: https://app.example.com
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Private-Network: true
@@ -442,6 +458,7 @@ Vary: Origin
 
 ---
 
+<a id="timing_allow_origin"></a>
 ### `timing_allow_origin`
 
 `Timing-Allow-Origin` 헤더를 설정하여, 특정 Origin이 리소스 타이밍 정보에 접근할 수 있도록 허용합니다. 성능 분석 도구나 모니터링 서비스에서 유용합니다.
@@ -458,7 +475,7 @@ let options = CorsOptions {
 };
 ```
 
-```
+```http
 Timing-Allow-Origin: https://analytics.example.com
 ```
 
@@ -470,8 +487,10 @@ Timing-Allow-Origin: https://analytics.example.com
 
 ---
 
-## 오류
+<a id="오류"></a>
+## 🚨 오류
 
+<a id="검증-오류"></a>
 ### 검증 오류
 
 `Cors::new()`는 잘못된 설정 조합이 있을 경우 `ValidationError`를 반환합니다. 주요 검증 오류는 다음과 같습니다.
@@ -491,6 +510,7 @@ Timing-Allow-Origin: https://analytics.example.com
 | `AllowedHeadersListContainsInvalidToken` | 허용 헤더가 유효한 HTTP 헤더 이름이 아님 |
 | `ExposeHeadersListContainsInvalidToken` | 노출 헤더가 유효한 HTTP 헤더 이름이 아님 |
 
+<a id="런타임-오류"></a>
 ### 런타임 오류
 
 `Cors::check()`는 `CorsError`를 반환할 수 있습니다.
@@ -501,9 +521,11 @@ Timing-Allow-Origin: https://analytics.example.com
 
 ---
 
-## 검증 및 결과 사용법
+<a id="요청-판정-및-결과-처리"></a>
+## 📋 요청 판정 및 결과 처리
 
-### 요청 검증 준비
+<a id="요청-컨텍스트-준비"></a>
+### 요청 컨텍스트 준비
 
 CORS 판정을 위해 HTTP 요청 정보를 `RequestContext`로 변환해야 합니다.
 
@@ -532,6 +554,7 @@ let decision = cors.check(&context)?;
 > [!TIP]
 > HTTP 헤더명은 대소문자를 구분하지 않으므로, 대부분의 프레임워크에서 `headers.get("origin")`처럼 소문자로 접근합니다. Axum/Actix 모두 소문자 헤더명을 권장합니다.
 
+<a id="판정-결과-처리"></a>
 ### 판정 결과 처리
 
 `cors.check()`는 `CorsDecision`을 반환하며 4가지 결과로 나뉩니다.
@@ -595,7 +618,8 @@ CorsDecision::SimpleAccepted { headers } => {
 
 Origin 헤더가 없거나 CORS가 필요하지 않은 요청입니다. 응답에 CORS 헤더를 추가하지 말고 요청을 처리하시면 됩니다.
 
-## 예제
+<a id="예제"></a>
+## 📝 예제
 
 `/examples/frameworks` 디렉토리에 프레임워크별 통합 예제가 제공됩니다. 인스턴스는 애플리케이션 시작 시 한 번 생성하여 상태로 공유하세요.
 
@@ -614,12 +638,14 @@ make coverage
 make bench
 ```
 
-## 기여하기
+<a id="기여하기"></a>
+## ❤️ 기여하기
 
 기여는 일정 기간동안 받지 않습니다. 준비되는대로 업데이트 하겠습니다.
 
 문제 혹은 요청사항이 있을 경우 이슈를 등록해주세요.
 
-## 라이선스
+<a id="라이선스"></a>
+## 📜 라이선스
 
 MIT License. 자세한 내용은 [LICENSE.md](LICENSE.md) 파일을 참조하세요.
