@@ -27,6 +27,9 @@ pprof = { version = "0.13", features = ["flamegraph", "criterion"] }
 axum = "0.8"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 actix-web = { version = "4", features = ["macros"] }
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["server", "service", "http1", "tokio"] }
+http-body-util = "0.1"
 
 [dev-dependencies.cargo-husky]
 version = "1"

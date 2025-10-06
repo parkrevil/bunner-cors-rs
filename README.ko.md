@@ -622,14 +622,21 @@ Origin 헤더가 없거나 CORS가 필요하지 않은 요청입니다. 응답�
 프레임워크별 적용 예제는 `/examples` 디렉토리에 있습니다.
 
 ### axum
-실행
 ```bash
 cargo run --example axum
+curl -X GET -H "Origin: http://api.example.com" -I http://127.0.0.1:5001/greet
 ```
 
-요청
+### Actix Web
 ```bash
-curl -X GET -H "Origin: http://api.example.com" -I http://127.0.0.1:5001/greet
+cargo run --example actix
+curl -X GET -H "Origin: http://api.example.com" -I http://127.0.0.1:5002/greet
+```
+
+### hyper
+```bash
+cargo run --example hyper
+curl -X GET -H "Origin: http://api.example.com" -I http://127.0.0.1:5003/greet
 ```
 
 ### 테스트
