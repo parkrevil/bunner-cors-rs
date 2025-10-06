@@ -1,16 +1,16 @@
-use std::future::{ready, Ready};
+use std::future::{Ready, ready};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use actix_web::body::{EitherBody, MessageBody};
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::{
-    header::{HeaderMap, HeaderName, HeaderValue},
     StatusCode,
+    header::{HeaderMap, HeaderName, HeaderValue},
 };
 use actix_web::{Error, HttpRequest, HttpResponse, HttpResponseBuilder};
 use bunner_cors_rs::{
-    constants::header, CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext,
+    CorsDecision, CorsError, Headers, PreflightRejectionReason, RequestContext, constants::header,
 };
 
 use super::SharedCors;
