@@ -56,7 +56,7 @@ audit:
 coverage:
 	@if command -v cargo-llvm-cov >/dev/null 2>&1; then \
 		mkdir -p $(TARGET_DIR)/llvm-cov-target/html; \
-		cargo llvm-cov --ignore-filename-regex '($(CURDIR)/tests/.*|$(CURDIR)/src/.*_test\.rs$$)'; \
+		RUSTFLAGS="-A dead_code" cargo llvm-cov --ignore-filename-regex '($(CURDIR)/tests/.*|$(CURDIR)/src/.*_test\.rs$$)'; \
 	else \
 		echo "cargo-llvm-cov not installed. Install with: cargo install cargo-llvm-cov" >&2; \
 	fi
@@ -64,20 +64,20 @@ coverage:
 coverage-lcov:
 	@if command -v cargo-llvm-cov >/dev/null 2>&1; then \
 		mkdir -p $(TARGET_DIR)/llvm-cov-target; \
-		cargo llvm-cov --ignore-filename-regex '($(CURDIR)/tests/.*|$(CURDIR)/src/.*_test\.rs$$)' --lcov --output-path $(TARGET_DIR)/llvm-cov-target/lcov.info; \
+		RUSTFLAGS="-A dead_code" cargo llvm-cov --ignore-filename-regex '($(CURDIR)/tests/.*|$(CURDIR)/src/.*_test\.rs$$)' --lcov --output-path $(TARGET_DIR)/llvm-cov-target/lcov.info; \
 	else \
 		echo "cargo-llvm-cov not installed. Install with: cargo install cargo-llvm-cov" >&2; \
 	fi
 
 ## Release / Publish
-.PHONY: release publish-dry-run publish-crate
+.PHONY: release publish-dry-run publish
 release:
 	cargo build --release --all-features
 
 publish-dry-run:
 	cargo publish --dry-run
 
-publish-crate:
+publish:
 	cargo publish
 
 ## Cleanup

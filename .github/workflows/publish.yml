@@ -113,7 +113,9 @@ jobs:
 
           entry = (match.group(0) + "\n" + section.strip()).strip()
 
-          output_path = Path("release-notes.md")
+          output_dir = Path("target/gh-release")
+          output_dir.mkdir(parents=True, exist_ok=True)
+          output_path = output_dir / "release-notes.md"
           output_path.write_text(entry, encoding="utf-8")
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
