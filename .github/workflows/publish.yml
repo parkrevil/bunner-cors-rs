@@ -79,7 +79,7 @@ jobs:
           git tag -f "$TAG"
           git push origin --force "$TAG"
 
-      - name: Extract changelog section
+      - name: Build release notes
         id: changelog
         shell: bash
         run: |
@@ -113,13 +113,13 @@ jobs:
 
           entry = (match.group(0) + "\n" + section.strip()).strip()
 
-          output_dir = Path("target/gh-release")
-          output_dir.mkdir(parents=True, exist_ok=True)
-          output_path = output_dir / "release-notes.md"
-          output_path.write_text(entry, encoding="utf-8")
+          lines = entry.splitlines()
+          body = "\n".join(lines[1:]).lstrip()
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-            fh.write(f"notes_path={output_path}\n")
+            fh.write("notes<<EOF\n")
+            fh.write(body)
+            fh.write("\nEOF\n")
           PY
 
       - name: Verify the publish process
@@ -137,7 +137,7 @@ jobs:
         with:
           tag_name: v${{ steps.version.outputs.current_version }}
           name: v${{ steps.version.outputs.current_version }}
-          body_path: ${{ steps.changelog.outputs.notes_path }}
+          body: ${{ steps.changelog.outputs.notes }}
           overwrite: true
           generate_release_notes: false
         env:
