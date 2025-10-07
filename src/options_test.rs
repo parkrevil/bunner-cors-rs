@@ -16,7 +16,7 @@ mod default {
         // Assert
         assert!(matches!(options.origin, Origin::Any));
         assert_eq!(options.methods, AllowedMethods::default());
-    assert!(options.allowed_headers == AllowedHeaders::default());
+        assert!(options.allowed_headers == AllowedHeaders::default());
         assert!(matches!(options.exposed_headers, ExposedHeaders::None));
         assert!(!options.credentials);
         assert!(options.max_age.is_none());
@@ -126,8 +126,8 @@ mod validate {
         use super::*;
 
         #[test]
-        fn given_credentials_with_any_origin_when_validate_called_then_returns_specific_origin_error(
-        ) {
+        fn given_credentials_with_any_origin_when_validate_called_then_returns_specific_origin_error()
+         {
             let options = CorsOptions::new().credentials(true);
             let result = options.validate();
 
@@ -138,8 +138,8 @@ mod validate {
         }
 
         #[test]
-        fn given_credentials_with_allowed_headers_any_when_validate_called_then_returns_header_error(
-        ) {
+        fn given_credentials_with_allowed_headers_any_when_validate_called_then_returns_header_error()
+         {
             let options = CorsOptions::new()
                 .credentials(true)
                 .origin(Origin::list(["https://api.test"]))
@@ -168,10 +168,10 @@ mod validate {
         }
 
         #[test]
-        fn given_header_list_with_invalid_token_when_validate_called_then_returns_invalid_token_error(
-        ) {
-            let options = CorsOptions::new()
-                .allowed_headers(AllowedHeaders::list(["X-Trace", "X Header"]));
+        fn given_header_list_with_invalid_token_when_validate_called_then_returns_invalid_token_error()
+         {
+            let options =
+                CorsOptions::new().allowed_headers(AllowedHeaders::list(["X-Trace", "X Header"]));
             let result = options.validate();
 
             assert!(matches!(
@@ -181,8 +181,10 @@ mod validate {
         }
 
         #[test]
-        fn given_header_list_with_empty_value_when_validate_called_then_returns_empty_token_error() {
-            let options = CorsOptions::new().allowed_headers(AllowedHeaders::list(["X-Test", "  "]));
+        fn given_header_list_with_empty_value_when_validate_called_then_returns_empty_token_error()
+        {
+            let options =
+                CorsOptions::new().allowed_headers(AllowedHeaders::list(["X-Test", "  "]));
             let result = options.validate();
 
             assert!(matches!(
@@ -218,7 +220,8 @@ mod validate {
         }
 
         #[test]
-        fn given_methods_with_invalid_token_when_validate_called_then_returns_invalid_token_error() {
+        fn given_methods_with_invalid_token_when_validate_called_then_returns_invalid_token_error()
+        {
             let options = CorsOptions::new().methods(AllowedMethods::list(["GET", "PO ST"]));
             let result = options.validate();
 
@@ -247,9 +250,10 @@ mod validate {
         }
 
         #[test]
-        fn given_headers_with_invalid_token_when_validate_called_then_returns_invalid_token_error() {
-            let options = CorsOptions::new()
-                .exposed_headers(ExposedHeaders::list(["X-Trace", "X Header"]));
+        fn given_headers_with_invalid_token_when_validate_called_then_returns_invalid_token_error()
+        {
+            let options =
+                CorsOptions::new().exposed_headers(ExposedHeaders::list(["X-Trace", "X Header"]));
             let result = options.validate();
 
             assert!(matches!(
@@ -260,8 +264,8 @@ mod validate {
 
         #[test]
         fn given_headers_with_empty_entry_when_validate_called_then_returns_empty_value_error() {
-            let options = CorsOptions::new()
-                .exposed_headers(ExposedHeaders::list(["  ", "X-Trace"]));
+            let options =
+                CorsOptions::new().exposed_headers(ExposedHeaders::list(["  ", "X-Trace"]));
             let result = options.validate();
 
             assert!(matches!(
@@ -279,10 +283,9 @@ mod validate {
         }
 
         #[test]
-        fn given_wildcard_combined_with_headers_when_validate_called_then_returns_combination_error(
-        ) {
-            let options = CorsOptions::new()
-                .exposed_headers(ExposedHeaders::list(["*", "X-Test"]));
+        fn given_wildcard_combined_with_headers_when_validate_called_then_returns_combination_error()
+         {
+            let options = CorsOptions::new().exposed_headers(ExposedHeaders::list(["*", "X-Test"]));
             let result = options.validate();
 
             assert!(matches!(
@@ -296,8 +299,8 @@ mod validate {
         use super::*;
 
         #[test]
-        fn given_private_network_without_credentials_when_validate_called_then_returns_credentials_error(
-        ) {
+        fn given_private_network_without_credentials_when_validate_called_then_returns_credentials_error()
+         {
             let options = CorsOptions::new().allow_private_network(true);
             let result = options.validate();
 
@@ -308,8 +311,8 @@ mod validate {
         }
 
         #[test]
-        fn given_private_network_with_wildcard_origin_when_validate_called_then_returns_origin_error(
-        ) {
+        fn given_private_network_with_wildcard_origin_when_validate_called_then_returns_origin_error()
+         {
             let options = CorsOptions::new()
                 .allow_private_network(true)
                 .credentials(true);
@@ -337,8 +340,8 @@ mod validate {
         use super::*;
 
         #[test]
-        fn given_timing_allow_origin_any_with_credentials_when_validate_called_then_returns_wildcard_error(
-        ) {
+        fn given_timing_allow_origin_any_with_credentials_when_validate_called_then_returns_wildcard_error()
+         {
             let options = CorsOptions::new()
                 .credentials(true)
                 .timing_allow_origin(TimingAllowOrigin::Any)
@@ -352,8 +355,8 @@ mod validate {
         }
 
         #[test]
-        fn given_timing_allow_origin_with_empty_entry_when_validate_called_then_returns_empty_value_error(
-        ) {
+        fn given_timing_allow_origin_with_empty_entry_when_validate_called_then_returns_empty_value_error()
+         {
             let options = CorsOptions::new()
                 .timing_allow_origin(TimingAllowOrigin::list([" ", "https://metrics.test"]));
             let result = options.validate();
@@ -390,8 +393,8 @@ mod validate {
         }
 
         #[test]
-        fn given_private_network_and_wildcard_origin_conflicts_when_validate_called_then_returns_specific_origin_error(
-        ) {
+        fn given_private_network_and_wildcard_origin_conflicts_when_validate_called_then_returns_specific_origin_error()
+         {
             let options = CorsOptions::new()
                 .credentials(true)
                 .allow_private_network(true)
@@ -406,8 +409,8 @@ mod validate {
         }
 
         #[test]
-        fn given_wildcard_header_and_timing_conflicts_when_validate_called_then_returns_header_error(
-        ) {
+        fn given_wildcard_header_and_timing_conflicts_when_validate_called_then_returns_header_error()
+         {
             let options = CorsOptions::new()
                 .origin(Origin::list(["https://api.test"]))
                 .credentials(true)
