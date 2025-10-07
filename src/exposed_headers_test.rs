@@ -1,42 +1,185 @@
 use super::*;
 
-#[test]
-fn should_return_none_when_default_then_no_headers_exposed() {
-    let headers = ExposedHeaders::default();
+mod default {
+    use super::*;
 
-    assert!(matches!(headers, ExposedHeaders::None));
-    assert!(headers.header_value().is_none());
+    #[test]
+    fn given_default_when_constructed_then_represents_none_variant() {
+        // Arrange & Act
+        let headers = ExposedHeaders::default();
+
+        // Assert
+        assert!(matches!(headers, ExposedHeaders::None));
+        assert!(headers.header_value().is_none());
+    }
 }
 
-#[test]
-fn should_trim_and_deduplicate_entries_when_list_created_then_return_unique_values() {
-    let headers = ExposedHeaders::list([" X-Trace ", "x-trace", "X-Span"]);
+mod list {
+    use super::*;
 
-    let collected: Vec<_> = headers.iter().cloned().collect();
+    #[test]
+    fn given_whitespace_values_when_list_called_then_trims_and_preserves_order() {
+        // Arrange
+        let input = ["  X-Trace  ", "x-trace", "X-Span"];
 
-    assert!(matches!(&headers, ExposedHeaders::List(_)));
-    assert_eq!(collected, vec!["X-Trace".to_string(), "X-Span".to_string()]);
+        // Act
+        let headers = ExposedHeaders::list(input);
+
+        // Assert
+        let collected: Vec<_> = headers.iter().cloned().collect();
+        assert!(matches!(&headers, ExposedHeaders::List(_)));
+        assert_eq!(collected, vec!["X-Trace".to_string(), "X-Span".to_string()]);
+    }
+
+    #[test]
+    fn given_single_wildcard_when_list_called_then_returns_any_variant() {
+        // Arrange
+        let input = ["*"];
+
+        // Act
+        let headers = ExposedHeaders::list(input);
+
+        // Assert
+        assert!(matches!(headers, ExposedHeaders::Any));
+        assert_eq!(headers.header_value().as_deref(), Some("*"));
+    }
+
+    #[test]
+    fn given_empty_iterator_when_list_called_then_returns_empty_list() {
+        // Arrange
+        let input = std::iter::empty::<&str>();
+
+        // Act
+        let headers = ExposedHeaders::list(input);
+
+        // Assert
+        assert!(matches!(&headers, ExposedHeaders::List(list) if list.is_empty()));
+        assert!(headers.header_value().is_none());
+    }
+
+    #[test]
+    fn given_empty_string_when_list_called_then_keeps_single_empty_entry() {
+        // Arrange
+        let input = ["  ", ""];
+
+        // Act
+        let headers = ExposedHeaders::list(input);
+
+        // Assert
+        if let ExposedHeaders::List(list) = headers {
+            assert_eq!(list.values(), &["".to_string()]);
+        } else {
+            panic!("expected list variant");
+        }
+    }
 }
 
-#[test]
-fn should_convert_single_wildcard_to_variant_when_star_provided_then_use_wildcard() {
-    let headers = ExposedHeaders::list(["*"]);
+mod header_value {
+    use super::*;
 
-    assert!(matches!(headers, ExposedHeaders::Any));
-    assert_eq!(headers.header_value().as_deref(), Some("*"));
+    #[test]
+    fn given_none_when_header_value_requested_then_returns_none() {
+        // Arrange
+        let headers = ExposedHeaders::None;
+
+        // Act
+        let value = headers.header_value();
+
+        // Assert
+        assert!(value.is_none());
+    }
+
+    #[test]
+    fn given_list_without_entries_when_header_value_requested_then_returns_none() {
+        // Arrange
+        let headers = ExposedHeaders::list(std::iter::empty::<&str>());
+
+        // Act
+        let value = headers.header_value();
+
+        // Assert
+        assert!(value.is_none());
+    }
+
+    #[test]
+    fn given_list_with_values_when_header_value_requested_then_returns_csv() {
+        // Arrange
+        let headers = ExposedHeaders::list(["X-Trace", "X-Span"]);
+
+        // Act
+        let value = headers.header_value();
+
+        // Assert
+        assert_eq!(value.as_deref(), Some("X-Trace,X-Span"));
+    }
+
+    #[test]
+    fn given_any_variant_when_header_value_requested_then_returns_wildcard() {
+        // Arrange
+        let headers = ExposedHeaders::Any;
+
+        // Act
+        let value = headers.header_value();
+
+        // Assert
+        assert_eq!(value.as_deref(), Some("*"));
+    }
 }
 
-#[test]
-fn should_return_none_header_value_when_list_empty_then_skip_header() {
-    let headers = ExposedHeaders::list(std::iter::empty::<&str>());
+mod iter {
+    use super::*;
 
-    assert!(matches!(&headers, ExposedHeaders::List(list) if list.is_empty()));
-    assert!(headers.header_value().is_none());
+    #[test]
+    fn given_list_variant_when_iter_called_then_yields_insertion_order() {
+        // Arrange
+        let headers = ExposedHeaders::list(["X-Trace", "X-Span"]);
+
+        // Act
+        let collected: Vec<_> = headers.iter().cloned().collect();
+
+        // Assert
+        assert_eq!(collected, vec!["X-Trace".to_string(), "X-Span".to_string()]);
+    }
+
+    #[test]
+    fn given_non_list_variant_when_iter_called_then_returns_empty_iterator() {
+        // Arrange
+        let headers = ExposedHeaders::Any;
+
+        // Act
+        let collected: Vec<_> = headers.iter().collect();
+
+        // Assert
+        assert!(collected.is_empty());
+    }
 }
 
-#[test]
-fn should_preserve_trimmed_values_when_header_value_requested_then_join_with_commas() {
-    let headers = ExposedHeaders::list(["  X-Trace  ", "X-Span", "X-Trace"]);
+mod exposed_header_list {
+    use super::*;
 
-    assert_eq!(headers.header_value().as_deref(), Some("X-Trace,X-Span"));
+    #[test]
+    fn given_list_variant_when_values_called_then_returns_inner_slice() {
+        // Arrange
+        let headers = ExposedHeaders::list(["X-Trace"]);
+
+        // Act & Assert
+        if let ExposedHeaders::List(list) = headers {
+            assert_eq!(list.values(), &["X-Trace".to_string()]);
+        } else {
+            panic!("expected list variant");
+        }
+    }
+
+    #[test]
+    fn given_empty_list_variant_when_is_empty_called_then_returns_true() {
+        // Arrange
+        let headers = ExposedHeaders::list(std::iter::empty::<&str>());
+
+        // Act & Assert
+        if let ExposedHeaders::List(list) = headers {
+            assert!(list.is_empty());
+        } else {
+            panic!("expected list variant");
+        }
+    }
 }
