@@ -1,4 +1,4 @@
 /target
 Cargo.lock
-tests/snapshots
+tests/snapshots/*.snap.new
 docs/perf

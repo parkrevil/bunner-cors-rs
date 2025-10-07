@@ -1,0 +1,17 @@
+---
+source: tests/snapshot_validations.rs
+expression: snapshot
+---
+headers:
+  - name: Access-Control-Allow-Credentials
+    value: "true"
+  - name: Access-Control-Allow-Headers
+    value: X-Trace-Id
+  - name: Access-Control-Allow-Methods
+    value: "GET,HEAD,PUT,PATCH,POST,DELETE"
+  - name: Access-Control-Allow-Origin
+    value: "https://mirror.dev"
+  - name: Access-Control-Max-Age
+    value: "3600"
+  - name: Vary
+    value: Origin

@@ -1,0 +1,9 @@
+---
+source: tests/snapshot_validations.rs
+expression: snapshot
+---
+headers:
+  - name: Access-Control-Allow-Methods
+    value: "GET,HEAD,PUT,PATCH,POST,DELETE"
+  - name: Access-Control-Allow-Origin
+    value: "*"
