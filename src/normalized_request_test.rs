@@ -4,7 +4,7 @@ use std::borrow::Cow;
 
 fn request(
     method: &'static str,
-    origin: &'static str,
+    origin: Option<&'static str>,
     acrm: Option<&'static str>,
     acrh: Option<&'static str>,
 ) -> RequestContext<'static> {
@@ -24,7 +24,7 @@ mod new {
     fn should_store_lowercase_when_components_have_uppercase_then_normalize_fields() {
         let ctx = request(
             "OPTIONS",
-            "HTTPS://API.TEST",
+            Some("HTTPS://API.TEST"),
             Some("POST"),
             Some("X-CUSTOM"),
         );
@@ -32,7 +32,7 @@ mod new {
         let normalized = NormalizedRequest::new(&ctx);
 
         assert_eq!(normalized.method, "options");
-        assert_eq!(normalized.origin, "https://api.test");
+        assert_eq!(normalized.origin.as_deref(), Some("https://api.test"));
         assert_eq!(
             normalized.access_control_request_method.as_deref(),
             Some("post")
@@ -45,24 +45,24 @@ mod new {
 
     #[test]
     fn should_borrow_original_when_components_are_lowercase_then_avoid_allocation() {
-        let ctx = request("get", "https://api.test", Some("post"), Some("x-custom"));
+        let ctx = request("get", Some("https://api.test"), Some("post"), Some("x-custom"));
 
         let normalized = NormalizedRequest::new(&ctx);
 
         assert!(matches!(normalized.method, Cow::Borrowed("get")));
         assert!(matches!(
             normalized.origin,
-            Cow::Borrowed("https://api.test")
+            Some(Cow::Borrowed("https://api.test"))
         ));
     }
 
     #[test]
     fn should_lowercase_unicode_uppercase_origin_then_normalize_non_ascii() {
-        let ctx = request("GET", "https://DÉV.TEST", Some("POST"), Some("X-CUSTOM"));
+        let ctx = request("GET", Some("https://DÉV.TEST"), Some("POST"), Some("X-CUSTOM"));
 
         let normalized = NormalizedRequest::new(&ctx);
 
-        assert_eq!(normalized.origin, "https://dév.test");
+        assert_eq!(normalized.origin.as_deref(), Some("https://dév.test"));
         assert_eq!(normalized.method, "get");
         assert_eq!(
             normalized.access_control_request_method.as_deref(),
@@ -76,25 +76,29 @@ mod new {
 
     #[test]
     fn should_release_unicode_buffer_when_no_uppercase_then_preserve_borrowed_origin() {
-        let ctx = request("get", "https://mañana.test", Some("post"), Some("x-custom"));
+        let ctx = request(
+            "get",
+            Some("https://mañana.test"),
+            Some("post"),
+            Some("x-custom"),
+        );
 
         let normalized = NormalizedRequest::new(&ctx);
 
         assert!(matches!(
             normalized.origin,
-            Cow::Borrowed("https://mañana.test")
+            Some(Cow::Borrowed("https://mañana.test"))
         ));
         assert!(matches!(normalized.method, Cow::Borrowed("get")));
     }
 
     #[test]
-    fn should_remain_empty_without_allocation_when_origin_is_empty_then_preserve_borrowed_slice() {
-        let ctx = request("get", "", Some("post"), Some("x-custom"));
+    fn should_return_none_when_origin_header_missing_then_skip_allocation() {
+        let ctx = request("get", None, Some("post"), Some("x-custom"));
 
         let normalized = NormalizedRequest::new(&ctx);
 
-        assert!(normalized.origin.is_empty());
-        assert!(matches!(normalized.origin, Cow::Borrowed("")));
+        assert!(normalized.origin.is_none());
     }
 }
 
@@ -138,7 +142,7 @@ mod as_context {
     fn should_return_normalized_view_when_context_requested_then_expose_lowercase_fields() {
         let ctx = request(
             "OPTIONS",
-            "https://API.TEST",
+            Some("https://API.TEST"),
             Some("POST"),
             Some("X-CUSTOM"),
         );
@@ -147,7 +151,7 @@ mod as_context {
         let view = normalized.as_context();
 
         assert_eq!(view.method, "options");
-        assert_eq!(view.origin, "https://api.test");
+        assert_eq!(view.origin, Some("https://api.test"));
         assert_eq!(view.access_control_request_method, Some("post"));
         assert_eq!(view.access_control_request_headers, Some("x-custom"));
         assert!(!view.access_control_request_private_network);
@@ -157,7 +161,7 @@ mod as_context {
     fn should_preserve_true_when_private_network_flag_set_then_propagate_state() {
         let ctx = RequestContext {
             method: "OPTIONS",
-            origin: "https://api.test",
+            origin: Some("https://api.test"),
             access_control_request_method: Some("POST"),
             access_control_request_headers: Some("X-CUSTOM"),
             access_control_request_private_network: true,
@@ -175,7 +179,7 @@ mod is_options {
 
     #[test]
     fn should_return_true_when_method_is_options_then_detect_preflight() {
-        let ctx = request("OPTIONS", "https://api.test", None, None);
+        let ctx = request("OPTIONS", Some("https://api.test"), None, None);
         let normalized = NormalizedRequest::new(&ctx);
 
         let result = normalized.is_options();
@@ -185,7 +189,7 @@ mod is_options {
 
     #[test]
     fn should_return_false_when_method_is_not_options_then_skip_preflight_detection() {
-        let ctx = request("GET", "https://api.test", None, None);
+        let ctx = request("GET", Some("https://api.test"), None, None);
         let normalized = NormalizedRequest::new(&ctx);
 
         let result = normalized.is_options();
@@ -205,7 +209,7 @@ mod pool_instrumentation {
         {
             let ctx = request(
                 "OPTIONS",
-                "HTTPS://POOL.TEST",
+                Some("HTTPS://POOL.TEST"),
                 Some("POST"),
                 Some("X-CUSTOM"),
             );
@@ -226,7 +230,7 @@ mod pool_instrumentation {
 
         let ctx = request(
             "OPTIONS",
-            "HTTPS://FILL.TEST",
+            Some("HTTPS://FILL.TEST"),
             Some("POST"),
             Some("X-CUSTOM"),
         );
@@ -247,7 +251,7 @@ mod pool_instrumentation {
         {
             let ctx = request(
                 "OPTIONS",
-                "HTTPS://OVERFLOW.TEST",
+                Some("HTTPS://OVERFLOW.TEST"),
                 Some("POST"),
                 Some("X-CUSTOM"),
             );

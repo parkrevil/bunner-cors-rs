@@ -144,7 +144,7 @@ let cors = Cors::new(CorsOptions {
 
 let request = RequestContext {
     method: "GET",
-    origin: "https://example.com",
+    origin: Some("https://example.com"),
     access_control_request_method: None,
     access_control_request_headers: None,
     access_control_request_private_network: false,
@@ -562,20 +562,17 @@ CORS 판정을 위해 HTTP 요청 정보를 `RequestContext`로 변환해야 합
 | 필드 | 타입 | HTTP 헤더 | 설명 |
 |------|------|-----------|------|
 | `method` | `&'a str` | 요청 메서드 | 실제 HTTP 메서드 문자열 (`"GET"`, `"POST"`, `"OPTIONS"` 등) |
-| `origin` | `&'a str` | `Origin` | 요청의 출처. 헤더가 없으면 빈 문자열 `""`로 전달하세요. |
+| `origin` | `Option<&'a str>` | `Origin` | 요청의 출처. 헤더가 없으면 `None` |
 | `access_control_request_method` | `Option<&'a str>` | `Access-Control-Request-Method` | Preflight 요청에서 실행할 메서드. 값이 없으면 `None` |
 | `access_control_request_headers` | `Option<&'a str>` | `Access-Control-Request-Headers` | Preflight 요청에서 사용할 헤더 목록(쉼표 구분). 값이 없으면 `None` |
-| `access_control_request_private_network` | `bool` | `Access-Control-Request-Private-Network` | 헤더 존재 여부 (`true`/`false`). |
-
-> [!NOTE]
-> `origin`은 `Option`이 아닌 `&str` 필드이므로, Origin 헤더가 없을 때는 반드시 빈 문자열 `""`을 전달해야 합니다. 빈 문자열은 라이브러리에서 Origin 헤더가 없는 요청으로 처리됩니다.
+| `access_control_request_private_network` | `bool` | `Access-Control-Request-Private-Network` | 헤더 존재 여부 (`true`/`false`) |
 
 ```rust
 use bunner_cors_rs::RequestContext;
 
 let context = RequestContext {
     method: "POST",
-    origin: "https://app.example.com",
+    origin: Some("https://app.example.com"),
     access_control_request_method: Some("POST"),
     access_control_request_headers: Some("content-type"),
     access_control_request_private_network: false,

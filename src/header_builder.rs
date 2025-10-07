@@ -22,17 +22,16 @@ impl<'a> HeaderBuilder<'a> {
         normalized: &RequestContext<'_>,
     ) -> Result<(HeaderCollection, OriginDecision), CorsError> {
         let normalized_origin = normalized.origin;
-        if normalized_origin.eq_ignore_ascii_case("null") && !self.options.allow_null_origin {
+        if let Some(origin) = normalized_origin
+            && origin.eq_ignore_ascii_case("null")
+            && !self.options.allow_null_origin
+        {
             let mut headers = HeaderCollection::with_estimate(1);
             headers.add_vary(header::ORIGIN);
             return Ok((headers, OriginDecision::Disallow));
         }
 
-        let request_origin = if normalized_origin.is_empty() {
-            None
-        } else {
-            Some(normalized_origin)
-        };
+        let request_origin = normalized_origin.filter(|origin| !origin.is_empty());
 
         match self.options.origin.resolve(request_origin, normalized) {
             OriginDecision::Any => {
@@ -56,15 +55,20 @@ impl<'a> HeaderBuilder<'a> {
                 Ok((headers, OriginDecision::Exact(value)))
             }
             OriginDecision::Mirror => {
-                let capacity = if original.origin.is_empty() { 1 } else { 2 };
+                let has_origin = matches!(original.origin, Some(origin) if !origin.is_empty());
+                let capacity = if has_origin { 2 } else { 1 };
                 let mut headers = HeaderCollection::with_estimate(capacity);
                 headers.add_vary(header::ORIGIN);
-                if !original.origin.is_empty() {
-                    headers.push(
-                        header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
-                        original.origin.to_string(),
-                    );
-                    Ok((headers, OriginDecision::Mirror))
+                if let Some(origin) = original.origin {
+                    if origin.is_empty() {
+                        Ok((headers, OriginDecision::Disallow))
+                    } else {
+                        headers.push(
+                            header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
+                            origin.to_string(),
+                        );
+                        Ok((headers, OriginDecision::Mirror))
+                    }
                 } else {
                     Ok((headers, OriginDecision::Disallow))
                 }

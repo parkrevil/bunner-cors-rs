@@ -402,7 +402,7 @@ mod check {
 
         let ctx = RequestContext {
             method: &method,
-            origin: "https://case.dev",
+            origin: Some("https://case.dev"),
             access_control_request_method: Some(&requested_method),
             access_control_request_headers: Some(&requested_headers),
             access_control_request_private_network: false,

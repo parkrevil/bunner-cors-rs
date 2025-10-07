@@ -144,7 +144,7 @@ let cors = Cors::new(CorsOptions {
 
 let request = RequestContext {
     method: "GET",
-    origin: "https://example.com",
+    origin: Some("https://example.com"),
     access_control_request_method: None,
     access_control_request_headers: None,
     access_control_request_private_network: false,
@@ -562,20 +562,17 @@ HTTP request information must be converted to `RequestContext` for CORS evaluati
 | Field | Type | HTTP Header | Description |
 |-------|------|-------------|-------------|
 | `method` | `&'a str` | Request method | Actual HTTP method string (`"GET"`, `"POST"`, `"OPTIONS"`, etc.) |
-| `origin` | `&'a str` | `Origin` | Request origin. Pass empty string `""` if header is absent. |
+| `origin` | `Option<&'a str>` | `Origin` | Request origin. Use `None` when the header is absent. |
 | `access_control_request_method` | `Option<&'a str>` | `Access-Control-Request-Method` | Method to execute in preflight request. `None` if absent |
 | `access_control_request_headers` | `Option<&'a str>` | `Access-Control-Request-Headers` | Comma-separated list of headers to use in preflight request. `None` if absent |
 | `access_control_request_private_network` | `bool` | `Access-Control-Request-Private-Network` | Header presence (`true`/`false`). |
-
-> [!NOTE]
-> `origin` is a `&str` field, not `Option`, so you must pass an empty string `""` when the Origin header is absent. An empty string is treated by the library as a request without an Origin header.
 
 ```rust
 use bunner_cors_rs::RequestContext;
 
 let context = RequestContext {
     method: "POST",
-    origin: "https://app.example.com",
+    origin: Some("https://app.example.com"),
     access_control_request_method: Some("POST"),
     access_control_request_headers: Some("content-type"),
     access_control_request_private_network: false,

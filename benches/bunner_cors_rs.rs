@@ -247,7 +247,7 @@ fn build_cors_with_large_lists(size: usize) -> Cors {
 fn build_preflight_request<'a>() -> RequestContext<'a> {
     RequestContext {
         method: "OPTIONS",
-        origin: "https://bench.allowed",
+        origin: Some("https://bench.allowed"),
         access_control_request_method: Some("POST"),
         access_control_request_headers: Some("X-Custom-One, content-type"),
         access_control_request_private_network: true,
@@ -257,7 +257,7 @@ fn build_preflight_request<'a>() -> RequestContext<'a> {
 fn build_null_origin_request<'a>() -> RequestContext<'a> {
     RequestContext {
         method: "OPTIONS",
-        origin: "null",
+        origin: Some("null"),
         access_control_request_method: Some("POST"),
         access_control_request_headers: Some("x-custom-one"),
         access_control_request_private_network: true,
@@ -267,7 +267,7 @@ fn build_null_origin_request<'a>() -> RequestContext<'a> {
 fn build_simple_request<'a>() -> RequestContext<'a> {
     RequestContext {
         method: "GET",
-        origin: "https://bench.allowed",
+        origin: Some("https://bench.allowed"),
         access_control_request_method: None,
         access_control_request_headers: None,
         access_control_request_private_network: false,
@@ -277,7 +277,7 @@ fn build_simple_request<'a>() -> RequestContext<'a> {
 fn build_simple_request_disallowed_method<'a>() -> RequestContext<'a> {
     RequestContext {
         method: "DELETE",
-        origin: "https://bench.allowed",
+        origin: Some("https://bench.allowed"),
         access_control_request_method: None,
         access_control_request_headers: None,
         access_control_request_private_network: false,
@@ -287,7 +287,7 @@ fn build_simple_request_disallowed_method<'a>() -> RequestContext<'a> {
 fn build_simple_request_uppercase() -> RequestContext<'static> {
     RequestContext {
         method: HEAVY_METHOD,
-        origin: HEAVY_SIMPLE_ORIGIN,
+        origin: Some(HEAVY_SIMPLE_ORIGIN),
         access_control_request_method: None,
         access_control_request_headers: Some(HEAVY_HEADER_LINE.as_ref()),
         access_control_request_private_network: false,
@@ -297,7 +297,7 @@ fn build_simple_request_uppercase() -> RequestContext<'static> {
 fn build_heavy_preflight_request() -> RequestContext<'static> {
     RequestContext {
         method: "OPTIONS",
-        origin: HEAVY_ORIGIN,
+        origin: Some(HEAVY_ORIGIN),
         access_control_request_method: Some(HEAVY_ACCESS_METHOD),
         access_control_request_headers: Some(HEAVY_HEADER_LINE.as_ref()),
         access_control_request_private_network: true,
@@ -317,7 +317,7 @@ fn build_large_preflight_request(size: usize) -> RequestContext<'static> {
     let leaked_headers: &'static str = Box::leak(headers.into_boxed_str());
     RequestContext {
         method: "OPTIONS",
-        origin: leaked_origin,
+        origin: Some(leaked_origin),
         access_control_request_method: Some(leaked_method),
         access_control_request_headers: Some(leaked_headers),
         access_control_request_private_network: true,
@@ -674,7 +674,7 @@ fn bench_request_normalization(c: &mut Criterion) {
 
     let mixed_unicode_request = RequestContext {
         method: "OpTiOns",
-        origin: "https://DÉV.edge.BENCH.allowed",
+        origin: Some("https://DÉV.edge.BENCH.allowed"),
         access_control_request_method: Some("PuT"),
         access_control_request_headers: Some("X-Trace, X-DÉBUG"),
         access_control_request_private_network: true,
@@ -689,7 +689,7 @@ fn bench_request_normalization(c: &mut Criterion) {
 
     let large_headers_request = RequestContext {
         method: HEAVY_METHOD,
-        origin: HEAVY_ORIGIN,
+        origin: Some(HEAVY_ORIGIN),
         access_control_request_method: Some(HEAVY_ACCESS_METHOD),
         access_control_request_headers: Some(LARGE_HEADER_LINE.as_ref()),
         access_control_request_private_network: true,

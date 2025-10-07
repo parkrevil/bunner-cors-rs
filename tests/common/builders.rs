@@ -156,7 +156,7 @@ impl SimpleRequestBuilder {
         } = self;
         let ctx = RequestContext {
             method: &method,
-            origin: origin.as_deref().unwrap_or(""),
+            origin: origin.as_deref(),
             access_control_request_method: None,
             access_control_request_headers: None,
             access_control_request_private_network: private_network,
@@ -209,7 +209,7 @@ impl PreflightRequestBuilder {
 
         let ctx = RequestContext {
             method: method::OPTIONS,
-            origin: origin.as_deref().unwrap_or(""),
+            origin: origin.as_deref(),
             access_control_request_method: request_method.as_deref(),
             access_control_request_headers: request_headers.as_deref(),
             access_control_request_private_network: private_network,

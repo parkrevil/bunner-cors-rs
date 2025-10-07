@@ -1,7 +1,7 @@
 use super::*;
 use crate::context::RequestContext;
 
-fn request_context(method: &'static str, origin: &'static str) -> RequestContext<'static> {
+fn request_context(method: &'static str, origin: Option<&'static str>) -> RequestContext<'static> {
     RequestContext {
         method,
         origin,
@@ -606,7 +606,7 @@ mod origin_type {
         #[test]
         fn should_return_skip_decision_when_origin_disabled_then_skip_processing() {
             let origin = Origin::disabled();
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -620,7 +620,7 @@ mod origin_type {
         #[test]
         fn should_return_any_decision_when_origin_any_then_allow_all_origins() {
             let origin = Origin::any();
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -630,7 +630,7 @@ mod origin_type {
         #[test]
         fn should_return_exact_decision_when_origin_exact_then_clone_value() {
             let origin = Origin::exact("https://api.test");
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -644,7 +644,7 @@ mod origin_type {
         fn should_return_skip_decision_when_origin_exact_missing_request_origin_then_skip_processing()
          {
             let origin = Origin::exact("https://app.test");
-            let ctx = request_context("GET", "https://app.test");
+            let ctx = request_context("GET", Some("https://app.test"));
 
             let decision = origin.resolve(None, &ctx);
 
@@ -654,7 +654,7 @@ mod origin_type {
         #[test]
         fn should_return_mirror_decision_when_origin_list_matches_request_then_reflect_origin() {
             let origin = Origin::list(["https://api.test"]);
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -665,7 +665,7 @@ mod origin_type {
         fn should_return_mirror_decision_when_origin_list_matches_case_insensitively_then_reflect_origin()
          {
             let origin = Origin::list(["https://api.test"]);
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("HTTPS://API.TEST"), &ctx);
 
@@ -675,7 +675,7 @@ mod origin_type {
         #[test]
         fn should_return_disallow_decision_when_origin_list_misses_then_block_origin() {
             let origin = Origin::list(["https://other.test"]);
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -686,7 +686,7 @@ mod origin_type {
         fn should_return_disallow_decision_when_origin_list_has_different_scheme_then_block_origin()
         {
             let origin = Origin::list(["https://api.test"]);
-            let ctx = request_context("GET", "http://api.test");
+            let ctx = request_context("GET", Some("http://api.test"));
 
             let decision = origin.resolve(Some("http://api.test"), &ctx);
 
@@ -697,7 +697,7 @@ mod origin_type {
         fn should_return_disallow_decision_when_origin_list_contains_false_matcher_then_block_origin()
          {
             let origin = Origin::list([OriginMatcher::Bool(false)]);
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -708,7 +708,7 @@ mod origin_type {
         fn should_return_mirror_decision_when_origin_list_contains_true_matcher_then_allow_all_origins()
          {
             let origin = Origin::list([OriginMatcher::Bool(true)]);
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://edge.allowed"), &ctx);
 
@@ -718,7 +718,7 @@ mod origin_type {
         #[test]
         fn should_return_disallow_decision_when_origin_list_has_different_port_then_block_origin() {
             let origin = Origin::list(["https://api.test:8443"]);
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -728,7 +728,7 @@ mod origin_type {
         #[test]
         fn should_return_disallow_decision_when_origin_length_exceeds_limit_then_block_request() {
             let origin = Origin::any();
-            let ctx = request_context("GET", "https://edge.test");
+            let ctx = request_context("GET", Some("https://edge.test"));
             let long_origin = format!("https://{}", "a".repeat(super::MAX_ORIGIN_LENGTH + 10));
 
             let decision = origin.resolve(Some(&long_origin), &ctx);
@@ -739,7 +739,7 @@ mod origin_type {
         #[test]
         fn should_match_unicode_origins_case_insensitively_then_allow_exact_origin() {
             let origin = Origin::exact("https://TÉST.dev");
-            let ctx = request_context("GET", "https://tést.dev");
+            let ctx = request_context("GET", Some("https://tést.dev"));
 
             let decision = origin.resolve(Some("https://tést.dev"), &ctx);
 
@@ -753,7 +753,7 @@ mod origin_type {
         fn should_return_mirror_decision_when_origin_list_contains_unicode_exact_then_reflect_origin()
          {
             let origin = Origin::list(["https://TÉST.dev"]);
-            let ctx = request_context("GET", "https://tést.dev");
+            let ctx = request_context("GET", Some("https://tést.dev"));
 
             let decision = origin.resolve(Some("https://tést.dev"), &ctx);
 
@@ -764,7 +764,7 @@ mod origin_type {
         fn should_return_skip_decision_when_origin_list_missing_request_origin_then_skip_processing()
          {
             let origin = Origin::list(["https://api.test"]);
-            let ctx = request_context("GET", "");
+            let ctx = request_context("GET", None);
 
             let decision = origin.resolve(None, &ctx);
 
@@ -775,7 +775,7 @@ mod origin_type {
         fn should_return_mirror_decision_when_origin_list_contains_null_string_then_allow_null_origin()
          {
             let origin = Origin::list(["null"]);
-            let ctx = request_context("GET", "null");
+            let ctx = request_context("GET", Some("null"));
 
             let decision = origin.resolve(Some("null"), &ctx);
 
@@ -786,7 +786,7 @@ mod origin_type {
         fn should_return_any_decision_when_origin_any_receives_null_string_then_allow_null_origin()
         {
             let origin = Origin::any();
-            let ctx = request_context("GET", "null");
+            let ctx = request_context("GET", Some("null"));
 
             let decision = origin.resolve(Some("null"), &ctx);
 
@@ -796,7 +796,7 @@ mod origin_type {
         #[test]
         fn should_return_mirror_decision_when_predicate_matches_then_reflect_origin() {
             let origin = Origin::predicate(|value, _| value.ends_with(".test"));
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -806,7 +806,7 @@ mod origin_type {
         #[test]
         fn should_return_disallow_decision_when_predicate_rejects_origin_then_block_request() {
             let origin = Origin::predicate(|value, _| value == "https://allowed.test");
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -816,7 +816,7 @@ mod origin_type {
         #[test]
         fn should_return_disallow_decision_when_predicate_returns_false_then_block_request() {
             let origin = Origin::predicate(|value, _| value == "https://allowed.test");
-            let ctx = request_context("GET", "https://blocked.test");
+            let ctx = request_context("GET", Some("https://blocked.test"));
 
             let decision = origin.resolve(Some("https://blocked.test"), &ctx);
 
@@ -836,7 +836,7 @@ mod origin_type {
                     true
                 })
             };
-            let ctx = request_context("GET", "");
+            let ctx = request_context("GET", None);
 
             let decision = origin.resolve(None, &ctx);
 
@@ -847,7 +847,7 @@ mod origin_type {
         #[test]
         fn should_forward_decision_when_custom_callback_returns_value_then_propagate_result() {
             let origin = Origin::custom(|_, _| OriginDecision::Exact("https://custom.test".into()));
-            let ctx = request_context("GET", "https://api.test");
+            let ctx = request_context("GET", Some("https://api.test"));
 
             let decision = origin.resolve(Some("https://api.test"), &ctx);
 
@@ -864,7 +864,7 @@ mod origin_type {
                 assert!(origin.is_none());
                 OriginDecision::Disallow
             });
-            let ctx = request_context("GET", "");
+            let ctx = request_context("GET", None);
 
             let decision = origin.resolve(None, &ctx);
 

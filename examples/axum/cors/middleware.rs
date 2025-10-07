@@ -110,7 +110,7 @@ fn simple_rejection_message(reason: &SimpleRejectionReason) -> &'static str {
 
 struct OwnedRequestContext {
     method: String,
-    origin: String,
+    origin: Option<String>,
     access_control_request_method: Option<String>,
     access_control_request_headers: Option<String>,
     access_control_request_private_network: bool,
@@ -122,7 +122,7 @@ impl OwnedRequestContext {
 
         Self {
             method: request.method().as_str().to_string(),
-            origin: header_value(headers, header::ORIGIN).unwrap_or_default(),
+            origin: header_value(headers, header::ORIGIN),
             access_control_request_method: header_value(
                 headers,
                 header::ACCESS_CONTROL_REQUEST_METHOD,
@@ -142,7 +142,7 @@ impl OwnedRequestContext {
     fn as_request_context(&self) -> RequestContext<'_> {
         RequestContext {
             method: &self.method,
-            origin: &self.origin,
+            origin: self.origin.as_deref(),
             access_control_request_method: self.access_control_request_method.as_deref(),
             access_control_request_headers: self.access_control_request_headers.as_deref(),
             access_control_request_private_network: self.access_control_request_private_network,
