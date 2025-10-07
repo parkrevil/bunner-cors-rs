@@ -9,7 +9,7 @@ mod default {
         let headers = ExposedHeaders::default();
 
         // Assert
-    assert!(matches!(&headers, ExposedHeaders::List(list) if list.is_empty()));
+        assert!(matches!(&headers, ExposedHeaders::List(list) if list.is_empty()));
         assert!(headers.header_value().is_none());
     }
 }
