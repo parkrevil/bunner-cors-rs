@@ -4,7 +4,6 @@
     <a href="https://crates.io/crates/bunner_cors_rs"><img src="https://img.shields.io/crates/v/bunner_cors_rs.svg" alt="Crates.io"></a>
     <a href="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/tests.yml"><img src="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/tests.yml/badge.svg?branch=main" alt="tests"></a>
     <a href="https://codecov.io/gh/parkrevil/bunner-cors-rs"><img src="https://codecov.io/gh/parkrevil/bunner-cors-rs/branch/main/graph/badge.svg" alt="coverage"></a>
-    <a href="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/publish.yml"><img src="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/publish.yml/badge.svg?branch=main" alt="release"></a>
     <a href="https://github.com/parkrevil/bunner-cors-rs/releases"><img src="https://img.shields.io/github/v/release/parkrevil/bunner-cors-rs?sort=semver" alt="version"></a>
     <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
