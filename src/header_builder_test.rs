@@ -115,7 +115,7 @@ mod build_origin_headers {
     fn should_emit_wildcard_without_vary_when_origin_any_then_allow_request() {
         let options = options_with_origin(Origin::any());
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("GET", Some("https://api.test"), "", "");
+        let ctx = request("GET", Some("https://api.test"), "", "");
 
         let map = expect_allow(builder.build_origin_headers(&ctx, &ctx)).into_headers();
 
@@ -130,8 +130,8 @@ mod build_origin_headers {
     fn should_mirror_request_origin_when_origin_matches_list_then_emit_vary_header() {
         let options = options_with_origin(Origin::list(["https://app.test"]));
         let builder = HeaderBuilder::new(&options);
-    let original = request("GET", Some("https://app.test"), "", "");
-    let normalized = request("get", Some("https://app.test"), "", "");
+        let original = request("GET", Some("https://app.test"), "", "");
+        let normalized = request("get", Some("https://app.test"), "", "");
 
         let map = expect_allow(builder.build_origin_headers(&original, &normalized)).into_headers();
 
@@ -146,7 +146,7 @@ mod build_origin_headers {
     fn should_skip_processing_when_origin_custom_skip_then_return_skip_decision() {
         let options = options_with_origin(Origin::custom(|_, _| OriginDecision::Skip));
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("OPTIONS", Some("https://skip.test"), "", "");
+        let ctx = request("OPTIONS", Some("https://skip.test"), "", "");
 
         let outcome = builder.build_origin_headers(&ctx, &ctx);
 
@@ -158,7 +158,7 @@ mod build_origin_headers {
         let mut options = options_with_origin(Origin::any());
         options.credentials = true;
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("OPTIONS", Some("https://wild.test"), "", "");
+        let ctx = request("OPTIONS", Some("https://wild.test"), "", "");
 
         let error = builder
             .build_origin_headers(&ctx, &ctx)
@@ -176,7 +176,7 @@ mod build_origin_headers {
             ..base
         };
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("OPTIONS", Some("https://wild.test"), "", "");
+        let ctx = request("OPTIONS", Some("https://wild.test"), "", "");
 
         let error = builder
             .build_origin_headers(&ctx, &ctx)
@@ -189,7 +189,7 @@ mod build_origin_headers {
     fn should_emit_vary_only_when_origin_disallowed_then_deny_request() {
         let options = options_with_origin(Origin::list(["https://allowed.test"]));
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("GET", Some("https://denied.test"), "", "");
+        let ctx = request("GET", Some("https://denied.test"), "", "");
 
         let map = expect_disallow(builder.build_origin_headers(&ctx, &ctx)).into_headers();
 
@@ -201,7 +201,7 @@ mod build_origin_headers {
     fn should_reject_origin_when_null_not_allowed_then_emit_vary_header() {
         let options = CorsOptions::default();
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("GET", Some("null"), "", "");
+        let ctx = request("GET", Some("null"), "", "");
 
         let map = expect_disallow(builder.build_origin_headers(&ctx, &ctx)).into_headers();
 
@@ -216,7 +216,7 @@ mod build_origin_headers {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("GET", Some("null"), "", "");
+        let ctx = request("GET", Some("null"), "", "");
 
         let map = expect_allow(builder.build_origin_headers(&ctx, &ctx)).into_headers();
 
@@ -231,8 +231,8 @@ mod build_origin_headers {
     fn should_omit_allow_origin_when_origin_mirror_request_empty_then_disallow() {
         let options = options_with_origin(Origin::list(["https://app.test"]));
         let builder = HeaderBuilder::new(&options);
-    let original = request("GET", None, "", "");
-    let normalized = request("get", Some("https://app.test"), "", "");
+        let original = request("GET", None, "", "");
+        let normalized = request("get", Some("https://app.test"), "", "");
 
         let map =
             expect_disallow(builder.build_origin_headers(&original, &normalized)).into_headers();
@@ -245,8 +245,8 @@ mod build_origin_headers {
     fn should_preserve_original_casing_when_origin_mirror_then_use_request_value() {
         let options = options_with_origin(Origin::list(["https://app.test"]));
         let builder = HeaderBuilder::new(&options);
-    let original = request("GET", Some("https://API.test"), "", "");
-    let normalized = request("get", Some("https://app.test"), "", "");
+        let original = request("GET", Some("https://API.test"), "", "");
+        let normalized = request("get", Some("https://app.test"), "", "");
 
         let map = expect_allow(builder.build_origin_headers(&original, &normalized)).into_headers();
 
@@ -260,8 +260,8 @@ mod build_origin_headers {
     fn should_return_skip_when_normalized_origin_missing_then_skip_processing() {
         let options = options_with_origin(Origin::any());
         let builder = HeaderBuilder::new(&options);
-    let original = request("GET", None, "", "");
-    let normalized = request("GET", None, "", "");
+        let original = request("GET", None, "", "");
+        let normalized = request("GET", None, "", "");
 
         let outcome = builder.build_origin_headers(&original, &normalized);
 
@@ -529,12 +529,8 @@ mod build_private_network_header {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-        let ctx = request_with_private_network(
-            "OPTIONS",
-            Some("https://api.test"),
-            "POST",
-            "X-Test",
-        );
+        let ctx =
+            request_with_private_network("OPTIONS", Some("https://api.test"), "POST", "X-Test");
 
         let map = builder.build_private_network_header(&ctx).into_headers();
 
@@ -548,12 +544,8 @@ mod build_private_network_header {
     fn should_return_empty_collection_when_private_network_disabled_then_skip_header() {
         let options = CorsOptions::default();
         let builder = HeaderBuilder::new(&options);
-        let ctx = request_with_private_network(
-            "OPTIONS",
-            Some("https://api.test"),
-            "POST",
-            "X-Test",
-        );
+        let ctx =
+            request_with_private_network("OPTIONS", Some("https://api.test"), "POST", "X-Test");
 
         let map = builder.build_private_network_header(&ctx).into_headers();
 
@@ -567,7 +559,7 @@ mod build_private_network_header {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("OPTIONS", Some("https://api.test"), "POST", "X-Test");
+        let ctx = request("OPTIONS", Some("https://api.test"), "POST", "X-Test");
 
         let map = builder.build_private_network_header(&ctx).into_headers();
 
@@ -581,7 +573,7 @@ mod build_private_network_header {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-    let ctx = request("GET", Some("https://api.test"), "GET", "");
+        let ctx = request("GET", Some("https://api.test"), "GET", "");
 
         let map = builder.build_private_network_header(&ctx).into_headers();
 
@@ -596,12 +588,8 @@ mod build_private_network_header {
             ..CorsOptions::default()
         };
         let builder = HeaderBuilder::new(&options);
-        let ctx = request_with_private_network(
-            "options",
-            Some("https://api.test"),
-            "POST",
-            "X-Test",
-        );
+        let ctx =
+            request_with_private_network("options", Some("https://api.test"), "POST", "X-Test");
 
         let map = builder.build_private_network_header(&ctx).into_headers();
 

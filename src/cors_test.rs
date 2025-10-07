@@ -117,7 +117,7 @@ mod new {
     #[test]
     fn should_build_instance_when_options_valid_then_allow_simple_checks() {
         let cors = cors_with(CorsOptions::default());
-    let request = request("GET", Some("https://allowed.test"), None, None);
+        let request = request("GET", Some("https://allowed.test"), None, None);
 
         let decision = cors.check(&request).expect("cors evaluation succeeded");
 
@@ -164,7 +164,7 @@ mod check {
     #[test]
     fn should_return_simple_decision_when_request_not_options_then_emit_simple_variant() {
         let cors = cors_with(CorsOptions::default());
-    let request = request("GET", Some("https://allowed.test"), None, None);
+        let request = request("GET", Some("https://allowed.test"), None, None);
 
         let decision = cors
             .check(&request)
@@ -179,7 +179,7 @@ mod check {
             origin: Origin::list(["https://allowed.test"]),
             ..CorsOptions::default()
         });
-    let request = request("GET", Some("https://denied.test"), None, None);
+        let request = request("GET", Some("https://denied.test"), None, None);
 
         let decision = cors
             .check(&request)
@@ -268,12 +268,7 @@ mod process_preflight {
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");
-        let request = request(
-            "OPTIONS",
-            Some("https://allowed.test"),
-            Some("PATCH"),
-            None,
-        );
+        let request = request("OPTIONS", Some("https://allowed.test"), Some("PATCH"), None);
 
         let rejection = expect_preflight_rejected(preflight_decision(&cors, &request));
 
@@ -364,7 +359,7 @@ mod process_simple {
             origin: Origin::custom(|_, _| OriginDecision::Skip),
             ..CorsOptions::default()
         });
-    let request = request("GET", Some("https://denied.test"), None, None);
+        let request = request("GET", Some("https://denied.test"), None, None);
 
         expect_not_applicable(simple_decision(&cors, &request));
     }
@@ -376,7 +371,7 @@ mod process_simple {
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");
-    let request = request("GET", Some("https://allowed.test"), None, None);
+        let request = request("GET", Some("https://allowed.test"), None, None);
 
         expect_not_applicable(simple_decision(&cors, &request));
     }
@@ -389,7 +384,7 @@ mod process_simple {
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");
-    let request = request("GET", Some("https://wild.test"), None, None);
+        let request = request("GET", Some("https://wild.test"), None, None);
 
         let error = simple_decision(&cors, &request)
             .expect_err("simple request should reject any origin when credentials required");
@@ -404,7 +399,7 @@ mod process_simple {
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");
-    let request = request("GET", Some("https://denied.test"), None, None);
+        let request = request("GET", Some("https://denied.test"), None, None);
 
         let rejection = expect_simple_rejected(simple_decision(&cors, &request));
 
@@ -423,7 +418,7 @@ mod process_simple {
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");
-    let request = request("GET", Some("https://allowed.test"), None, None);
+        let request = request("GET", Some("https://allowed.test"), None, None);
 
         let headers = expect_simple_accepted(simple_decision(&cors, &request));
 
@@ -444,7 +439,7 @@ mod process_simple {
             ..CorsOptions::default()
         })
         .expect("valid CORS configuration");
-    let request = request("GET", Some("https://allowed.test"), None, None);
+        let request = request("GET", Some("https://allowed.test"), None, None);
 
         let headers = expect_simple_accepted(simple_decision(&cors, &request));
 

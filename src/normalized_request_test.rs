@@ -45,7 +45,12 @@ mod new {
 
     #[test]
     fn should_borrow_original_when_components_are_lowercase_then_avoid_allocation() {
-        let ctx = request("get", Some("https://api.test"), Some("post"), Some("x-custom"));
+        let ctx = request(
+            "get",
+            Some("https://api.test"),
+            Some("post"),
+            Some("x-custom"),
+        );
 
         let normalized = NormalizedRequest::new(&ctx);
 
@@ -58,7 +63,12 @@ mod new {
 
     #[test]
     fn should_lowercase_unicode_uppercase_origin_then_normalize_non_ascii() {
-        let ctx = request("GET", Some("https://DÉV.TEST"), Some("POST"), Some("X-CUSTOM"));
+        let ctx = request(
+            "GET",
+            Some("https://DÉV.TEST"),
+            Some("POST"),
+            Some("X-CUSTOM"),
+        );
 
         let normalized = NormalizedRequest::new(&ctx);
 

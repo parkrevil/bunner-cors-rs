@@ -152,10 +152,7 @@ impl<'a> NormalizedRequest<'a> {
     pub fn as_context(&self) -> RequestContext<'_> {
         RequestContext {
             method: self.method.as_ref(),
-            origin: self
-                .origin
-                .as_ref()
-                .map(|value| value.as_ref()),
+            origin: self.origin.as_ref().map(|value| value.as_ref()),
             access_control_request_method: self
                 .access_control_request_method
                 .as_ref()
