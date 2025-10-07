@@ -9,7 +9,7 @@ DOC_DIR := $(TARGET_DIR)/doc
 all: format lint test
 
 ## Code Quality
-.PHONY: lint format
+.PHONY: lint format format-check
 
 lint:
 	cargo clippy --workspace --all-features --lib --bins -- -D warnings -D clippy::dbg_macro -D clippy::todo -D clippy::unimplemented -D clippy::panic -D clippy::print_stdout -D clippy::print_stderr
@@ -17,6 +17,9 @@ lint:
 
 format:
 	cargo fmt --all
+
+format-check:
+	cargo fmt --all -- --check
 
 ## Testing
 .PHONY: test
@@ -58,9 +61,15 @@ coverage:
 	fi
 
 ## Release / Publish
-.PHONY: release
+.PHONY: release publish-dry-run publish-crate
 release:
 	cargo build --release --all-features
+
+publish-dry-run:
+	cargo publish --dry-run
+
+publish-crate:
+	cargo publish
 
 ## Cleanup
 .PHONY: clean distclean

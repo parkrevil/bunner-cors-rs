@@ -10,10 +10,8 @@ mod default {
 
     #[test]
     fn given_new_options_when_constructed_then_uses_baseline_defaults() {
-        // Arrange & Act
         let options = CorsOptions::new();
 
-        // Assert
         assert!(matches!(options.origin, Origin::Any));
         assert_eq!(options.methods, AllowedMethods::default());
         assert!(options.allowed_headers == AllowedHeaders::default());
@@ -30,14 +28,10 @@ mod default {
 
     #[test]
     fn given_distinct_instances_when_values_change_then_preserve_isolation() {
-        // Arrange
         let first = CorsOptions::new().credentials(true);
         let second = CorsOptions::new();
-
-        // Act
         let has_same_credentials = first.credentials == second.credentials;
 
-        // Assert
         assert!(!has_same_credentials);
     }
 }
@@ -47,7 +41,6 @@ mod display {
 
     #[test]
     fn given_validation_errors_when_display_called_then_mentions_context() {
-        // Arrange
         let cases: [(ValidationError, &str); 16] = [
             (
                 ValidationError::CredentialsRequireSpecificOrigin,
@@ -115,7 +108,6 @@ mod display {
             ),
         ];
 
-        // Act & Assert
         for (error, phrase) in cases {
             assert!(error.to_string().contains(phrase));
         }

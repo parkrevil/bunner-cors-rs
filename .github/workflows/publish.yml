@@ -1,0 +1,146 @@
+name: Auto Release Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Detect version change
+        id: version
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          try:
+            import tomllib
+          except ModuleNotFoundError:
+            import tomli as tomllib
+
+          def load_version(content: str) -> str:
+            data = tomllib.loads(content)
+            return data["package"]["version"]
+
+          current_content = Path("Cargo.toml").read_text(encoding="utf-8")
+          current_version = load_version(current_content)
+
+          try:
+            prev_content = subprocess.check_output(["git", "show", "HEAD^:Cargo.toml"], text=True)
+            previous_version = load_version(prev_content)
+          except subprocess.CalledProcessError:
+            previous_version = ""
+
+          should_release = current_version != previous_version
+
+          print(f"Current version: {current_version}")
+          print(f"Previous version: {previous_version or 'N/A'}")
+          print(f"Should release: {should_release}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+            fh.write(f"current_version={current_version}\n")
+            fh.write(f"previous_version={previous_version}\n")
+            fh.write(f"should_release={'true' if should_release else 'false'}\n")
+          PY
+
+      - name: Fail when release already exists
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          TAG="v${{ steps.version.outputs.current_version }}"
+          if git ls-remote --tags origin "${TAG}" | grep -q "${TAG}"; then
+            echo "::error::Tag ${TAG} already exists on remote."
+            exit 1
+          fi
+
+      - name: Extract changelog section
+        if: steps.version.outputs.should_release == 'true'
+        id: changelog
+        shell: bash
+        run: |
+          export VERSION='${{ steps.version.outputs.current_version }}'
+          if [ ! -f CHANGELOG.md ]; then
+            echo "::error::CHANGELOG.md not found" >&2
+            exit 1
+          fi
+
+          python - <<'PY'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          path = Path("CHANGELOG.md")
+          text = path.read_text(encoding="utf-8")
+
+          pattern = re.compile(rf"^##\s+\[?{re.escape(version)}\]?[^\n]*", re.MULTILINE)
+          match = pattern.search(text)
+
+          if not match:
+            print(f"::error::No changelog entry found for version {version}", file=sys.stderr)
+            sys.exit(1)
+
+          start = match.end()
+          rest = text[start:]
+          next_match = re.search(r"^##\s+", rest, re.MULTILINE)
+          section = rest[:next_match.start()] if next_match else rest
+
+          entry = (match.group(0) + "\n" + section.strip()).strip()
+
+          output_path = Path("release-notes.md")
+          output_path.write_text(entry, encoding="utf-8")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+            fh.write(f"notes_path={output_path}\n")
+          PY
+
+      - name: Verify the publish process
+        if: steps.version.outputs.should_release == 'true'
+        run: make publish-dry-run
+
+      - name: Publish to crates.io
+        if: steps.version.outputs.should_release == 'true'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATE_IO_TOKEN }}
+        run: make publish
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.current_version }}
+          name: v${{ steps.version.outputs.current_version }}
+          body_path: ${{ steps.changelog.outputs.notes_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip notice
+        if: steps.version.outputs.should_release != 'true'
+        run: echo "No version change detected; skipping release."

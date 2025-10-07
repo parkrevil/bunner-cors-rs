@@ -1,10 +1,12 @@
 <h1 align="center">bunner-cors-rs</h1>
 
 <p align="center">
-  <a href="https://crates.io/crates/bunner_cors_rs"><img src="https://img.shields.io/crates/v/bunner_cors_rs.svg" alt="Crates.io"></a>
-  <a href="https://docs.rs/bunner_cors_rs"><img src="https://docs.rs/bunner_cors_rs/badge.svg" alt="Documentation"></a>
-  <a href="https://github.com/parkrevil/bunner-cors-rs/actions"><img src="https://github.com/parkrevil/bunner-cors-rs/workflows/CI/badge.svg" alt="CI Status"></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+    <a href="https://crates.io/crates/bunner_cors_rs"><img src="https://img.shields.io/crates/v/bunner_cors_rs.svg" alt="Crates.io"></a>
+    <a href="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/pr-check.yml"><img src="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/pr-check.yml/badge.svg?branch=main" alt="CI"></a>
+    <a href="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/tests.yml"><img src="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests"></a>
+    <a href="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/coverage.yml"><img src="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/coverage.yml/badge.svg?branch=main" alt="Coverage"></a>
+    <a href="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/publish.yml"><img src="https://github.com/parkrevil/bunner-cors-rs/actions/workflows/publish.yml/badge.svg?branch=main" alt="Release"></a>
+    <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
 
 <p align="center">
