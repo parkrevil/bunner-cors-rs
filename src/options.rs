@@ -7,23 +7,41 @@ use crate::util::is_http_token;
 use std::error::Error;
 use std::fmt::{self, Display};
 
+/// Enumerates misconfigurations that prevent a [`CorsOptions`] instance from being
+/// used safely.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
+    /// Credentials can only be enabled when a specific origin is configured.
     CredentialsRequireSpecificOrigin,
+    /// Wildcard request headers are forbidden when credentials are enabled.
     AllowedHeadersAnyNotAllowedWithCredentials,
+    /// `*` is not allowed inside explicit header lists.
     AllowedHeadersListCannotContainWildcard,
+    /// Header allow-lists may only include valid HTTP tokens.
     AllowedHeadersListContainsInvalidToken,
+    /// Exposing all headers requires credentials to be disabled.
     ExposeHeadersWildcardRequiresCredentialsDisabled,
+    /// `*` cannot be combined with other exposed header values.
     ExposeHeadersWildcardCannotBeCombined,
+    /// Exposed header values must be valid HTTP tokens.
     ExposeHeadersListContainsInvalidToken,
+    /// Private network access requires credentials to be enabled.
     PrivateNetworkRequiresCredentials,
+    /// Private network access requires a specific origin, not `*`.
     PrivateNetworkRequiresSpecificOrigin,
+    /// Allowed methods lists cannot contain empty values.
     AllowedMethodsCannotContainEmptyToken,
+    /// `*` is not allowed inside explicit method lists.
     AllowedMethodsCannotContainWildcard,
+    /// Allowed methods must be valid HTTP tokens.
     AllowedMethodsListContainsInvalidToken,
+    /// Allowed headers lists cannot contain empty values.
     AllowedHeadersCannotContainEmptyToken,
+    /// Exposed headers lists cannot contain empty values.
     ExposeHeadersCannotContainEmptyValue,
+    /// Timing-Allow-Origin cannot be wildcarded when credentials are enabled.
     TimingAllowOriginWildcardNotAllowedWithCredentials,
+    /// Timing-Allow-Origin lists cannot contain empty values.
     TimingAllowOriginCannotContainEmptyValue,
 }
 
@@ -87,16 +105,31 @@ impl Display for ValidationError {
 
 impl Error for ValidationError {}
 
+/// Configuration entry point for the CORS engine.
+///
+/// The struct is intentionally builder-friendly: individual setters consume and
+/// return `Self` to enable fluent configuration chains. Use [`CorsOptions::validate`]
+/// or [`Cors::new`](crate::Cors::new) to ensure the configuration is internally
+/// consistent before responding to requests.
 #[derive(Clone)]
 pub struct CorsOptions {
+    /// Defines which origins may access the resource.
     pub origin: Origin,
+    /// Declares which HTTP methods are allowed for cross-origin requests.
     pub methods: AllowedMethods,
+    /// Controls which request headers are allowed during preflight.
     pub allowed_headers: AllowedHeaders,
+    /// Specifies which response headers should be exposed to the browser.
     pub exposed_headers: ExposedHeaders,
+    /// Enables `Access-Control-Allow-Credentials` when set.
     pub credentials: bool,
+    /// When present, sets the `Access-Control-Max-Age` header in seconds.
     pub max_age: Option<u64>,
+    /// Allows treating the literal `Origin: null` as an allowed origin.
     pub allow_null_origin: bool,
+    /// Enables `Access-Control-Allow-Private-Network` during preflight.
     pub allow_private_network: bool,
+    /// Configures the `Timing-Allow-Origin` header.
     pub timing_allow_origin: Option<TimingAllowOrigin>,
 }
 
@@ -117,55 +150,70 @@ impl Default for CorsOptions {
 }
 
 impl CorsOptions {
+    /// Returns the default configuration, equivalent to [`Default::default`].
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Sets the allowed origin policy.
     pub fn origin(mut self, origin: Origin) -> Self {
         self.origin = origin;
         self
     }
 
+    /// Replaces the allowed methods list.
     pub fn methods(mut self, methods: AllowedMethods) -> Self {
         self.methods = methods;
         self
     }
 
+    /// Replaces the allowed headers configuration.
     pub fn allowed_headers(mut self, allowed_headers: AllowedHeaders) -> Self {
         self.allowed_headers = allowed_headers;
         self
     }
 
+    /// Replaces the exposed headers configuration.
     pub fn exposed_headers(mut self, exposed_headers: ExposedHeaders) -> Self {
         self.exposed_headers = exposed_headers;
         self
     }
 
+    /// Enables or disables credential support.
     pub fn credentials(mut self, enabled: bool) -> Self {
         self.credentials = enabled;
         self
     }
 
+    /// Sets the `Access-Control-Max-Age` header to the provided number of seconds.
     pub fn max_age(mut self, value: u64) -> Self {
         self.max_age = Some(value);
         self
     }
 
+    /// Grants or revokes support for `Origin: null` requests.
     pub fn allow_null_origin(mut self, enabled: bool) -> Self {
         self.allow_null_origin = enabled;
         self
     }
 
+    /// Enables or disables private network preflight support.
     pub fn allow_private_network(mut self, enabled: bool) -> Self {
         self.allow_private_network = enabled;
         self
     }
 
+    /// Replaces the `Timing-Allow-Origin` configuration.
     pub fn timing_allow_origin(mut self, value: TimingAllowOrigin) -> Self {
         self.timing_allow_origin = Some(value);
         self
     }
 
+    /// Ensures the configuration adheres to the CORS specification.
+    ///
+    /// The validation focuses on combinations that would otherwise produce
+    /// undefined or non-spec-compliant behaviour, enabling library users to catch
+    /// mistakes during initialization rather than at runtime.
     pub fn validate(&self) -> Result<(), ValidationError> {
         if self.credentials && matches!(self.origin, Origin::Any) {
             if self.allow_private_network {

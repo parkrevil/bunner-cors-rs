@@ -7,6 +7,10 @@ thread_local! {
     static REQUEST_HEADER_CACHE: RefCell<AllowedHeadersCache> = RefCell::new(AllowedHeadersCache::new());
 }
 
+/// Lightweight cache that deduplicates header tokens for a single request.
+///
+/// The cache is thread-local and reused across validations to avoid repeated
+/// allocations when the same header string is parsed multiple times.
 #[derive(Default, Clone)]
 pub struct AllowedHeadersCache {
     identity: (usize, usize),
@@ -45,6 +49,11 @@ impl AllowedHeadersCache {
     }
 }
 
+/// Configures which request headers are permitted during a CORS preflight.
+///
+/// This enum mirrors the semantics of `Access-Control-Allow-Headers` and is
+/// typically configured through [`CorsOptions`]. All comparisons are
+/// case-insensitive and duplicate values are automatically removed.
 #[derive(Clone, PartialEq, Eq)]
 pub enum AllowedHeaders {
     Any,
@@ -58,6 +67,10 @@ impl Default for AllowedHeaders {
 }
 
 impl AllowedHeaders {
+    /// Constructs a deduplicated allow-list from the provided iterator.
+    ///
+    /// Each value is trimmed, normalized for case-insensitive comparisons, and
+    /// stored in insertion order so header serialization remains predictable.
     pub fn list<I, S>(values: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -76,6 +89,11 @@ impl AllowedHeaders {
         Self::List(AllowedHeaderList::new(deduped, seen))
     }
 
+    /// Validates the requested header list from an `Access-Control-Request-Headers`
+    /// preflight header.
+    ///
+    /// Internally this method reuses a thread-local cache to avoid repeated
+    /// tokenization for identical header strings within a single request.
     pub fn allows_headers(&self, request_headers: &str) -> bool {
         match self {
             Self::Any => true,
@@ -86,6 +104,9 @@ impl AllowedHeaders {
         }
     }
 
+    /// Performs the same validation work as [`AllowedHeaders::allows_headers`]
+    /// but accepts an explicit cache so callers can manage reuse boundaries
+    /// themselves (for example in benchmarks or tests).
     pub fn allows_headers_with_cache(
         &self,
         request_headers: &str,
@@ -98,6 +119,7 @@ impl AllowedHeaders {
     }
 }
 
+/// Internally used storage for the normalized allow-list representation.
 #[derive(Clone, PartialEq, Eq, Default)]
 pub struct AllowedHeaderList {
     values: Vec<String>,

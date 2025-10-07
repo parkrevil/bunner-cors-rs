@@ -3,10 +3,19 @@ use crate::util::{equals_ignore_case, normalize_lower};
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 
+/// Declarative allow-list for HTTP methods accepted on cross-origin requests.
+///
+/// Instances of this type are typically created through [`AllowedMethods::list`] and
+/// consumed by [`CorsOptions`]. The collection preserves insertion order and performs
+/// case-insensitive comparisons when evaluating incoming requests.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct AllowedMethods(Vec<String>);
 
 impl AllowedMethods {
+    /// Builds a normalized allow-list from the provided iterator.
+    ///
+    /// Whitespace is trimmed and duplicate values (ignoring ASCII case) are removed
+    /// to ensure the generated header values are stable and spec compliant.
     pub fn list<I, S>(values: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -25,6 +34,10 @@ impl AllowedMethods {
         Self(deduped)
     }
 
+    /// Serializes the configured methods into a canonical header string.
+    ///
+    /// Returns `None` when the list is empty so callers can skip emitting
+    /// `Access-Control-Allow-Methods` for default scenarios.
     pub fn header_value(&self) -> Option<String> {
         if self.0.is_empty() {
             None
@@ -33,6 +46,10 @@ impl AllowedMethods {
         }
     }
 
+    /// Returns `true` when the provided method matches an entry in the allow-list.
+    ///
+    /// The comparison is case-insensitive and treats empty or whitespace-only
+    /// methods as invalid.
     pub fn allows_method(&self, method: &str) -> bool {
         let method = method.trim();
         if method.is_empty() {
@@ -44,14 +61,17 @@ impl AllowedMethods {
             .any(|allowed| equals_ignore_case(allowed, method))
     }
 
+    /// Provides an iterator over the stored methods, preserving insertion order.
     pub fn iter(&self) -> impl Iterator<Item = &String> {
         self.0.iter()
     }
 
+    /// Consumes the structure and returns the owned list of methods.
     pub fn into_inner(self) -> Vec<String> {
         self.0
     }
 
+    /// Returns an immutable slice of the stored methods for ergonomic borrowing.
     pub fn as_slice(&self) -> &[String] {
         &self.0
     }

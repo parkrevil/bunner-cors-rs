@@ -48,6 +48,10 @@ pub(crate) fn header_pool_reset() {
     HEADER_POOL_STATS.with(|stats| *stats.borrow_mut() = PoolStats::default());
 }
 
+/// Canonical map type used for returning header modifications to callers.
+///
+/// The map preserves insertion order to keep the resulting response headers
+/// stable, which simplifies snapshot testing and debugging.
 pub type Headers = IndexMap<String, String>;
 
 const HEADER_BUFFER_POOL_LIMIT: usize = 64;

@@ -8,16 +8,32 @@ use crate::result::{
     SimpleRejectionReason,
 };
 
+/// High-level entry point that evaluates incoming requests against a [`CorsOptions`]
+/// configuration and produces a [`CorsDecision`].
+///
+/// The struct is intentionally lightweight; cloning it is cheap because the heavy
+/// lifting happens per-request.
 pub struct Cors {
     options: CorsOptions,
 }
 
 impl Cors {
+    /// Creates a new CORS evaluator, validating the provided options before use.
+    ///
+    /// The validation step mirrors the logic executed during request processing,
+    /// so failing fast here prevents inconsistent behaviour later in the pipeline.
     pub fn new(options: CorsOptions) -> Result<Self, ValidationError> {
         options.validate()?;
         Ok(Self { options })
     }
 
+    /// Evaluates an incoming request and determines the appropriate CORS response.
+    ///
+    /// The method normalizes the raw request metadata, automatically dispatching
+    /// to the preflight or simple request handling paths as defined by the CORS
+    /// specification. The resulting [`CorsDecision`] encapsulates both header
+    /// mutations and rejection reasons so callers can surface precise feedback to
+    /// upstream layers.
     pub fn check(&self, request: &RequestContext<'_>) -> Result<CorsDecision, CorsError> {
         let normalized_request = NormalizedRequest::new(request);
         let normalized_ctx = normalized_request.as_context();
@@ -34,6 +50,12 @@ impl Cors {
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
     ) -> Result<CorsDecision, CorsError> {
+        // Steps through the CORS preflight algorithm. We follow the WHATWG
+        // reference flow: verify request metadata, emit allow headers, and
+        // short-circuit with an explicit [`PreflightRejection`] when the request
+        // violates policy. This keeps the observable behaviour identical to
+        // browser expectations while allowing servers to reason about rejections
+        // programmatically.
         let Some(requested_method) = normalized
             .access_control_request_method
             .filter(|method| !method.trim().is_empty())
@@ -91,6 +113,11 @@ impl Cors {
         original: &RequestContext<'_>,
         normalized: &RequestContext<'_>,
     ) -> Result<CorsDecision, CorsError> {
+        // Handles non-preflight requests. This path intentionally mirrors the
+        // same origin resolution logic as `process_preflight`, but limits the
+        // emitted headers to those allowed on "simple" requests. Returning
+        // [`CorsDecision::NotApplicable`] allows upstream orchestration layers
+        // to fall back to default behaviour for requests that never needed CORS.
         let builder = HeaderBuilder::new(&self.options);
         let (mut headers, decision) = builder.build_origin_headers(original, normalized)?;
 

@@ -2,6 +2,7 @@ use crate::util::normalize_lower;
 use std::collections::HashSet;
 use std::ops::Deref;
 
+/// Configuration mirror of the `Access-Control-Expose-Headers` response header.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ExposedHeaders {
     List(ExposedHeaderList),
@@ -15,6 +16,8 @@ impl Default for ExposedHeaders {
 }
 
 impl ExposedHeaders {
+    /// Builds an allow-list from the provided iterator, automatically trimming
+    /// whitespace and removing duplicates.
     pub fn list<I, S>(values: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -43,6 +46,7 @@ impl ExposedHeaders {
         Self::List(ExposedHeaderList::new(deduped))
     }
 
+    /// Serializes the configuration into a header-ready value.
     pub fn header_value(&self) -> Option<String> {
         match self {
             Self::List(values) if values.is_empty() => None,
@@ -51,6 +55,10 @@ impl ExposedHeaders {
         }
     }
 
+    /// Returns an iterator over the explicitly configured header names.
+    ///
+    /// When configured as [`Self::Any`], the iterator is empty because "*" is
+    /// represented via the header value rather than as an explicit element.
     pub fn iter(&self) -> ExposedHeadersIter<'_> {
         match self {
             Self::List(values) => ExposedHeadersIter::List(values.values.iter()),
@@ -59,6 +67,7 @@ impl ExposedHeaders {
     }
 }
 
+/// Iterator type returned by [`ExposedHeaders::iter`].
 pub enum ExposedHeadersIter<'a> {
     Empty,
     List(std::slice::Iter<'a, String>),

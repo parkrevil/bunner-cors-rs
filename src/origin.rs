@@ -9,10 +9,14 @@ use std::hash::{Hash, Hasher};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
+/// Convenience alias used for predicate-based origin configuration.
 pub type OriginPredicateFn = dyn for<'a> Fn(&str, &RequestContext<'a>) -> bool + Send + Sync;
+/// Convenience alias used for custom callbacks that can construct a full
+/// [`OriginDecision`].
 pub type OriginCallbackFn =
     dyn for<'a> Fn(Option<&'a str>, &RequestContext<'a>) -> OriginDecision + Send + Sync;
 
+/// Represents the various strategies for deciding which origins are permitted.
 #[derive(Clone, Default)]
 pub enum Origin {
     #[default]
@@ -23,6 +27,7 @@ pub enum Origin {
     Custom(Arc<OriginCallbackFn>),
 }
 
+/// Outcome category emitted by [`Origin::resolve`].
 #[derive(Debug, Clone)]
 pub enum OriginDecision {
     Any,
@@ -33,22 +38,27 @@ pub enum OriginDecision {
 }
 
 impl OriginDecision {
+    /// Convenience constructor for [`OriginDecision::Any`].
     pub fn any() -> Self {
         Self::Any
     }
 
+    /// Convenience constructor for [`OriginDecision::Exact`].
     pub fn exact<S: Into<String>>(value: S) -> Self {
         Self::Exact(value.into())
     }
 
+    /// Convenience constructor for [`OriginDecision::Mirror`].
     pub fn mirror() -> Self {
         Self::Mirror
     }
 
+    /// Convenience constructor for [`OriginDecision::Disallow`].
     pub fn disallow() -> Self {
         Self::Disallow
     }
 
+    /// Convenience constructor for [`OriginDecision::Skip`].
     pub fn skip() -> Self {
         Self::Skip
     }
@@ -76,6 +86,7 @@ where
     }
 }
 
+/// Errors encountered while compiling user-supplied origin patterns.
 #[derive(Debug)]
 pub enum PatternError {
     Build(Box<BuildError>),
@@ -119,6 +130,7 @@ thread_local! {
     static ORIGIN_UNICODE_BUFFER: RefCell<String> = const { RefCell::new(String::new()) };
 }
 
+/// Pre-compiled matcher used by [`Origin::List`].
 #[derive(Clone, Debug)]
 pub enum OriginMatcher {
     Exact(String),
@@ -126,6 +138,7 @@ pub enum OriginMatcher {
     Bool(bool),
 }
 
+/// Collection that stores and evaluates a list of [`OriginMatcher`] values.
 #[derive(Clone, Debug)]
 pub struct OriginList {
     matchers: Vec<OriginMatcher>,
@@ -397,14 +410,17 @@ impl From<bool> for OriginMatcher {
 }
 
 impl Origin {
+    /// Returns a configuration that allows any non-empty origin.
     pub fn any() -> Self {
         Self::Any
     }
 
+    /// Returns a configuration that only allows the provided origin.
     pub fn exact<S: Into<String>>(value: S) -> Self {
         Self::Exact(value.into())
     }
 
+    /// Returns a configuration backed by the provided list of matchers.
     pub fn list<I, T>(values: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -414,6 +430,7 @@ impl Origin {
         Self::List(OriginList::new(matchers))
     }
 
+    /// Returns a configuration powered by a user-provided predicate.
     pub fn predicate<F>(predicate: F) -> Self
     where
         F: for<'a> Fn(&str, &RequestContext<'a>) -> bool + Send + Sync + 'static,
@@ -421,6 +438,7 @@ impl Origin {
         Self::Predicate(Arc::new(predicate))
     }
 
+    /// Returns a configuration that can construct arbitrary [`OriginDecision`]s.
     pub fn custom<F>(callback: F) -> Self
     where
         F: for<'a> Fn(Option<&'a str>, &RequestContext<'a>) -> OriginDecision
@@ -431,10 +449,14 @@ impl Origin {
         Self::Custom(Arc::new(callback))
     }
 
+    /// Disables CORS handling entirely, mirroring the behaviour of omitting
+    /// the middleware.
     pub fn disabled() -> Self {
         Self::custom(|_, _| OriginDecision::Skip)
     }
 
+    /// Determines which response should be returned based on the supplied
+    /// request metadata.
     pub fn resolve(
         &self,
         request_origin: Option<&str>,
@@ -484,6 +506,8 @@ impl Origin {
         }
     }
 
+    /// Indicates whether the `Vary: Origin` header should be set when the
+    /// decision is [`OriginDecision::Disallow`].
     pub fn vary_on_disallow(&self) -> bool {
         !matches!(self, Origin::Any)
     }
