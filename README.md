@@ -173,7 +173,7 @@ Configure CorsOptions according to your application requirements. The following 
 | `origin` | `Origin::Any` | Allow all origins |
 | `methods` | `["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]` | Common HTTP methods |
 | `allowed_headers` | `AllowedHeaders::List()` | Only explicitly allowed headers |
-| `exposed_headers` | `ExposedHeaders::None` | No exposed headers |
+| `exposed_headers` | `ExposedHeaders::default()` | No exposed headers |
 | `credentials` | `false` | Credentials not allowed |
 | `max_age` | `None` | Preflight cache not configured |
 | `allow_null_origin` | `false` | null origin not allowed |

@@ -173,7 +173,7 @@ match handle_request(&cors, request) {
 | `origin` | `Origin::Any` | 모든 Origin 허용 |
 | `methods` | `["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]` | 일반적인 HTTP 메서드 |
 | `allowed_headers` | `AllowedHeaders::List()` | 명시적으로 허용된 헤더만 |
-| `exposed_headers` | `ExposedHeaders::None` | 노출 헤더 없음 |
+| `exposed_headers` | `ExposedHeaders::default()` | 노출 헤더 없음 |
 | `credentials` | `false` | 자격증명 불허 |
 | `max_age` | `None` | Preflight 캐시 미설정 |
 | `allow_null_origin` | `false` | null Origin 불허 |

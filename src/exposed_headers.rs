@@ -4,14 +4,13 @@ use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ExposedHeaders {
-    None,
     List(ExposedHeaderList),
     Any,
 }
 
 impl Default for ExposedHeaders {
     fn default() -> Self {
-        Self::None
+        Self::List(ExposedHeaderList::default())
     }
 }
 
@@ -46,7 +45,6 @@ impl ExposedHeaders {
 
     pub fn header_value(&self) -> Option<String> {
         match self {
-            Self::None => None,
             Self::List(values) if values.is_empty() => None,
             Self::List(values) => Some(values.join(",")),
             Self::Any => Some("*".to_string()),
@@ -56,7 +54,7 @@ impl ExposedHeaders {
     pub fn iter(&self) -> ExposedHeadersIter<'_> {
         match self {
             Self::List(values) => ExposedHeadersIter::List(values.values.iter()),
-            _ => ExposedHeadersIter::Empty,
+            Self::Any => ExposedHeadersIter::Empty,
         }
     }
 }

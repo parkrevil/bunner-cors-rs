@@ -106,7 +106,7 @@ impl Default for CorsOptions {
             origin: Origin::Any,
             methods: AllowedMethods::default(),
             allowed_headers: AllowedHeaders::default(),
-            exposed_headers: ExposedHeaders::None,
+            exposed_headers: ExposedHeaders::default(),
             credentials: false,
             max_age: None,
             allow_null_origin: false,
@@ -215,7 +215,6 @@ impl CorsOptions {
         }
 
         match &self.exposed_headers {
-            ExposedHeaders::None => {}
             ExposedHeaders::Any => {
                 if self.credentials {
                     return Err(ValidationError::ExposeHeadersWildcardRequiresCredentialsDisabled);

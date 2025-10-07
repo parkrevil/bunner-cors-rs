@@ -17,7 +17,10 @@ mod default {
         assert!(matches!(options.origin, Origin::Any));
         assert_eq!(options.methods, AllowedMethods::default());
         assert!(options.allowed_headers == AllowedHeaders::default());
-        assert!(matches!(options.exposed_headers, ExposedHeaders::None));
+        assert!(matches!(
+            options.exposed_headers,
+            ExposedHeaders::List(list) if list.is_empty()
+        ));
         assert!(!options.credentials);
         assert!(options.max_age.is_none());
         assert!(!options.allow_null_origin);

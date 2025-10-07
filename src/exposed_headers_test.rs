@@ -4,12 +4,12 @@ mod default {
     use super::*;
 
     #[test]
-    fn given_default_when_constructed_then_represents_none_variant() {
+    fn given_default_when_constructed_then_represents_empty_list_variant() {
         // Arrange & Act
         let headers = ExposedHeaders::default();
 
         // Assert
-        assert!(matches!(headers, ExposedHeaders::None));
+    assert!(matches!(&headers, ExposedHeaders::List(list) if list.is_empty()));
         assert!(headers.header_value().is_none());
     }
 }
@@ -76,18 +76,6 @@ mod list {
 
 mod header_value {
     use super::*;
-
-    #[test]
-    fn given_none_when_header_value_requested_then_returns_none() {
-        // Arrange
-        let headers = ExposedHeaders::None;
-
-        // Act
-        let value = headers.header_value();
-
-        // Assert
-        assert!(value.is_none());
-    }
 
     #[test]
     fn given_list_without_entries_when_header_value_requested_then_returns_none() {

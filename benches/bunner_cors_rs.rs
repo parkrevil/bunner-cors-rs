@@ -204,7 +204,7 @@ fn build_cors_timing_enabled() -> Cors {
 
 fn build_cors_exposed_headers_disabled() -> Cors {
     let mut options = build_cors_options_base();
-    options.exposed_headers = ExposedHeaders::None;
+    options.exposed_headers = ExposedHeaders::default();
 
     Cors::new(options).expect("valid exposed headers off configuration")
 }
@@ -224,7 +224,7 @@ fn build_cors_with_large_lists(size: usize) -> Cors {
         .origin(Origin::list(origin_matchers))
         .methods(AllowedMethods::list(methods))
         .allowed_headers(AllowedHeaders::list(headers))
-        .exposed_headers(ExposedHeaders::None)
+        .exposed_headers(ExposedHeaders::default())
         .credentials(true)
         .max_age(120)
         .allow_private_network(true);

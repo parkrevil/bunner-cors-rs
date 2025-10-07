@@ -149,7 +149,6 @@ impl<'a> HeaderBuilder<'a> {
 
     pub(crate) fn build_exposed_headers(&self) -> HeaderCollection {
         match &self.options.exposed_headers {
-            ExposedHeaders::None => HeaderCollection::new(),
             ExposedHeaders::Any => {
                 let mut headers = HeaderCollection::with_estimate(1);
                 headers.push(
