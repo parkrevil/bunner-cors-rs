@@ -326,8 +326,8 @@ mod build_allowed_headers {
 
     #[test]
     fn should_emit_joined_value_when_allowed_headers_configured_then_include_header() {
-        let options = CorsOptions::new()
-            .allowed_headers(AllowedHeaders::list(["X-Trace", "X-Auth"]));
+        let options =
+            CorsOptions::new().allowed_headers(AllowedHeaders::list(["X-Trace", "X-Auth"]));
         let builder = HeaderBuilder::new(&options);
 
         let map = builder.build_allowed_headers().into_headers();
@@ -341,8 +341,8 @@ mod build_allowed_headers {
 
     #[test]
     fn should_return_empty_collection_when_allowed_headers_empty_then_skip_header() {
-        let options = CorsOptions::new()
-            .allowed_headers(AllowedHeaders::list(Vec::<String>::new()));
+        let options =
+            CorsOptions::new().allowed_headers(AllowedHeaders::list(Vec::<String>::new()));
         let builder = HeaderBuilder::new(&options);
 
         let map = builder.build_allowed_headers().into_headers();
@@ -352,8 +352,8 @@ mod build_allowed_headers {
 
     #[test]
     fn should_emit_joined_value_when_request_has_headers_then_include_configured_list() {
-        let options = CorsOptions::new()
-            .allowed_headers(AllowedHeaders::list(["X-Test", "X-Trace"]));
+        let options =
+            CorsOptions::new().allowed_headers(AllowedHeaders::list(["X-Test", "X-Trace"]));
         let builder = HeaderBuilder::new(&options);
 
         let map = builder.build_allowed_headers().into_headers();
@@ -398,8 +398,8 @@ mod build_exposed_headers {
 
     #[test]
     fn should_emit_comma_separated_header_when_values_present_then_include_exposed_headers() {
-        let options = CorsOptions::new()
-            .exposed_headers(ExposedHeaders::list(["X-Trace", "X-Auth"]));
+        let options =
+            CorsOptions::new().exposed_headers(ExposedHeaders::list(["X-Trace", "X-Auth"]));
         let builder = HeaderBuilder::new(&options);
 
         let map = builder.build_exposed_headers().into_headers();
@@ -422,8 +422,8 @@ mod build_exposed_headers {
 
     #[test]
     fn should_return_empty_collection_when_configured_list_empty_then_skip_exposed_headers() {
-        let options = CorsOptions::new()
-            .exposed_headers(ExposedHeaders::list(std::iter::empty::<&str>()));
+        let options =
+            CorsOptions::new().exposed_headers(ExposedHeaders::list(std::iter::empty::<&str>()));
         let builder = HeaderBuilder::new(&options);
 
         let map = builder.build_exposed_headers().into_headers();
@@ -433,8 +433,7 @@ mod build_exposed_headers {
 
     #[test]
     fn should_emit_trimmed_value_when_values_have_whitespace_then_include_exposed_headers() {
-        let options = CorsOptions::new()
-            .exposed_headers(ExposedHeaders::list(["  *  "]));
+        let options = CorsOptions::new().exposed_headers(ExposedHeaders::list(["  *  "]));
         let builder = HeaderBuilder::new(&options);
 
         let map = builder.build_exposed_headers().into_headers();
@@ -583,11 +582,10 @@ mod build_timing_allow_origin_header {
 
     #[test]
     fn should_emit_space_separated_value_when_timing_allow_origin_list_then_include_header() {
-        let options = CorsOptions::new()
-            .timing_allow_origin(TimingAllowOrigin::list([
-                "https://metrics.test",
-                "https://dash.test",
-            ]));
+        let options = CorsOptions::new().timing_allow_origin(TimingAllowOrigin::list([
+            "https://metrics.test",
+            "https://dash.test",
+        ]));
         let builder = HeaderBuilder::new(&options);
 
         let map = builder.build_timing_allow_origin_header().into_headers();

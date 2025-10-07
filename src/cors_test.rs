@@ -171,8 +171,7 @@ mod check {
 
     #[test]
     fn should_return_simple_rejection_when_origin_disallowed_then_emit_rejection_variant() {
-        let cors =
-            cors_with(CorsOptions::new().origin(Origin::list(["https://allowed.test"])));
+        let cors = cors_with(CorsOptions::new().origin(Origin::list(["https://allowed.test"])));
         let request = request("GET", Some("https://denied.test"), None, None);
 
         let decision = cors
@@ -233,8 +232,7 @@ mod process_preflight {
 
     #[test]
     fn should_return_origin_not_allowed_when_origin_rejected_then_include_vary_header() {
-        let cors =
-            cors_with(CorsOptions::new().origin(Origin::list(["https://allowed.test"])));
+        let cors = cors_with(CorsOptions::new().origin(Origin::list(["https://allowed.test"])));
         let request = request(
             "OPTIONS",
             Some("https://blocked.test"),
@@ -339,9 +337,8 @@ mod process_simple {
 
     #[test]
     fn should_return_not_applicable_when_origin_handler_skips_then_stop_simple_flow() {
-        let cors = cors_with(
-            CorsOptions::new().origin(Origin::custom(|_, _| OriginDecision::Skip)),
-        );
+        let cors =
+            cors_with(CorsOptions::new().origin(Origin::custom(|_, _| OriginDecision::Skip)));
         let request = request("GET", Some("https://denied.test"), None, None);
 
         expect_not_applicable(simple_decision(&cors, &request));
@@ -349,10 +346,8 @@ mod process_simple {
 
     #[test]
     fn should_return_not_applicable_when_method_not_allowed_then_skip_simple_flow() {
-        let cors = Cors::new(
-            CorsOptions::new().methods(AllowedMethods::list(["POST"])),
-        )
-        .expect("valid CORS configuration");
+        let cors = Cors::new(CorsOptions::new().methods(AllowedMethods::list(["POST"])))
+            .expect("valid CORS configuration");
         let request = request("GET", Some("https://allowed.test"), None, None);
 
         expect_not_applicable(simple_decision(&cors, &request));
@@ -377,7 +372,7 @@ mod process_simple {
     #[test]
     fn should_emit_vary_without_allow_origin_when_origin_disallowed_then_return_vary_header() {
         let cors = Cors::new(CorsOptions::new().origin(Origin::list(["https://allowed.test"])))
-        .expect("valid CORS configuration");
+            .expect("valid CORS configuration");
         let request = request("GET", Some("https://denied.test"), None, None);
 
         let rejection = expect_simple_rejected(simple_decision(&cors, &request));
@@ -413,9 +408,8 @@ mod process_simple {
 
     #[test]
     fn should_emit_timing_allow_origin_when_configuration_allows_then_return_wildcard_value() {
-        let cors =
-            Cors::new(CorsOptions::new().timing_allow_origin(TimingAllowOrigin::Any))
-                .expect("valid CORS configuration");
+        let cors = Cors::new(CorsOptions::new().timing_allow_origin(TimingAllowOrigin::Any))
+            .expect("valid CORS configuration");
         let request = request("GET", Some("https://allowed.test"), None, None);
 
         let headers = expect_simple_accepted(simple_decision(&cors, &request));

@@ -17,8 +17,7 @@ mod new {
     #[test]
     fn should_return_error_when_allowed_headers_any_with_credentials_enabled_then_fail_validation()
     {
-        let mut options =
-            CorsOptions::new().origin(Origin::exact("https://wild.dev"));
+        let mut options = CorsOptions::new().origin(Origin::exact("https://wild.dev"));
         options.credentials = true;
         options.allowed_headers = AllowedHeaders::Any;
 

@@ -25,9 +25,9 @@ mod default {
 
     #[test]
     fn should_not_affect_other_defaults_when_instance_mutated_then_preserve_isolation() {
-    let mut first = CorsOptions::new();
+        let mut first = CorsOptions::new();
         first.credentials = true;
-    let second = CorsOptions::new();
+        let second = CorsOptions::new();
 
         assert_ne!(first.credentials, second.credentials);
     }
@@ -143,8 +143,7 @@ mod validate {
 
     #[test]
     fn should_return_error_when_allowed_headers_list_contains_wildcard_then_reject_configuration() {
-        let options =
-            CorsOptions::new().allowed_headers(AllowedHeaders::list(["*", "X-Test"]));
+        let options = CorsOptions::new().allowed_headers(AllowedHeaders::list(["*", "X-Test"]));
         let result = options.validate();
 
         assert!(matches!(
@@ -167,8 +166,7 @@ mod validate {
     #[test]
     fn should_return_error_when_allowed_methods_list_contains_empty_token_then_reject_configuration()
      {
-        let options =
-            CorsOptions::new().methods(AllowedMethods::list(["GET", "  ", "POST"]));
+        let options = CorsOptions::new().methods(AllowedMethods::list(["GET", "  ", "POST"]));
         let result = options.validate();
 
         assert!(matches!(
@@ -192,8 +190,8 @@ mod validate {
     #[test]
     fn should_return_error_when_allowed_headers_list_contains_invalid_token_then_reject_configuration()
      {
-        let options = CorsOptions::new()
-            .allowed_headers(AllowedHeaders::list(["X-Trace", "X Header"]));
+        let options =
+            CorsOptions::new().allowed_headers(AllowedHeaders::list(["X-Trace", "X Header"]));
         let result = options.validate();
 
         assert!(matches!(
@@ -205,8 +203,7 @@ mod validate {
     #[test]
     fn should_return_error_when_allowed_headers_list_contains_empty_token_then_reject_configuration()
      {
-        let options =
-            CorsOptions::new().allowed_headers(AllowedHeaders::list(["X-Test", "  "]));
+        let options = CorsOptions::new().allowed_headers(AllowedHeaders::list(["X-Test", "  "]));
         let result = options.validate();
 
         assert!(matches!(
@@ -232,8 +229,8 @@ mod validate {
 
     #[test]
     fn should_return_error_when_expose_headers_contains_invalid_token_then_reject_configuration() {
-        let options = CorsOptions::new()
-            .exposed_headers(ExposedHeaders::list(["X-Trace", "X Header"]));
+        let options =
+            CorsOptions::new().exposed_headers(ExposedHeaders::list(["X-Trace", "X Header"]));
         let result = options.validate();
 
         assert!(matches!(
@@ -254,8 +251,7 @@ mod validate {
     #[test]
     fn should_return_error_when_expose_headers_wildcard_combined_with_headers_then_reject_configuration()
      {
-        let options =
-            CorsOptions::new().exposed_headers(ExposedHeaders::list(["*", "X-Test"]));
+        let options = CorsOptions::new().exposed_headers(ExposedHeaders::list(["*", "X-Test"]));
         let result = options.validate();
 
         assert!(matches!(
@@ -266,8 +262,7 @@ mod validate {
 
     #[test]
     fn should_return_error_when_expose_headers_contains_empty_value_then_reject_configuration() {
-        let options = CorsOptions::new()
-            .exposed_headers(ExposedHeaders::list(["  ", "X-Trace"]));
+        let options = CorsOptions::new().exposed_headers(ExposedHeaders::list(["  ", "X-Trace"]));
         let result = options.validate();
 
         assert!(matches!(

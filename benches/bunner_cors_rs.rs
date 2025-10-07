@@ -327,9 +327,8 @@ fn bench_preflight_processing(c: &mut Criterion) {
         })
     });
 
-    let rejecting_cors =
-        Cors::new(CorsOptions::new().origin(Origin::exact("https://other.host")))
-            .expect("valid rejecting configuration");
+    let rejecting_cors = Cors::new(CorsOptions::new().origin(Origin::exact("https://other.host")))
+        .expect("valid rejecting configuration");
 
     group.bench_function("reject_disallowed_preflight", |b| {
         let request = build_preflight_request();
