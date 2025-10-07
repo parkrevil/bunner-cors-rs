@@ -1,6 +1,6 @@
 [package]
 name = "bunner_cors_rs"
-version = "0.1.1"
+version = "0.1.0"
 edition = "2024"
 license = "MIT"
 description = "A lightweight CORS (Cross-Origin Resource Sharing) core library for Rust"
