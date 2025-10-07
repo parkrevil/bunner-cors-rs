@@ -13,21 +13,17 @@ pub struct AppState {
 }
 
 pub fn build_state() -> Result<AppState, ValidationError> {
-    let options = CorsOptions {
-        origin: Origin::list(["http://api.example.com"]),
-        methods: AllowedMethods::list(["GET", "POST", "OPTIONS"]),
-        allowed_headers: AllowedHeaders::list([
+    let options = CorsOptions::new()
+        .origin(Origin::list(["http://api.example.com"]))
+        .methods(AllowedMethods::list(["GET", "POST", "OPTIONS"]))
+        .allowed_headers(AllowedHeaders::list([
             "Content-Type",
             "X-Requested-With",
             "X-Example-Trace",
-        ]),
-        exposed_headers: ExposedHeaders::list(["X-Example-Trace"]),
-        credentials: true,
-        max_age: Some(600),
-        allow_null_origin: false,
-        allow_private_network: false,
-        timing_allow_origin: None,
-    };
+        ]))
+        .exposed_headers(ExposedHeaders::list(["X-Example-Trace"]))
+        .credentials(true)
+        .max_age(600);
 
     let cors = Arc::new(Cors::new(options)?);
 

@@ -123,61 +123,54 @@ fn allocation_snapshot() -> AllocationSnapshot {
 }
 
 fn build_cors() -> Cors {
-    Cors::new(CorsOptions {
-        origin: Origin::list([
+    let options = CorsOptions::new()
+        .origin(Origin::list([
             OriginMatcher::Exact("https://bench.allowed".to_string()),
             OriginMatcher::pattern_str(r"^https://.*\.bench\.allowed$").unwrap(),
-        ]),
-        methods: AllowedMethods::list(["GET", "POST", "OPTIONS"]),
-        allowed_headers: AllowedHeaders::list(["X-Custom-One", "X-Custom-Two", "Content-Type"]),
-        exposed_headers: ExposedHeaders::list(["X-Expose-One", "X-Expose-Two"]),
-        credentials: true,
-        max_age: Some(600),
-        allow_null_origin: false,
-        allow_private_network: true,
-        timing_allow_origin: None,
-    })
-    .expect("valid benchmark configuration")
+        ]))
+        .methods(AllowedMethods::list(["GET", "POST", "OPTIONS"]))
+        .allowed_headers(AllowedHeaders::list([
+            "X-Custom-One",
+            "X-Custom-Two",
+            "Content-Type",
+        ]))
+        .exposed_headers(ExposedHeaders::list(["X-Expose-One", "X-Expose-Two"]))
+        .credentials(true)
+        .max_age(600)
+        .allow_private_network(true);
+
+    Cors::new(options).expect("valid benchmark configuration")
 }
 
 fn build_cors_options_base() -> CorsOptions {
-    CorsOptions {
-        origin: Origin::list([
+    CorsOptions::new()
+        .origin(Origin::list([
             OriginMatcher::Exact("https://bench.allowed".into()),
             OriginMatcher::pattern_str(r"^https://.*\\.bench\\.allowed$").unwrap(),
-        ]),
-        methods: AllowedMethods::list(["GET", "POST", "OPTIONS", "PUT"]),
-        allowed_headers: AllowedHeaders::list([
+        ]))
+        .methods(AllowedMethods::list(["GET", "POST", "OPTIONS", "PUT"]))
+        .allowed_headers(AllowedHeaders::list([
             "X-Custom-One",
             "X-Custom-Two",
             "Content-Type",
             "X-Profiling",
-        ]),
-        exposed_headers: ExposedHeaders::list(["X-Expose-One", "X-Expose-Two"]),
-        credentials: true,
-        max_age: Some(600),
-        allow_null_origin: false,
-        allow_private_network: true,
-        timing_allow_origin: Some(TimingAllowOrigin::list(vec![
-            String::from("https://metrics.bench.allowed"),
-            String::from("https://insights.bench.allowed"),
-        ])),
-    }
+        ]))
+        .exposed_headers(ExposedHeaders::list(["X-Expose-One", "X-Expose-Two"]))
+        .credentials(true)
+        .max_age(600)
+        .allow_private_network(true)
+        .timing_allow_origin(TimingAllowOrigin::list([
+            "https://metrics.bench.allowed",
+            "https://insights.bench.allowed",
+        ]))
 }
 
 fn build_cors_wildcard() -> Cors {
-    Cors::new(CorsOptions {
-        origin: Origin::any(),
-        methods: AllowedMethods::list(["GET", "POST", "OPTIONS"]),
-        allowed_headers: AllowedHeaders::default(),
-        exposed_headers: ExposedHeaders::None,
-        credentials: false,
-        max_age: None,
-        allow_null_origin: false,
-        allow_private_network: false,
-        timing_allow_origin: None,
-    })
-    .expect("valid wildcard configuration")
+    let options = CorsOptions::new()
+        .methods(AllowedMethods::list(["GET", "POST", "OPTIONS"]))
+        .allowed_headers(AllowedHeaders::default());
+
+    Cors::new(options).expect("valid wildcard configuration")
 }
 
 fn build_cors_null_origin_allowed() -> Cors {
@@ -193,30 +186,27 @@ fn build_cors_null_origin_allowed() -> Cors {
 }
 
 fn build_cors_no_private_network() -> Cors {
-    Cors::new(CorsOptions {
-        allow_private_network: false,
-        ..build_cors_options_base()
-    })
-    .expect("valid configuration without private network")
+    let mut options = build_cors_options_base();
+    options.allow_private_network = false;
+
+    Cors::new(options).expect("valid configuration without private network")
 }
 
 fn build_cors_timing_enabled() -> Cors {
-    Cors::new(CorsOptions {
-        timing_allow_origin: Some(TimingAllowOrigin::list(vec![
-            String::from("https://metrics.bench.allowed"),
-            String::from("https://dashboard.bench.allowed"),
-        ])),
-        ..build_cors_options_base()
-    })
-    .expect("valid timing allow configuration")
+    let mut options = build_cors_options_base();
+    options.timing_allow_origin = Some(TimingAllowOrigin::list([
+        "https://metrics.bench.allowed",
+        "https://dashboard.bench.allowed",
+    ]));
+
+    Cors::new(options).expect("valid timing allow configuration")
 }
 
 fn build_cors_exposed_headers_disabled() -> Cors {
-    Cors::new(CorsOptions {
-        exposed_headers: ExposedHeaders::None,
-        ..build_cors_options_base()
-    })
-    .expect("valid exposed headers off configuration")
+    let mut options = build_cors_options_base();
+    options.exposed_headers = ExposedHeaders::None;
+
+    Cors::new(options).expect("valid exposed headers off configuration")
 }
 
 fn build_cors_with_large_lists(size: usize) -> Cors {
@@ -230,18 +220,16 @@ fn build_cors_with_large_lists(size: usize) -> Cors {
         .collect::<Vec<_>>();
     let headers = generate_large_headers(size.max(1));
 
-    Cors::new(CorsOptions {
-        origin: Origin::list(origin_matchers),
-        methods: AllowedMethods::list(methods),
-        allowed_headers: AllowedHeaders::list(headers),
-        exposed_headers: ExposedHeaders::None,
-        credentials: true,
-        max_age: Some(120),
-        allow_null_origin: false,
-        allow_private_network: true,
-        timing_allow_origin: None,
-    })
-    .expect("valid large configuration")
+    let options = CorsOptions::new()
+        .origin(Origin::list(origin_matchers))
+        .methods(AllowedMethods::list(methods))
+        .allowed_headers(AllowedHeaders::list(headers))
+        .exposed_headers(ExposedHeaders::None)
+        .credentials(true)
+        .max_age(120)
+        .allow_private_network(true);
+
+    Cors::new(options).expect("valid large configuration")
 }
 
 fn build_preflight_request<'a>() -> RequestContext<'a> {
@@ -339,11 +327,9 @@ fn bench_preflight_processing(c: &mut Criterion) {
         })
     });
 
-    let rejecting_cors = Cors::new(CorsOptions {
-        origin: Origin::exact("https://other.host"),
-        ..CorsOptions::default()
-    })
-    .expect("valid rejecting configuration");
+    let rejecting_cors =
+        Cors::new(CorsOptions::new().origin(Origin::exact("https://other.host")))
+            .expect("valid rejecting configuration");
 
     group.bench_function("reject_disallowed_preflight", |b| {
         let request = build_preflight_request();

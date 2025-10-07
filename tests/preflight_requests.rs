@@ -17,12 +17,12 @@ mod new {
     #[test]
     fn should_return_error_when_allowed_headers_any_with_credentials_enabled_then_fail_validation()
     {
-        let result = Cors::new(CorsOptions {
-            origin: Origin::exact("https://wild.dev"),
-            credentials: true,
-            allowed_headers: AllowedHeaders::Any,
-            ..CorsOptions::default()
-        });
+        let mut options =
+            CorsOptions::new().origin(Origin::exact("https://wild.dev"));
+        options.credentials = true;
+        options.allowed_headers = AllowedHeaders::Any;
+
+        let result = Cors::new(options);
 
         assert!(matches!(
             result,

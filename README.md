@@ -84,7 +84,9 @@ The example below uses the [`http`](https://docs.rs/http/latest/http/) crate to 
 
 
 ```rust
-use bunner_cors_rs::{Cors, CorsDecision, CorsError, CorsOptions, Headers, Origin, RequestContext};
+use bunner_cors_rs::{
+    Cors, CorsDecision, CorsError, CorsOptions, Headers, Origin, RequestContext,
+};
 use http::{header::HeaderName, HeaderValue, Response, StatusCode};
 
 fn apply_headers(target: &mut http::HeaderMap, headers: Headers) {
@@ -136,11 +138,7 @@ fn handle_request(cors: &Cors, ctx: RequestContext<'_>) -> Result<Response<Strin
     }
 }
 
-let cors = Cors::new(CorsOptions {
-    origin: Origin::Any,
-    credentials: false,
-    ..Default::default()
-}).expect("valid configuration");
+let cors = Cors::new(CorsOptions::new()).expect("valid configuration");
 
 let request = RequestContext {
     method: "GET",
@@ -194,11 +192,7 @@ Allows all origins.
 ```rust
 use bunner_cors_rs::{CorsOptions, Origin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    credentials: false,
-    ..Default::default()
-};
+let options = CorsOptions::new();
 ```
 ```http
 Access-Control-Allow-Origin: *
@@ -213,11 +207,9 @@ Vary: Origin
 Use when allowing only a single domain.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::exact("https://app.example.com"),
-    credentials: true,
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .origin(Origin::exact("https://app.example.com"))
+    .credentials(true);
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -230,15 +222,13 @@ Vary: Origin
 Explicitly allows multiple domains.
 
 ```rust
-use bunner_cors_rs::OriginMatcher;
+use bunner_cors_rs::{CorsOptions, OriginMatcher};
 
-let options = CorsOptions {
-    origin: Origin::list(vec![
+let options = CorsOptions::new()
+    .origin(Origin::list(vec![
         OriginMatcher::exact("https://app.example.com"),
         OriginMatcher::exact("https://admin.example.com"),
-    ]),
-    ..Default::default()
-};
+    ]));
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -250,13 +240,11 @@ Vary: Origin
 Flexible matching using regular expressions.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::list(vec![
-        OriginMatcher::pattern_str(r"https://.*\.example\.com")
+let options = CorsOptions::new()
+    .origin(Origin::list(vec![
+        OriginMatcher::pattern_str(r"https://.*\\.example\\.com")
             .expect("valid pattern"),
-    ]),
-    ..Default::default()
-};
+    ]));
 ```
 ```http
 Access-Control-Allow-Origin: https://api.example.com
@@ -271,12 +259,10 @@ Vary: Origin
 Allows you to set custom validation logic. Returns the request Origin as-is when returning `true`, rejects when returning false.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::predicate(|origin, _ctx| {
+let options = CorsOptions::new()
+    .origin(Origin::predicate(|origin, _ctx| {
         origin.ends_with(".trusted.com") || origin == "https://partner.io"
-    }),
-    ..Default::default()
-};
+    }));
 ```
 
 ```http
@@ -289,10 +275,7 @@ Vary: Origin
 Disables CORS evaluation. Returns `OriginDecision::Skip`, so `CorsDecision::NotApplicable` is returned and no CORS headers are generated.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::disabled(),
-    ..Default::default()
-};
+let options = CorsOptions::new().origin(Origin::disabled());
 
 let decision = cors.check(&request_context)?;
 assert!(matches!(decision, CorsDecision::NotApplicable));
@@ -305,8 +288,8 @@ Directly controls `OriginDecision` to implement complex logic:
 ```rust
 use bunner_cors_rs::OriginDecision;
 
-let options = CorsOptions {
-    origin: Origin::custom(|maybe_origin, ctx| {
+let options = CorsOptions::new()
+    .origin(Origin::custom(|maybe_origin, ctx| {
         match maybe_origin {
             Some(origin) if origin.starts_with("https://") => {
                 if origin.ends_with(".trusted.com") {
@@ -320,9 +303,7 @@ let options = CorsOptions {
             Some(_) => OriginDecision::Disallow,
             None => OriginDecision::Skip,
         }
-    }),
-    ..Default::default()
-};
+    }));
 ```
 
 > [!WARNING]
@@ -336,13 +317,10 @@ let options = CorsOptions {
 Specifies HTTP methods to allow in preflight and simple requests.
 
 ```rust
-use bunner_cors_rs::AllowedMethods;
+use bunner_cors_rs::{AllowedMethods, CorsOptions, Origin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    methods: AllowedMethods::list(["GET", "POST", "DELETE"]),
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .methods(AllowedMethods::list(["GET", "POST", "DELETE"]));
 ```
 ```http
 Access-Control-Allow-Methods: GET,POST,DELETE
@@ -357,13 +335,14 @@ Specifies headers the client can send in preflight requests.
 
 
 ```rust
-use bunner_cors_rs::AllowedHeaders;
+use bunner_cors_rs::{AllowedHeaders, CorsOptions, Origin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    allowed_headers: AllowedHeaders::list(["Content-Type", "Authorization", "X-Api-Key"]),
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .allowed_headers(AllowedHeaders::list([
+        "Content-Type",
+        "Authorization",
+        "X-Api-Key",
+    ]));
 ```
 
 ```http
@@ -382,13 +361,10 @@ Specifies response headers to expose to the client in simple requests.
 
 
 ```rust
-use bunner_cors_rs::ExposedHeaders;
+use bunner_cors_rs::{CorsOptions, ExposedHeaders, Origin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    exposed_headers: ExposedHeaders::list(["X-Total-Count", "X-Page-Number"]),
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .exposed_headers(ExposedHeaders::list(["X-Total-Count", "X-Page-Number"]));
 ```
 
 ```http
@@ -408,11 +384,9 @@ Specifies whether to allow requests with credentials.
 
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::exact("https://app.example.com"),
-    credentials: true,
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .origin(Origin::exact("https://app.example.com"))
+    .credentials(true);
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -431,11 +405,8 @@ Vary: Origin
 Specifies the preflight response cache time in seconds.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::Any,
-    max_age: Some(3600),
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .max_age(3600);
 ```
 
 ```http
@@ -453,11 +424,10 @@ Access-Control-Max-Age: 3600
 Specifies whether to allow requests with Origin header value `"null"`.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::Any,
-    allow_null_origin: true,
-    ..Default::default()
-};
+let options = CorsOptionsBuilder::new()
+    .allow_null_origin(true)
+    .build()
+    .expect("valid configuration");
 ```
 ```http
 Access-Control-Allow-Origin: null
@@ -472,12 +442,12 @@ Vary: Origin
 Allows Private Network Access requests.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::exact("https://app.example.com"),
-    credentials: true,
-    allow_private_network: true,
-    ..Default::default()
-};
+let options = CorsOptionsBuilder::new()
+    .origin(Origin::exact("https://app.example.com"))
+    .credentials(true)
+    .allow_private_network(true)
+    .build()
+    .expect("valid configuration");
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -497,15 +467,14 @@ Vary: Origin
 Specifies the `Timing-Allow-Origin` header.
 
 ```rust
-use bunner_cors_rs::TimingAllowOrigin;
+use bunner_cors_rs::{CorsOptions, Origin, TimingAllowOrigin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    timing_allow_origin: Some(TimingAllowOrigin::list([
+let options = CorsOptionsBuilder::new()
+    .timing_allow_origin(TimingAllowOrigin::list([
         "https://analytics.example.com",
-    ])),
-    ..Default::default()
-};
+    ]))
+    .build()
+    .expect("valid configuration");
 ```
 
 ```http

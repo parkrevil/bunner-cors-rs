@@ -81,20 +81,10 @@ impl CorsBuilder {
     }
 
     pub fn build(self) -> Cors {
-        let CorsOptions {
-            origin: default_origin,
-            methods: default_methods,
-            allowed_headers: default_allowed_headers,
-            exposed_headers: default_exposed_headers,
-            credentials: default_credentials,
-            max_age: default_max_age,
-            allow_null_origin: default_allow_null_origin,
-            allow_private_network: default_private_network,
-            timing_allow_origin: default_timing_allow_origin,
-        } = CorsOptions::default();
+        let defaults = CorsOptions::new();
 
-        let mut origin = self.origin.unwrap_or(default_origin);
-        let credentials = self.credentials.unwrap_or(default_credentials);
+        let mut origin = self.origin.unwrap_or(defaults.origin.clone());
+        let credentials = self.credentials.unwrap_or(defaults.credentials);
 
         if credentials {
             origin = match origin {
@@ -103,18 +93,37 @@ impl CorsBuilder {
             };
         }
 
-        Cors::new(CorsOptions {
-            origin,
-            methods: self.methods.unwrap_or(default_methods),
-            allowed_headers: self.allowed_headers.unwrap_or(default_allowed_headers),
-            exposed_headers: self.exposed_headers.unwrap_or(default_exposed_headers),
-            credentials,
-            max_age: self.max_age.or(default_max_age),
-            allow_null_origin: self.allow_null_origin.unwrap_or(default_allow_null_origin),
-            allow_private_network: self.private_network.unwrap_or(default_private_network),
-            timing_allow_origin: self.timing_allow_origin.or(default_timing_allow_origin),
-        })
-        .expect("valid CORS configuration")
+        let mut options = CorsOptions::new()
+            .origin(origin)
+            .methods(self.methods.unwrap_or(defaults.methods.clone()))
+            .allowed_headers(
+                self.allowed_headers
+                    .unwrap_or(defaults.allowed_headers.clone()),
+            )
+            .exposed_headers(
+                self.exposed_headers
+                    .unwrap_or(defaults.exposed_headers.clone()),
+            )
+            .allow_null_origin(self.allow_null_origin.unwrap_or(defaults.allow_null_origin))
+            .allow_private_network(
+                self.private_network
+                    .unwrap_or(defaults.allow_private_network),
+            )
+            .credentials(credentials);
+
+        if let Some(max_age) = self.max_age.or(defaults.max_age) {
+            options = options.max_age(max_age);
+        }
+
+        if let Some(timing) = self
+            .timing_allow_origin
+            .clone()
+            .or(defaults.timing_allow_origin.clone())
+        {
+            options = options.timing_allow_origin(timing);
+        }
+
+        Cors::new(options).expect("valid CORS configuration")
     }
 }
 

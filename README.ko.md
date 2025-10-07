@@ -84,7 +84,9 @@ bunner_cors_rs = "0.1.0"
 
 
 ```rust
-use bunner_cors_rs::{Cors, CorsDecision, CorsError, CorsOptions, Headers, Origin, RequestContext};
+use bunner_cors_rs::{
+    Cors, CorsDecision, CorsError, CorsOptions, Headers, Origin, RequestContext,
+};
 use http::{header::HeaderName, HeaderValue, Response, StatusCode};
 
 fn apply_headers(target: &mut http::HeaderMap, headers: Headers) {
@@ -136,11 +138,7 @@ fn handle_request(cors: &Cors, ctx: RequestContext<'_>) -> Result<Response<Strin
     }
 }
 
-let cors = Cors::new(CorsOptions {
-    origin: Origin::Any,
-    credentials: false,
-    ..Default::default()
-}).expect("valid configuration");
+let cors = Cors::new(CorsOptions::new().expect("valid configuration");
 
 let request = RequestContext {
     method: "GET",
@@ -194,11 +192,7 @@ match handle_request(&cors, request) {
 ```rust
 use bunner_cors_rs::{CorsOptions, Origin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    credentials: false,
-    ..Default::default()
-};
+let options = CorsOptions::new();
 ```
 ```http
 Access-Control-Allow-Origin: *
@@ -213,11 +207,9 @@ Vary: Origin
 단일 도메인만 허용할 때 사용합니다.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::exact("https://app.example.com"),
-    credentials: true,
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .origin(Origin::exact("https://app.example.com"))
+    .credentials(true);
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -230,15 +222,13 @@ Vary: Origin
 여러 도메인을 명시적으로 허용합니다.
 
 ```rust
-use bunner_cors_rs::OriginMatcher;
+use bunner_cors_rs::{CorsOptions, OriginMatcher};
 
-let options = CorsOptions {
-    origin: Origin::list(vec![
+let options = CorsOptions::new()
+    .origin(Origin::list(vec![
         OriginMatcher::exact("https://app.example.com"),
         OriginMatcher::exact("https://admin.example.com"),
-    ]),
-    ..Default::default()
-};
+    ]));
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -250,13 +240,11 @@ Vary: Origin
 정규식을 사용한 유연한 매칭입니다.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::list(vec![
-        OriginMatcher::pattern_str(r"https://.*\.example\.com")
+let options = CorsOptions::new()
+    .origin(Origin::list(vec![
+        OriginMatcher::pattern_str(r"https://.*\\.example\\.com")
             .expect("valid pattern"),
-    ]),
-    ..Default::default()
-};
+    ]));
 ```
 ```http
 Access-Control-Allow-Origin: https://api.example.com
@@ -271,12 +259,10 @@ Vary: Origin
 사용자가 직접 판정 조건을 설정합니다. `true` 반환 시 요청 Origin을 그대로 반영하고, false 반환 시 거부합니다.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::predicate(|origin, _ctx| {
+let options = CorsOptions::new()
+    .origin(Origin::predicate(|origin, _ctx| {
         origin.ends_with(".trusted.com") || origin == "https://partner.io"
-    }),
-    ..Default::default()
-};
+    }));
 ```
 
 ```http
@@ -289,10 +275,7 @@ Vary: Origin
 CORS 판정을 비활성화합니다. `OriginDecision::Skip`을 반환하므로 `CorsDecision::NotApplicable`이 반환되고 CORS 헤더가 생성되지 않습니다.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::disabled(),
-    ..Default::default()
-};
+let options = CorsOptions::new().origin(Origin::disabled());
 
 let decision = cors.check(&request_context)?;
 assert!(matches!(decision, CorsDecision::NotApplicable));
@@ -305,8 +288,8 @@ assert!(matches!(decision, CorsDecision::NotApplicable));
 ```rust
 use bunner_cors_rs::OriginDecision;
 
-let options = CorsOptions {
-    origin: Origin::custom(|maybe_origin, ctx| {
+let options = CorsOptions::new()
+    .origin(Origin::custom(|maybe_origin, ctx| {
         match maybe_origin {
             Some(origin) if origin.starts_with("https://") => {
                 if origin.ends_with(".trusted.com") {
@@ -320,9 +303,7 @@ let options = CorsOptions {
             Some(_) => OriginDecision::Disallow,
             None => OriginDecision::Skip,
         }
-    }),
-    ..Default::default()
-};
+    }));
 ```
 
 > [!WARNING]
@@ -336,13 +317,10 @@ let options = CorsOptions {
 Preflight 요청과 Simple 요청에서 허용할 HTTP 메서드를 지정합니다.
 
 ```rust
-use bunner_cors_rs::AllowedMethods;
+use bunner_cors_rs::{AllowedMethods, CorsOptions, Origin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    methods: AllowedMethods::list(["GET", "POST", "DELETE"]),
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .methods(AllowedMethods::list(["GET", "POST", "DELETE"]));
 ```
 ```http
 Access-Control-Allow-Methods: GET,POST,DELETE
@@ -357,13 +335,14 @@ Preflight 요청에서 클라이언트가 보낼 수 있는 헤더를 지정합�
 
 
 ```rust
-use bunner_cors_rs::AllowedHeaders;
+use bunner_cors_rs::{AllowedHeaders, CorsOptions, Origin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    allowed_headers: AllowedHeaders::list(["Content-Type", "Authorization", "X-Api-Key"]),
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .allowed_headers(AllowedHeaders::list([
+        "Content-Type",
+        "Authorization",
+        "X-Api-Key",
+    ]));
 ```
 
 ```http
@@ -382,13 +361,10 @@ Simple 요청에서 클라이언트에게 노출할 응답 헤더를 지정합�
 
 
 ```rust
-use bunner_cors_rs::ExposedHeaders;
+use bunner_cors_rs::{CorsOptions, ExposedHeaders, Origin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    exposed_headers: ExposedHeaders::list(["X-Total-Count", "X-Page-Number"]),
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .exposed_headers(ExposedHeaders::list(["X-Total-Count", "X-Page-Number"]));
 ```
 
 ```http
@@ -408,11 +384,9 @@ Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::exact("https://app.example.com"),
-    credentials: true,
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .origin(Origin::exact("https://app.example.com"))
+    .credentials(true);
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -431,11 +405,8 @@ Vary: Origin
 Preflight 응답 캐시 시간(초)을 지정합니다.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::Any,
-    max_age: Some(3600),
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .max_age(3600);
 ```
 
 ```http
@@ -453,11 +424,8 @@ Access-Control-Max-Age: 3600
 Origin 헤더 값이 `"null"`인 요청 허용 여부를 지정합니다.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::Any,
-    allow_null_origin: true,
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .allow_null_origin(true);
 ```
 ```http
 Access-Control-Allow-Origin: null
@@ -472,12 +440,10 @@ Vary: Origin
 Private Network Access 요청을 허용합니다.
 
 ```rust
-let options = CorsOptions {
-    origin: Origin::exact("https://app.example.com"),
-    credentials: true,
-    allow_private_network: true,
-    ..Default::default()
-};
+let options = CorsOptions::new()
+    .origin(Origin::exact("https://app.example.com"))
+    .credentials(true)
+    .allow_private_network(true);
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -497,15 +463,12 @@ Vary: Origin
 `Timing-Allow-Origin` 헤더를 지정합니다.
 
 ```rust
-use bunner_cors_rs::TimingAllowOrigin;
+use bunner_cors_rs::{CorsOptions, Origin, TimingAllowOrigin};
 
-let options = CorsOptions {
-    origin: Origin::Any,
-    timing_allow_origin: Some(TimingAllowOrigin::list([
+let options = CorsOptions::new()
+    .timing_allow_origin(TimingAllowOrigin::list([
         "https://analytics.example.com",
-    ])),
-    ..Default::default()
-};
+    ]));
 ```
 
 ```http

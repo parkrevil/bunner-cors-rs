@@ -117,6 +117,55 @@ impl Default for CorsOptions {
 }
 
 impl CorsOptions {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn origin(mut self, origin: Origin) -> Self {
+        self.origin = origin;
+        self
+    }
+
+    pub fn methods(mut self, methods: AllowedMethods) -> Self {
+        self.methods = methods;
+        self
+    }
+
+    pub fn allowed_headers(mut self, allowed_headers: AllowedHeaders) -> Self {
+        self.allowed_headers = allowed_headers;
+        self
+    }
+
+    pub fn exposed_headers(mut self, exposed_headers: ExposedHeaders) -> Self {
+        self.exposed_headers = exposed_headers;
+        self
+    }
+
+    pub fn credentials(mut self, enabled: bool) -> Self {
+        self.credentials = enabled;
+        self
+    }
+
+    pub fn max_age(mut self, value: u64) -> Self {
+        self.max_age = Some(value);
+        self
+    }
+
+    pub fn allow_null_origin(mut self, enabled: bool) -> Self {
+        self.allow_null_origin = enabled;
+        self
+    }
+
+    pub fn allow_private_network(mut self, enabled: bool) -> Self {
+        self.allow_private_network = enabled;
+        self
+    }
+
+    pub fn timing_allow_origin(mut self, value: TimingAllowOrigin) -> Self {
+        self.timing_allow_origin = Some(value);
+        self
+    }
+
     pub fn validate(&self) -> Result<(), ValidationError> {
         if self.credentials && matches!(self.origin, Origin::Any) {
             if self.allow_private_network {
