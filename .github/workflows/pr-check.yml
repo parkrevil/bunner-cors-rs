@@ -4,12 +4,20 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'examples/**'
+      - 'tests/**'
   pull_request:
     branches:
       - main
       - develop
       - 'release/**'
     types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/**'
+      - 'examples/**'
+      - 'tests/**'
   workflow_dispatch:
 
 concurrency:

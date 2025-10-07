@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'examples/**'
+      - 'tests/**'
   workflow_dispatch:
 
 concurrency:
