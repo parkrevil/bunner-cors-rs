@@ -9,8 +9,8 @@ use criterion::{
 use once_cell::sync::Lazy;
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::env;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::hint::black_box;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 const HEAVY_METHOD: &str = "POsT";
 const HEAVY_ACCESS_METHOD: &str = "PuT";
