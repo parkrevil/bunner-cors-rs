@@ -4,13 +4,13 @@ use bunner_cors_rs::{
     equals_ignore_case, normalize_lower,
 };
 use criterion::{
-    BenchmarkId, Criterion, SamplingMode, Throughput, black_box, criterion_group, criterion_main,
+    BenchmarkId, Criterion, SamplingMode, Throughput, criterion_group, criterion_main,
 };
 use once_cell::sync::Lazy;
-use pprof::criterion::{Output, PProfProfiler};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::env;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::hint::black_box;
 
 const HEAVY_METHOD: &str = "POsT";
 const HEAVY_ACCESS_METHOD: &str = "PuT";
@@ -735,10 +735,12 @@ fn bench_cors(c: &mut Criterion) {
 
 fn configure_criterion() -> Criterion {
     if env::var_os("BUNNER_PROFILE_FLAMEGRAPH").is_some() {
-        Criterion::default().with_profiler(PProfProfiler::new(1000, Output::Flamegraph(None)))
-    } else {
-        Criterion::default()
+        eprintln!(
+            "BUNNER_PROFILE_FLAMEGRAPH is set, but pprof-based profiling is currently disabled."
+        );
     }
+
+    Criterion::default()
 }
 
 criterion_group!(

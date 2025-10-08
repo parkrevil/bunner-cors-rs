@@ -52,7 +52,7 @@ audit:
 	fi
 
 ## Coverage
-.PHONY: coverage coverage-html coverage-lcov
+.PHONY: coverage coverage-lcov
 coverage:
 	@if command -v cargo-llvm-cov >/dev/null 2>&1; then \
 		mkdir -p $(TARGET_DIR)/llvm-cov-target/html; \
@@ -70,10 +70,7 @@ coverage-lcov:
 	fi
 
 ## Release / Publish
-.PHONY: release publish-dry-run publish
-release:
-	cargo build --release --all-features
-
+.PHONY: publish-dry-run publish
 publish-dry-run:
 	cargo publish --dry-run
 
