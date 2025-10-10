@@ -9,8 +9,8 @@ use criterion::{
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::env;
 use std::hint::black_box;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::LazyLock;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 const HEAVY_METHOD: &str = "POsT";
 const HEAVY_ACCESS_METHOD: &str = "PuT";
