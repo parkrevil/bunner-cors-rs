@@ -1,6 +1,6 @@
 [package]
 name = "bunner_cors_rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "LICENSE.md"
 description = "A lightweight CORS (Cross-Origin Resource Sharing) core library for Rust"
@@ -13,10 +13,8 @@ authors = ["parkrevil"]
 readme = "README.md"
 
 [dependencies]
-once_cell = "1"
 regex-automata = "0.4"
 thiserror = "2"
-indexmap = "2"
 
 [dev-dependencies]
 proptest = "1"

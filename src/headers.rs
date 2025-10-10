@@ -1,6 +1,6 @@
 use crate::constants::header;
-use indexmap::IndexMap;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::mem;
 
 #[cfg(debug_assertions)]
@@ -49,10 +49,7 @@ pub(crate) fn header_pool_reset() {
 }
 
 /// Canonical map type used for returning header modifications to callers.
-///
-/// The map preserves insertion order to keep the resulting response headers
-/// stable, which simplifies snapshot testing and debugging.
-pub type Headers = IndexMap<String, String>;
+pub type Headers = HashMap<String, String>;
 
 const HEADER_BUFFER_POOL_LIMIT: usize = 64;
 

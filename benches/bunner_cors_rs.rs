@@ -6,18 +6,18 @@ use bunner_cors_rs::{
 use criterion::{
     BenchmarkId, Criterion, SamplingMode, Throughput, criterion_group, criterion_main,
 };
-use once_cell::sync::Lazy;
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::env;
 use std::hint::black_box;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::LazyLock;
 
 const HEAVY_METHOD: &str = "POsT";
 const HEAVY_ACCESS_METHOD: &str = "PuT";
 static HEAVY_ORIGIN: &str = "HTTPS://EDGE.BENCH.ALLOWED";
 static HEAVY_SIMPLE_ORIGIN: &str = "HTTPS://SIMPLE.BENCH.ALLOWED";
 
-static HEAVY_HEADER_LINE: Lazy<&'static str> = Lazy::new(|| {
+static HEAVY_HEADER_LINE: LazyLock<&'static str> = LazyLock::new(|| {
     let headers = (0..64)
         .map(|idx| format!("X-BENCH-HEADER-{idx:03}"))
         .collect::<Vec<_>>()
@@ -25,7 +25,7 @@ static HEAVY_HEADER_LINE: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(headers.into_boxed_str())
 });
 
-static LARGE_HEADER_LINE: Lazy<&'static str> = Lazy::new(|| {
+static LARGE_HEADER_LINE: LazyLock<&'static str> = LazyLock::new(|| {
     let headers = (0..256)
         .map(|idx| format!("X-ALLOW-{idx:03}"))
         .collect::<Vec<_>>()
@@ -33,7 +33,7 @@ static LARGE_HEADER_LINE: Lazy<&'static str> = Lazy::new(|| {
     Box::leak(headers.into_boxed_str())
 });
 
-static LARGE_ORIGIN_PATTERNS: Lazy<Vec<OriginMatcher>> = Lazy::new(|| {
+static LARGE_ORIGIN_PATTERNS: LazyLock<Vec<OriginMatcher>> = LazyLock::new(|| {
     (0..256)
         .map(|idx| {
             let pattern = format!("^https://svc{idx:03}\\.bench\\.allowed$");

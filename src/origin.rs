@@ -1,12 +1,11 @@
 use crate::context::RequestContext;
 use crate::util::{equals_ignore_case, lowercase_unicode_into, normalize_lower};
-use once_cell::sync::Lazy;
 use regex_automata::meta::{BuildError, Regex};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, LazyLock, RwLock};
 use std::time::{Duration, Instant};
 
 /// Convenience alias used for predicate-based origin configuration.
@@ -123,8 +122,8 @@ const PATTERN_COMPILE_BUDGET: Duration = Duration::from_millis(100);
 const MAX_PATTERN_LENGTH: usize = 50_000;
 const MAX_ORIGIN_LENGTH: usize = 4_096;
 
-static REGEX_CACHE: Lazy<RwLock<HashMap<String, Regex>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+static REGEX_CACHE: LazyLock<RwLock<HashMap<String, Regex>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 thread_local! {
     static ORIGIN_UNICODE_BUFFER: RefCell<String> = const { RefCell::new(String::new()) };

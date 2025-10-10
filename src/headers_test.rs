@@ -222,18 +222,17 @@ mod into_headers {
     }
 
     #[test]
-    fn should_emit_vary_header_first_when_into_headers_called_then_preserve_ordering() {
+    fn should_include_vary_header_when_into_headers_called_then_retain_entry() {
         let mut collection = HeaderCollection::new();
         collection.add_vary("Origin");
         collection.push("Access-Control-Allow-Methods".into(), "GET".into());
 
         let headers = collection.into_headers();
-        let mut keys = headers.keys();
-
-        assert_eq!(keys.next(), Some(&header::VARY.to_string()));
+        assert_eq!(headers.len(), 2);
+        assert_eq!(headers.get(header::VARY), Some(&"Origin".to_string()));
         assert_eq!(
-            keys.next(),
-            Some(&"Access-Control-Allow-Methods".to_string())
+            headers.get("Access-Control-Allow-Methods"),
+            Some(&"GET".to_string())
         );
     }
 }
