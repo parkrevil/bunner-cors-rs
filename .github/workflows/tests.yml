@@ -8,6 +8,10 @@ on:
       - 'src/**'
       - 'examples/**'
       - 'tests/**'
+      - 'benches/**'
+      - 'Makefile'
+      - 'Cargo.toml'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
@@ -18,6 +22,10 @@ on:
       - 'src/**'
       - 'examples/**'
       - 'tests/**'
+      - 'benches/**'
+      - 'Makefile'
+      - 'Cargo.toml'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 concurrency:
