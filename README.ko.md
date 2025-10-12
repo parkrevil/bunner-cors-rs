@@ -167,7 +167,7 @@ match handle_request(&cors, request) {
 <a id="corsoptions"></a>
 ## ⚙️ CorsOptions
 
-애플리케이션 사양에 맞게 CorsOptions 을 설정하세요. 다음은 `CorsOptions`과 `CorsOptions::default()`를 사용시 설정되는 기본값입니다.
+애플리케이션 사양에 맞게 `CorsOptions` 을 설정하세요. 다음은 `CorsOptions` 의 기본 값입니다.
 
 | 옵션 | 기본값 | 설명 |
 |------|--------|------|
@@ -175,7 +175,7 @@ match handle_request(&cors, request) {
 | `methods` | `["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]` | 일반적인 HTTP 메서드 |
 | `allowed_headers` | `AllowedHeaders::List()` | 명시적으로 허용된 헤더만 |
 | `exposed_headers` | `ExposedHeaders::default()` | 노출 헤더 없음 |
-| `credentials` | `false` | 자격증명 불허 |
+| `credentials` | `false` | 자격 증명 불허 |
 | `max_age` | `None` | Preflight 캐시 미설정 |
 | `allow_null_origin` | `false` | null Origin 불허 |
 | `allow_private_network` | `false` | 사설망 접근 불허 |
@@ -183,11 +183,11 @@ match handle_request(&cors, request) {
 
 <a id="origin"></a>
 ### `origin`
-허용할 출처를 지정합니다.
+허용할 Origin을 지정합니다.
 
 #### `Origin::Any`
 
-모든 출처를 허용합니다.
+모든 Origin을 허용합니다.
 
 
 ```rust
@@ -205,7 +205,7 @@ Vary: Origin
 
 #### `Origin::exact`
 
-단일 도메인만 허용할 때 사용합니다.
+단일 Origin만 허용할 때 사용합니다.
 
 ```rust
 let options = CorsOptions::new()
@@ -220,7 +220,7 @@ Vary: Origin
 
 #### `Origin::list`
 
-여러 도메인을 명시적으로 허용합니다.
+여러 Origin을 명시적으로 허용합니다.
 
 ```rust
 use bunner_cors_rs::{CorsOptions, OriginMatcher};
@@ -257,7 +257,7 @@ Vary: Origin
 
 #### `Origin::predicate`
 
-사용자가 직접 판정 조건을 설정합니다. `true` 반환 시 요청 Origin을 그대로 반영하고, false 반환 시 거부합니다.
+사용자가 직접 판정 조건을 설정합니다. `true` 반환 시 요청 Origin을 그대로 반영하고, `false` 반환 시 거부합니다.
 
 ```rust
 let options = CorsOptions::new()
@@ -308,14 +308,14 @@ let options = CorsOptions::new()
 ```
 
 > [!WARNING]
-> `credentials: true`인 상황에서 사용자 콜백이 `OriginDecision::Any`를 반환하면 런타임 오류가 발생합니다. CORS 표준상 자격증명과 와일드카드 Origin은 함께 사용할 수 없습니다.
+> `credentials: true`인 상황에서 사용자 콜백이 `OriginDecision::Any`를 반환하면 런타임 오류가 발생합니다. CORS 표준상 자격 증명과 와일드카드 Origin은 함께 사용할 수 없습니다.
 
 ---
 
 <a id="methods"></a>
 ### `methods`
 
-Preflight 요청과 Simple 요청에서 허용할 HTTP 메서드를 지정합니다.
+Preflight 요청과 단순 요청에서 허용할 HTTP 메서드를 지정합니다.
 
 ```rust
 use bunner_cors_rs::{AllowedMethods, CorsOptions, Origin};
@@ -358,7 +358,7 @@ Access-Control-Allow-Headers: Content-Type,Authorization,X-Api-Key
 <a id="exposed_headers"></a>
 ### `exposed_headers`
 
-Simple 요청에서 클라이언트에게 노출할 응답 헤더를 지정합니다.
+단순 요청에서 클라이언트에게 노출할 응답 헤더를 지정합니다.
 
 
 ```rust
@@ -381,7 +381,7 @@ Access-Control-Expose-Headers: X-Total-Count,X-Page-Number
 <a id="credentials"></a>
 ### `credentials`
 
-자격증명을 포함한 요청 허용 여부를 지정합니다.
+자격 증명을 포함한 요청 허용 여부를 지정합니다.
 
 
 ```rust
@@ -493,8 +493,8 @@ Timing-Allow-Origin: https://analytics.example.com
 |------|------|
 | `CredentialsRequireSpecificOrigin` | `credentials: true`일 때 `Origin::Any` 사용 불가 |
 | `AllowedHeadersAnyNotAllowedWithCredentials` | `credentials: true`일 때 `AllowedHeaders::Any` 사용 불가 |
-| `AllowedHeadersListCannotContainWildcard` | 허용 헤더 목록에 `"*"` 포함 불가 (대신 `AllowedHeaders::Any` 사용) |
-| `ExposeHeadersWildcardRequiresCredentialsDisabled` | 노출 헤더에 `"*"`를 쓰려면 `credentials: false` 필요 |
+| `AllowedHeadersListCannotContainWildcard` | 허용 헤더 목록에 `"*"` 포함 불가 (`AllowedHeaders::Any` 사용) |
+| `ExposeHeadersWildcardRequiresCredentialsDisabled` | 노출 헤더에 `"*"`를 사용하려면 `credentials: false` 필요 |
 | `ExposeHeadersWildcardCannotBeCombined` | 노출 헤더에 `"*"`와 다른 헤더를 함께 지정 불가 |
 | `PrivateNetworkRequiresCredentials` | `allow_private_network: true`일 때 `credentials: true` 필수 |
 | `PrivateNetworkRequiresSpecificOrigin` | `allow_private_network: true`일 때 `Origin::Any` 사용 불가 |
@@ -507,7 +507,7 @@ Timing-Allow-Origin: https://analytics.example.com
 <a id="런타임-오류"></a>
 ### 런타임 오류
 
-`Cors::check()`는 `CorsError`를 반환할 수 있습니다.
+`Cors::check()`는 `CorsError`를 반환합니다.
 
 | 오류 | 설명 |
 |------|------|
@@ -526,7 +526,7 @@ CORS 판정을 위해 HTTP 요청 정보를 `RequestContext`로 변환해야 합
 | 필드 | 타입 | HTTP 헤더 | 설명 |
 |------|------|-----------|------|
 | `method` | `&'a str` | 요청 메서드 | 실제 HTTP 메서드 문자열 (`"GET"`, `"POST"`, `"OPTIONS"` 등) |
-| `origin` | `Option<&'a str>` | `Origin` | 요청의 출처. 헤더가 없으면 `None` |
+| `origin` | `Option<&'a str>` | `Origin` | 요청의 Origin. 헤더가 없으면 `None` |
 | `access_control_request_method` | `Option<&'a str>` | `Access-Control-Request-Method` | Preflight 요청에서 실행할 메서드. 값이 없으면 `None` |
 | `access_control_request_headers` | `Option<&'a str>` | `Access-Control-Request-Headers` | Preflight 요청에서 사용할 헤더 목록(쉼표 구분). 값이 없으면 `None` |
 | `access_control_request_private_network` | `bool` | `Access-Control-Request-Private-Network` | 헤더 존재 여부 (`true`/`false`) |
@@ -671,9 +671,9 @@ make bench
 <a id="기여하기"></a>
 ## ❤️ 기여하기
 
-기여는 일정 기간동안 받지 않습니다. 준비되는대로 업데이트 하겠습니다.
+기여는 일정 기간 동안 받지 않습니다. 준비되는 대로 업데이트하겠습니다.
 
-문제 혹은 요청사항이 있을 경우 이슈를 등록해주세요.
+문제 또는 요청사항이 있을 경우 이슈를 등록해주세요.
 
 <a id="라이선스"></a>
 ## 📜 라이선스

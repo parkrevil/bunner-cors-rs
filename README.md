@@ -205,7 +205,7 @@ Vary: Origin
 
 #### `Origin::exact`
 
-Use when allowing only a single domain.
+Use when allowing only a single origin.
 
 ```rust
 let options = CorsOptions::new()
@@ -220,7 +220,7 @@ Vary: Origin
 
 #### `Origin::list`
 
-Explicitly allows multiple domains.
+Explicitly allows multiple origins.
 
 ```rust
 use bunner_cors_rs::{CorsOptions, OriginMatcher};
@@ -257,7 +257,7 @@ Vary: Origin
 
 #### `Origin::predicate`
 
-Allows you to set custom validation logic. Returns the request Origin as-is when returning `true`, rejects when returning false.
+Allows you to set custom validation logic. Returns the request Origin as-is when returning `true`, rejects when returning `false`.
 
 ```rust
 let options = CorsOptions::new()
@@ -425,10 +425,8 @@ Access-Control-Max-Age: 3600
 Specifies whether to allow requests with Origin header value `"null"`.
 
 ```rust
-let options = CorsOptionsBuilder::new()
-    .allow_null_origin(true)
-    .build()
-    .expect("valid configuration");
+let options = CorsOptions::new()
+    .allow_null_origin(true);
 ```
 ```http
 Access-Control-Allow-Origin: null
@@ -443,12 +441,10 @@ Vary: Origin
 Allows Private Network Access requests.
 
 ```rust
-let options = CorsOptionsBuilder::new()
+let options = CorsOptions::new()
     .origin(Origin::exact("https://app.example.com"))
     .credentials(true)
-    .allow_private_network(true)
-    .build()
-    .expect("valid configuration");
+    .allow_private_network(true);
 ```
 ```http
 Access-Control-Allow-Origin: https://app.example.com
@@ -470,12 +466,10 @@ Specifies the `Timing-Allow-Origin` header.
 ```rust
 use bunner_cors_rs::{CorsOptions, Origin, TimingAllowOrigin};
 
-let options = CorsOptionsBuilder::new()
+let options = CorsOptions::new()
     .timing_allow_origin(TimingAllowOrigin::list([
         "https://analytics.example.com",
-    ]))
-    .build()
-    .expect("valid configuration");
+    ]));
 ```
 
 ```http
@@ -499,7 +493,7 @@ Timing-Allow-Origin: https://analytics.example.com
 |-------|-------------|
 | `CredentialsRequireSpecificOrigin` | Cannot use `Origin::Any` when `credentials: true` |
 | `AllowedHeadersAnyNotAllowedWithCredentials` | Cannot use `AllowedHeaders::Any` when `credentials: true` |
-| `AllowedHeadersListCannotContainWildcard` | Cannot include `"*"` in allowed headers list (use `AllowedHeaders::Any` instead) |
+| `AllowedHeadersListCannotContainWildcard` | Cannot include `"*"` in allowed headers list (use `AllowedHeaders::Any`) |
 | `ExposeHeadersWildcardRequiresCredentialsDisabled` | Need `credentials: false` to use `"*"` in exposed headers |
 | `ExposeHeadersWildcardCannotBeCombined` | Cannot specify `"*"` with other headers in exposed headers |
 | `PrivateNetworkRequiresCredentials` | `credentials: true` required when `allow_private_network: true` |
