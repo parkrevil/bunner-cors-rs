@@ -96,9 +96,6 @@ fn rejection_message(reason: &PreflightRejectionReason) -> String {
         PreflightRejectionReason::HeadersNotAllowed { requested_headers } => {
             format!("Preflight rejected: headers '{requested_headers}' not allowed")
         }
-        PreflightRejectionReason::MissingAccessControlRequestMethod => {
-            "Preflight rejected: Access-Control-Request-Method header missing".into()
-        }
     }
 }
 

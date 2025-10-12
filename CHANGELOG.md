@@ -2,6 +2,14 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-10-12
+### Removed
+- Removed the unused `PreflightRejectionReason::MissingAccessControlRequestMethod` variant and the surrounding example branches.
+
+### Documentation
+- Synced the English README with the Korean source, expanding explanations and tables to stay aligned.
+- Refreshed validation error descriptions to reflect the current configuration checks.
+
 ## [0.1.1] - 2025-10-10
 ### Changed
 - Replaced the internal `Headers` map implementation with `std::collections::HashMap`, removing insertion-order guarantees in favor of lower overhead and simpler pooling.

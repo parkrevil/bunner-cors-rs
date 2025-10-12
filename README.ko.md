@@ -65,13 +65,13 @@
 <a id="설치"></a>
 ### 설치
 
-`cargo add`를 사용하여 라이브러리를 추가하세요:
+`cargo add`를 사용하여 라이브러리를 추가하세요.
 
 ```bash
 cargo add bunner_cors_rs
 ```
 
-또는 `Cargo.toml`에 직접 추가할 수 있습니다:
+또는 `Cargo.toml`에 직접 추가할 수 있습니다.
 
 ```toml
 [dependencies]
@@ -139,7 +139,7 @@ fn handle_request(cors: &Cors, ctx: RequestContext<'_>) -> Result<Response<Strin
     }
 }
 
-let cors = Cors::new(CorsOptions::new().expect("valid configuration");
+let cors = Cors::new(CorsOptions::new()).expect("valid configuration");
 
 let request = RequestContext {
     method: "GET",
@@ -173,7 +173,7 @@ match handle_request(&cors, request) {
 |------|--------|------|
 | `origin` | `Origin::Any` | 모든 Origin 허용 |
 | `methods` | `["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]` | 일반적인 HTTP 메서드 |
-| `allowed_headers` | `AllowedHeaders::List()` | 명시적으로 허용된 헤더만 |
+| `allowed_headers` | `AllowedHeaders::default()` | 명시적으로 허용된 헤더 없음 |
 | `exposed_headers` | `ExposedHeaders::default()` | 노출 헤더 없음 |
 | `credentials` | `false` | 자격 증명 불허 |
 | `max_age` | `None` | Preflight 캐시 미설정 |
@@ -284,7 +284,7 @@ assert!(matches!(decision, CorsDecision::NotApplicable));
 
 #### `Origin::custom`
 
-`OriginDecision`을 직접 제어하여 복잡한 로직을 구현할 수 있습니다:
+`OriginDecision`을 직접 제어하여 복잡한 로직을 구현할 수 있습니다.
 
 ```rust
 use bunner_cors_rs::OriginDecision;
@@ -494,15 +494,19 @@ Timing-Allow-Origin: https://analytics.example.com
 | `CredentialsRequireSpecificOrigin` | `credentials: true`일 때 `Origin::Any` 사용 불가 |
 | `AllowedHeadersAnyNotAllowedWithCredentials` | `credentials: true`일 때 `AllowedHeaders::Any` 사용 불가 |
 | `AllowedHeadersListCannotContainWildcard` | 허용 헤더 목록에 `"*"` 포함 불가 (`AllowedHeaders::Any` 사용) |
+| `AllowedHeadersCannotContainEmptyToken` | 허용 헤더 목록에 빈 값이나 공백만 있는 항목 포함 불가 |
+| `AllowedHeadersListContainsInvalidToken` | 허용 헤더가 유효한 HTTP 헤더 이름이 아님 |
 | `ExposeHeadersWildcardRequiresCredentialsDisabled` | 노출 헤더에 `"*"`를 사용하려면 `credentials: false` 필요 |
 | `ExposeHeadersWildcardCannotBeCombined` | 노출 헤더에 `"*"`와 다른 헤더를 함께 지정 불가 |
+| `ExposeHeadersCannotContainEmptyValue` | 노출 헤더 목록에 빈 값이나 공백만 있는 항목 포함 불가 |
+| `ExposeHeadersListContainsInvalidToken` | 노출 헤더가 유효한 HTTP 헤더 이름이 아님 |
 | `PrivateNetworkRequiresCredentials` | `allow_private_network: true`일 때 `credentials: true` 필수 |
 | `PrivateNetworkRequiresSpecificOrigin` | `allow_private_network: true`일 때 `Origin::Any` 사용 불가 |
-| `TimingAllowOriginWildcardNotAllowedWithCredentials` | `credentials: true`일 때 `TimingAllowOrigin::Any` 사용 불가 |
+| `AllowedMethodsCannotContainEmptyToken` | 허용 메서드 목록에 빈 값이나 공백만 있는 항목 포함 불가 |
 | `AllowedMethodsCannotContainWildcard` | 허용 메서드 목록에 `"*"` 포함 불가 |
 | `AllowedMethodsListContainsInvalidToken` | 허용 메서드가 유효한 HTTP 메서드 토큰이 아님 |
-| `AllowedHeadersListContainsInvalidToken` | 허용 헤더가 유효한 HTTP 헤더 이름이 아님 |
-| `ExposeHeadersListContainsInvalidToken` | 노출 헤더가 유효한 HTTP 헤더 이름이 아님 |
+| `TimingAllowOriginWildcardNotAllowedWithCredentials` | `credentials: true`일 때 `TimingAllowOrigin::Any` 사용 불가 |
+| `TimingAllowOriginCannotContainEmptyValue` | `TimingAllowOrigin` 목록에 빈 값이나 공백만 있는 항목 포함 불가 |
 
 <a id="런타임-오류"></a>
 ### 런타임 오류
@@ -584,7 +588,7 @@ match cors.check(&context)? {
 
 #### `PreflightRejected`
 
-Origin이 허용되지 않거나 요청된 메서드/헤더가 정책을 위반하면 이 변형을 반환합니다. `PreflightRejection.reason`에는 `OriginNotAllowed`, `MethodNotAllowed`, `HeadersNotAllowed`, `MissingAccessControlRequestMethod` 중 하나가 포함됩니다.
+Origin이 허용되지 않거나 요청된 메서드/헤더가 정책을 위반하면 이 변형을 반환합니다. `PreflightRejection.reason`에는 `OriginNotAllowed`, `MethodNotAllowed`, `HeadersNotAllowed` 중 하나가 포함됩니다.
 
 ```rust
 CorsDecision::PreflightRejected(rejection) => {
@@ -655,7 +659,7 @@ curl -X GET -H "Origin: http://api.example.com" -I http://127.0.0.1:5003/greet
 
 ### 테스트
 
-이 라이브러리는 유닛 테스트, 통합 테스트, property-based 테스트, snapshot 테스트를 포함합니다:
+이 라이브러리는 유닛 테스트, 통합 테스트, property-based 테스트, snapshot 테스트를 포함합니다.
 
 ```bash
 # 일반 테스트

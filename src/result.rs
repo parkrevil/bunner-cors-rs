@@ -21,7 +21,6 @@ pub enum PreflightRejectionReason {
     OriginNotAllowed,
     MethodNotAllowed { requested_method: String },
     HeadersNotAllowed { requested_headers: String },
-    MissingAccessControlRequestMethod,
 }
 
 /// Wrapper struct that exposes the rejection reason alongside the headers that

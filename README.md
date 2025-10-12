@@ -81,7 +81,7 @@ bunner_cors_rs = "0.1.0"
 <a id="quick-start"></a>
 ### Quick Start
 
-The example below uses the [`http`](https://docs.rs/http/latest/http/) crate to construct responses, showing how to convert the result returned by `Cors::check()` into an actual HTTP response.
+The example below uses the [`http`](https://docs.rs/http/latest/http/) crate to construct responses and demonstrates how to turn the result returned by `Cors::check()` into an actual HTTP response.
 
 
 ```rust
@@ -167,17 +167,17 @@ match handle_request(&cors, request) {
 <a id="corsoptions"></a>
 ## ⚙️ CorsOptions
 
-Configure CorsOptions according to your application requirements. The following shows `CorsOptions` and the default values when using `CorsOptions::default()`.
+Configure `CorsOptions` to match your application requirements. The table below lists the default values of `CorsOptions`.
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `origin` | `Origin::Any` | Allow all origins |
 | `methods` | `["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]` | Common HTTP methods |
-| `allowed_headers` | `AllowedHeaders::List()` | Only explicitly allowed headers |
+| `allowed_headers` | `AllowedHeaders::default()` | No explicitly allowed headers |
 | `exposed_headers` | `ExposedHeaders::default()` | No exposed headers |
 | `credentials` | `false` | Credentials not allowed |
 | `max_age` | `None` | Preflight cache not configured |
-| `allow_null_origin` | `false` | null origin not allowed |
+| `allow_null_origin` | `false` | Does not allow the `null` origin |
 | `allow_private_network` | `false` | Private network access not allowed |
 | `timing_allow_origin` | `None` | Timing information not exposed |
 
@@ -494,15 +494,19 @@ Timing-Allow-Origin: https://analytics.example.com
 | `CredentialsRequireSpecificOrigin` | Cannot use `Origin::Any` when `credentials: true` |
 | `AllowedHeadersAnyNotAllowedWithCredentials` | Cannot use `AllowedHeaders::Any` when `credentials: true` |
 | `AllowedHeadersListCannotContainWildcard` | Cannot include `"*"` in allowed headers list (use `AllowedHeaders::Any`) |
+| `AllowedHeadersCannotContainEmptyToken` | Cannot include empty or whitespace-only values in allowed headers list |
+| `AllowedHeadersListContainsInvalidToken` | Allowed header is not a valid HTTP header name |
 | `ExposeHeadersWildcardRequiresCredentialsDisabled` | Need `credentials: false` to use `"*"` in exposed headers |
 | `ExposeHeadersWildcardCannotBeCombined` | Cannot specify `"*"` with other headers in exposed headers |
+| `ExposeHeadersCannotContainEmptyValue` | Cannot include empty or whitespace-only values in exposed headers list |
+| `ExposeHeadersListContainsInvalidToken` | Exposed header is not a valid HTTP header name |
 | `PrivateNetworkRequiresCredentials` | `credentials: true` required when `allow_private_network: true` |
 | `PrivateNetworkRequiresSpecificOrigin` | Cannot use `Origin::Any` when `allow_private_network: true` |
-| `TimingAllowOriginWildcardNotAllowedWithCredentials` | Cannot use `TimingAllowOrigin::Any` when `credentials: true` |
+| `AllowedMethodsCannotContainEmptyToken` | Cannot include empty or whitespace-only values in allowed methods list |
 | `AllowedMethodsCannotContainWildcard` | Cannot include `"*"` in allowed methods list |
 | `AllowedMethodsListContainsInvalidToken` | Allowed method is not a valid HTTP method token |
-| `AllowedHeadersListContainsInvalidToken` | Allowed header is not a valid HTTP header name |
-| `ExposeHeadersListContainsInvalidToken` | Exposed header is not a valid HTTP header name |
+| `TimingAllowOriginWildcardNotAllowedWithCredentials` | Cannot use `TimingAllowOrigin::Any` when `credentials: true` |
+| `TimingAllowOriginCannotContainEmptyValue` | Cannot include empty or whitespace-only values in `Timing-Allow-Origin` list |
 
 <a id="runtime-errors"></a>
 ### Runtime Errors
@@ -584,7 +588,7 @@ match cors.check(&context)? {
 
 #### `PreflightRejected`
 
-Returns this variant when origin is not allowed or requested method/headers violate policy. `PreflightRejection.reason` contains one of: `OriginNotAllowed`, `MethodNotAllowed`, `HeadersNotAllowed`, `MissingAccessControlRequestMethod`.
+Returns this variant when origin is not allowed or requested method/headers violate policy. `PreflightRejection.reason` contains one of: `OriginNotAllowed`, `MethodNotAllowed`, `HeadersNotAllowed`.
 
 ```rust
 CorsDecision::PreflightRejected(rejection) => {
@@ -655,7 +659,7 @@ curl -X GET -H "Origin: http://api.example.com" -I http://127.0.0.1:5003/greet
 
 ### Testing
 
-This library includes unit tests, integration tests, property-based tests, and snapshot tests:
+This library includes unit tests, integration tests, property-based tests, and snapshot tests.
 
 ```bash
 # Run tests
